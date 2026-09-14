@@ -1,6 +1,6 @@
 <template>
   <div class="components-view">
-    <v-card elevation="1" class="rounded-xl border overflow-hidden">
+    <v-card elevation="1" class="rounded-0 border overflow-hidden">
       <v-card-item class="bg-surface-variant py-3 px-4">
         <div class="d-flex flex-wrap align-center justify-space-between gap-3">
           <div class="d-flex align-center">
@@ -228,7 +228,7 @@
 
     <!-- COMPONENT DETAILS DIALOG -->
     <v-dialog v-model="showDetailsDialog" max-width="650">
-      <v-card class="rounded-xl border" v-if="selectedComponent">
+      <v-card class="rounded-0 border" v-if="selectedComponent">
         <v-card-title class="bg-surface-variant py-3 px-4 d-flex align-center justify-space-between">
           <div class="font-mono font-weight-bold text-subtitle-1 text-primary">
             {{ selectedComponent.component }}

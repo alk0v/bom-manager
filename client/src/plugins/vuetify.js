@@ -33,5 +33,13 @@ export default createVuetify({
     themes: {
       light: lightTheme,
     }
+  },
+  defaults: {
+    VCard: {
+      rounded: 0
+    },
+    VDialog: {
+      rounded: 0
+    }
   }
 });

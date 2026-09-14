@@ -35,7 +35,7 @@
     </div>
 
     <!-- Project Properties Header Card -->
-    <v-card elevation="1" class="rounded-xl border bg-white mb-6 overflow-hidden">
+    <v-card elevation="1" class="rounded-0 border bg-white mb-6 overflow-hidden">
       <v-row no-gutters>
         <!-- Photo (Fit, not crop) -->
         <v-col cols="12" md="3" class="bg-slate-50 d-flex align-center justify-center p-3 border-e">
@@ -46,7 +46,7 @@
               height="200px"
               width="100%"
               :cover="false"
-              class="rounded-lg border cursor-pointer"
+              class="rounded-0 border cursor-pointer"
             />
           </div>
         </v-col>
@@ -105,7 +105,7 @@
     </v-card>
 
     <!-- BOM List Card -->
-    <v-card elevation="1" class="rounded-xl border bg-white overflow-hidden">
+    <v-card elevation="1" class="rounded-0 border bg-white overflow-hidden">
       <v-card-item class="bg-slate-50 py-3 px-5 border-b">
         <div class="d-flex flex-wrap align-center justify-space-between gap-3">
           <div class="d-flex align-center">
@@ -283,7 +283,7 @@
 
     <!-- DIALOG: Add Component to BOM -->
     <v-dialog v-model="showAddDialog" max-width="650">
-      <v-card class="rounded-xl border bg-white">
+      <v-card class="rounded-0 border bg-white">
         <v-card-title class="bg-slate-50 py-3 px-4 font-weight-bold text-subtitle-1 border-b">
           Add Component to BOM
         </v-card-title>
@@ -362,7 +362,7 @@
 
     <!-- DIALOG: Edit BOM Item -->
     <v-dialog v-model="showEditDialog" max-width="500">
-      <v-card class="rounded-xl border bg-white" v-if="editingBom">
+      <v-card class="rounded-0 border bg-white" v-if="editingBom">
         <v-card-title class="bg-slate-50 py-3 px-4 font-weight-bold text-subtitle-1 border-b">
           Edit BOM Item
         </v-card-title>

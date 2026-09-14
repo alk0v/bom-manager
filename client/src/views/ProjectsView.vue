@@ -1,7 +1,7 @@
 <template>
   <div class="projects-view">
     <!-- Top Header Bar -->
-    <v-card elevation="1" class="rounded-xl border bg-white mb-6">
+    <v-card elevation="1" class="rounded-0 border bg-white mb-6">
       <v-card-item class="py-4 px-5">
         <div class="d-flex flex-wrap align-center justify-space-between gap-4">
           <!-- Title & Stats -->
@@ -61,7 +61,7 @@
       >
         <v-card
           elevation="1"
-          class="rounded-xl border project-card h-100 d-flex flex-column"
+          class="rounded-0 border project-card h-100 d-flex flex-column"
           hover
           @click="openBomModal(p)"
         >
@@ -151,7 +151,7 @@
     </v-row>
 
     <!-- Empty State -->
-    <v-card v-else-if="!loadingProjects" class="pa-12 text-center rounded-xl border bg-white">
+    <v-card v-else-if="!loadingProjects" class="pa-12 text-center rounded-0 border bg-white">
       <v-icon size="56" color="disabled" class="mb-3">mdi-folder-search-outline</v-icon>
       <div class="text-h6 text-slate-800">No projects match your search</div>
       <div class="text-caption text-disabled mb-4">Try clearing or adjusting your search keywords</div>
@@ -174,7 +174,7 @@
       scrollable
       transition="dialog-bottom-transition"
     >
-      <v-card class="rounded-xl border bg-white overflow-hidden" v-if="activeProject">
+      <v-card class="rounded-0 border bg-white overflow-hidden" v-if="activeProject">
         <!-- Modal Header -->
         <v-card-title class="bg-slate-50 py-3 px-5 border-b d-flex align-center justify-space-between">
           <div class="d-flex align-center">
@@ -454,7 +454,7 @@
 
     <!-- DIALOG: Add Component to Project BOM -->
     <v-dialog v-model="showAddDialog" max-width="650">
-      <v-card class="rounded-xl border bg-white">
+      <v-card class="rounded-0 border bg-white">
         <v-card-title class="bg-slate-50 py-3 px-4 font-weight-bold text-subtitle-1 border-b">
           Add Component to {{ activeProject?.projectName }} BOM
         </v-card-title>
@@ -536,7 +536,7 @@
 
     <!-- DIALOG: Edit BOM Item -->
     <v-dialog v-model="showEditDialog" max-width="500">
-      <v-card class="rounded-xl border bg-white" v-if="editingBom">
+      <v-card class="rounded-0 border bg-white" v-if="editingBom">
         <v-card-title class="bg-slate-50 py-3 px-4 font-weight-bold text-subtitle-1 border-b">
           Edit BOM Item
         </v-card-title>

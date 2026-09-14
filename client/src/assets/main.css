@@ -18,6 +18,15 @@ body {
   font-family: 'JetBrains Mono', monospace !important;
 }
 
+/* Squared corners for main containers and cards */
+.v-card,
+.v-card--variant-elevated,
+.project-card,
+.v-dialog > .v-overlay__content > .v-card,
+.media-image-wrapper {
+  border-radius: 0px !important;
+}
+
 /* Card Hover Animation */
 .project-card {
   transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
@@ -56,7 +65,7 @@ body {
 }
 ::-webkit-scrollbar-thumb {
   background: #CBD5E1;
-  border-radius: 4px;
+  border-radius: 0px;
 }
 ::-webkit-scrollbar-thumb:hover {
   background: #94A3B8;
