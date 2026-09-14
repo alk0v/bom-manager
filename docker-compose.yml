@@ -1,0 +1,17 @@
+services:
+  bommanager:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: bommanager
+    restart: unless-stopped
+    ports:
+      - "3001:3001"
+    environment:
+      - PORT=3001
+      - DB_HOST=192.168.31.122
+      - DB_PORT=3306
+      - DB_USER=admin_ro
+      - DB_PASSWORD=cv96vWvmAGtQ
+      - DB_NAME=retool_bommanager
+      - MEDIA_BASE_URL=http://192.168.31.122:8085
