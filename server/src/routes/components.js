@@ -152,6 +152,70 @@ router.get('/', async (req, res) => {
   }
 });
 
+// GET /api/components/check-existing - check if duplicate or similar component exists
+router.get('/check-existing', async (req, res) => {
+  const { component = '', category_id, package_id } = req.query;
+
+  const trimmedName = component.trim();
+  if (!trimmedName) {
+    return res.json({ exists: false, matches: [] });
+  }
+
+  const parsedCatId = category_id ? parseInt(category_id, 10) : null;
+  const parsedPkgId = package_id ? parseInt(package_id, 10) : null;
+
+  try {
+    const query = `
+      SELECT 
+        c.ID, 
+        c.component, 
+        c.marking, 
+        c.qty, 
+        c.category_id, 
+        c.package_id,
+        cat.category, 
+        pkg.package,
+        pkg.isSmd,
+        pkg.pinQuantity,
+        CASE
+          WHEN LOWER(TRIM(c.component)) = LOWER(?) AND c.package_id <=> ? AND c.category_id <=> ? THEN 'exact'
+          WHEN LOWER(TRIM(c.component)) = LOWER(?) THEN 'same_name'
+          ELSE 'similar'
+        END AS matchReason
+      FROM i_components c
+      LEFT JOIN i_categories cat ON c.category_id = cat.ID
+      LEFT JOIN i_packages pkg ON c.package_id = pkg.ID
+      WHERE 
+        LOWER(TRIM(c.component)) = LOWER(?)
+        OR (c.category_id = ? AND c.package_id = ? AND LOWER(TRIM(c.component)) LIKE CONCAT('%', LOWER(?), '%'))
+      ORDER BY 
+        CASE 
+          WHEN LOWER(TRIM(c.component)) = LOWER(?) AND c.package_id <=> ? AND c.category_id <=> ? THEN 1
+          WHEN LOWER(TRIM(c.component)) = LOWER(?) THEN 2
+          ELSE 3
+        END ASC
+      LIMIT 5
+    `;
+
+    const [rows] = await pool.query(query, [
+      trimmedName, parsedPkgId, parsedCatId,
+      trimmedName,
+      trimmedName,
+      parsedCatId, parsedPkgId, trimmedName,
+      trimmedName, parsedPkgId, parsedCatId,
+      trimmedName
+    ]);
+
+    res.json({
+      exists: rows.length > 0,
+      matches: rows
+    });
+  } catch (error) {
+    console.error('Error checking existing component:', error);
+    res.status(500).json({ error: 'Failed to check existing components', details: error.message });
+  }
+});
+
 // GET /api/components/:id - single component details + warehouse stock breakdown
 router.get('/:id', async (req, res) => {
   try {

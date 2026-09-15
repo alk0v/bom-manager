@@ -358,6 +358,82 @@
       </v-card-actions>
     </v-card>
   </v-dialog>
+
+  <!-- DUPLICATE / SIMILAR WARNING CONFIRMATION MODAL -->
+  <v-dialog v-model="showDuplicateWarning" max-width="640" persistent>
+    <v-card class="rounded-0 border bg-white">
+      <v-card-title class="bg-amber-lighten-5 py-3 px-4 d-flex align-center gap-2 border-b text-amber-darken-4">
+        <v-icon icon="mdi-alert-circle-outline" color="amber-darken-3" size="24" />
+        <span class="font-weight-bold text-subtitle-1">
+          Similar Component Already Exists
+        </span>
+      </v-card-title>
+
+      <v-card-text class="pa-4">
+        <p class="text-body-2 text-slate-700 mb-3">
+          The catalog already has component(s) matching
+          <strong class="font-mono text-primary">{{ form.component }}</strong>:
+        </p>
+
+        <v-table density="compact" class="border rounded mb-3 text-caption">
+          <thead class="bg-slate-50">
+            <tr>
+              <th class="text-left font-weight-bold">Component</th>
+              <th class="text-left font-weight-bold">Category</th>
+              <th class="text-left font-weight-bold">Package</th>
+              <th class="text-center font-weight-bold">In Stock</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="match in duplicateMatches" :key="match.ID">
+              <td class="font-mono font-weight-bold text-slate-900">{{ match.component }}</td>
+              <td>{{ match.category || '—' }}</td>
+              <td class="font-mono">
+                {{ match.package || '—' }}
+                <span v-if="match.isSmd !== null" class="text-slate-400 ms-1">
+                  ({{ match.isSmd ? 'SMD' : 'THT' }})
+                </span>
+              </td>
+              <td class="text-center font-mono font-weight-bold">
+                {{ match.qty ?? 0 }}
+              </td>
+            </tr>
+          </tbody>
+        </v-table>
+
+        <v-alert
+          type="warning"
+          variant="tonal"
+          density="compact"
+          class="rounded-0 text-caption"
+          icon="mdi-help-circle-outline"
+        >
+          A component with this name or package/category combination is already cataloged. Are you sure you want to create a new entry?
+        </v-alert>
+      </v-card-text>
+
+      <v-divider />
+
+      <v-card-actions class="pa-3 px-4 bg-surface d-flex justify-end gap-2">
+        <v-btn
+          variant="outlined"
+          color="slate-700"
+          @click="showDuplicateWarning = false"
+        >
+          Review & Edit
+        </v-btn>
+        <v-btn
+          color="amber-darken-4"
+          variant="flat"
+          prepend-icon="mdi-check"
+          :loading="submitting"
+          @click="proceedCreate(true)"
+        >
+          Yes, Create Anyway
+        </v-btn>
+      </v-card-actions>
+    </v-card>
+  </v-dialog>
 </template>
 
 <script setup>
@@ -394,6 +470,8 @@ const errorMessage = ref('');
 const addAnother = ref(false);
 const storages = ref([]);
 const packageMountType = ref('all');
+const showDuplicateWarning = ref(false);
+const duplicateMatches = ref([]);
 
 const initialForm = () => ({
   component: '',
@@ -492,6 +570,33 @@ const submitForm = async () => {
     submitting.value = true;
     errorMessage.value = '';
 
+    // Check if similar component already exists
+    const checkRes = await api.checkExistingComponent({
+      component: form.component.trim(),
+      category_id: form.category_id,
+      package_id: form.package_id
+    });
+
+    if (checkRes.exists && checkRes.matches?.length > 0) {
+      duplicateMatches.value = checkRes.matches;
+      showDuplicateWarning.value = true;
+      submitting.value = false;
+      return;
+    }
+
+    await proceedCreate(false);
+  } catch (err) {
+    console.error('Error checking duplicate component:', err);
+    errorMessage.value = err.response?.data?.error || err.message || 'Validation failed';
+    submitting.value = false;
+  }
+};
+
+const proceedCreate = async (fromConfirmation = false) => {
+  try {
+    submitting.value = true;
+    errorMessage.value = '';
+
     const payload = {
       component: form.component.trim(),
       category_id: form.category_id,
@@ -509,13 +614,21 @@ const submitForm = async () => {
 
     emit('created', newComponent);
 
+    if (fromConfirmation) {
+      showDuplicateWarning.value = false;
+    }
+
     if (addAnother.value) {
-      // Clear fields but keep category, package, initial stock qty, and storage location for kits & rapid entry
+      // Keep part name, marking, category, package, initial stock qty, and storage location for kits & rapid entry
+      const prevComponent = form.component;
+      const prevMarking = form.marking;
       const prevCategory = form.category_id;
       const prevPackage = form.package_id;
       const prevQty = form.qty;
       const prevStorage = form.storageId;
       resetFormFields();
+      form.component = prevComponent;
+      form.marking = prevMarking;
       form.category_id = prevCategory;
       form.package_id = prevPackage;
       form.qty = prevQty;

@@ -79,6 +79,7 @@ export const api = {
     return client.get('/components', { params: cleanParams }).then(res => res.data);
   },
   getComponent: (id) => client.get(`/components/${id}`).then(res => res.data),
+  checkExistingComponent: (params) => client.get('/components/check-existing', { params }).then(res => res.data),
   createComponent: (data) => client.post('/components', data).then(res => res.data),
   updateComponent: (id, data) => client.put(`/components/${id}`, data).then(res => res.data),
 
