@@ -5,25 +5,111 @@ const pool = require('../db');
 // GET /api/components - list components with optional search & filtering
 router.get('/', async (req, res) => {
   try {
-    const { search = '', categoryId, limit = 100, offset = 0 } = req.query;
+    const {
+      search = '',
+      categoryId,
+      categoryIds,
+      packageId,
+      packageIds,
+      projectId,
+      isSmd,
+      minPins,
+      maxPins,
+      limit = 100,
+      offset = 0
+    } = req.query;
     
     let whereClauses = [];
     let params = [];
 
-    if (search.trim()) {
+    // Search keyword across multiple fields
+    if (search && search.trim()) {
       whereClauses.push('(c.component LIKE ? OR c.description LIKE ? OR c.marking LIKE ? OR c.shortDescription LIKE ?)');
       const term = `%${search.trim()}%`;
       params.push(term, term, term, term);
     }
 
-    if (categoryId) {
-      whereClauses.push('c.category_id = ?');
-      params.push(categoryId);
+    // Category filter (multi-choice supported)
+    let parsedCategoryIds = [];
+    if (categoryIds) {
+      if (Array.isArray(categoryIds)) {
+        parsedCategoryIds = categoryIds.map(x => parseInt(x, 10)).filter(x => !isNaN(x));
+      } else if (typeof categoryIds === 'string') {
+        parsedCategoryIds = categoryIds.split(',').map(x => parseInt(x, 10)).filter(x => !isNaN(x));
+      }
+    } else if (categoryId) {
+      const parsed = parseInt(categoryId, 10);
+      if (!isNaN(parsed)) parsedCategoryIds = [parsed];
+    }
+
+    if (parsedCategoryIds.length > 0) {
+      const placeholders = parsedCategoryIds.map(() => '?').join(', ');
+      whereClauses.push(`c.category_id IN (${placeholders})`);
+      params.push(...parsedCategoryIds);
+    }
+
+    // Package filter (multi-choice supported)
+    let parsedPackageIds = [];
+    if (packageIds) {
+      if (Array.isArray(packageIds)) {
+        parsedPackageIds = packageIds.map(x => parseInt(x, 10)).filter(x => !isNaN(x));
+      } else if (typeof packageIds === 'string') {
+        parsedPackageIds = packageIds.split(',').map(x => parseInt(x, 10)).filter(x => !isNaN(x));
+      }
+    } else if (packageId) {
+      const parsed = parseInt(packageId, 10);
+      if (!isNaN(parsed)) parsedPackageIds = [parsed];
+    }
+
+    if (parsedPackageIds.length > 0) {
+      const placeholders = parsedPackageIds.map(() => '?').join(', ');
+      whereClauses.push(`c.package_id IN (${placeholders})`);
+      params.push(...parsedPackageIds);
+    }
+
+    // Project filter (components linked to project BOM)
+    if (projectId) {
+      const parsedProjectId = parseInt(projectId, 10);
+      if (!isNaN(parsedProjectId)) {
+        whereClauses.push('EXISTS (SELECT 1 FROM t_bom b WHERE b.projectId = ? AND b.componentId = c.ID)');
+        params.push(parsedProjectId);
+      }
+    }
+
+    // SMD / THT filter
+    if (isSmd !== undefined && isSmd !== null && isSmd !== '') {
+      const parsedSmd = parseInt(isSmd, 10);
+      if (!isNaN(parsedSmd) && (parsedSmd === 0 || parsedSmd === 1)) {
+        whereClauses.push('pkg.isSmd = ?');
+        params.push(parsedSmd);
+      }
+    }
+
+    // Number of pins (range)
+    if (minPins !== undefined && minPins !== null && minPins !== '') {
+      const parsedMin = parseInt(minPins, 10);
+      if (!isNaN(parsedMin)) {
+        whereClauses.push('pkg.pinQuantity >= ?');
+        params.push(parsedMin);
+      }
+    }
+
+    if (maxPins !== undefined && maxPins !== null && maxPins !== '') {
+      const parsedMax = parseInt(maxPins, 10);
+      if (!isNaN(parsedMax)) {
+        whereClauses.push('pkg.pinQuantity <= ?');
+        params.push(parsedMax);
+      }
     }
 
     const whereSql = whereClauses.length > 0 ? `WHERE ${whereClauses.join(' AND ')}` : '';
 
-    const countQuery = `SELECT COUNT(*) AS total FROM i_components c ${whereSql}`;
+    const countQuery = `
+      SELECT COUNT(DISTINCT c.ID) AS total 
+      FROM i_components c
+      LEFT JOIN i_packages pkg ON c.package_id = pkg.ID
+      ${whereSql}
+    `;
     const [countRows] = await pool.query(countQuery, params);
     const total = countRows[0].total;
 

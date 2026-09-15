@@ -11,7 +11,7 @@ services:
       - PORT=3001
       - DB_HOST=192.168.31.122
       - DB_PORT=3306
-      - DB_USER=admin_ro
-      - DB_PASSWORD=cv96vWvmAGtQ
-      - DB_NAME=retool_bommanager
+      - DB_USER=bommanager_admin
+      - DB_PASSWORD=Hm7dgJ5ggHKebPM8
+      - DB_NAME=bommanager_dev
       - MEDIA_BASE_URL=http://192.168.31.122:8085

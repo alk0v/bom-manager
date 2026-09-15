@@ -177,3 +177,9 @@ Locations and stock quantity per storage bin/box.
       - Actions: Edit quantity, Remove from BOM
     - **Available Components Picker**:
       - Searchable modal dialog to quickly add components from catalog into project BOM.
+
+---
+
+## 5. Development & Testing Directives
+- **Do NOT spawn agents for testing**: Never spawn subagents, browser subagents, or automated testing agents for browser testing, taking screenshots, clicking around, or manual UI verification.
+- **Verification Method**: Validate changes using automated build commands (e.g. `npm run build --workspace=client`), API requests via PowerShell (`Invoke-RestMethod`), or unit tests. Keep turn execution lean, direct, and fast without browser recording or screenshot overhead.
