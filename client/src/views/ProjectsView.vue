@@ -170,7 +170,8 @@
     <!-- ======================================================== -->
     <v-dialog
       v-model="showBomDialog"
-      max-width="1200"
+      width="94vw"
+      max-width="1650"
       scrollable
       transition="dialog-bottom-transition"
     >
@@ -453,86 +454,12 @@
     </v-dialog>
 
     <!-- DIALOG: Add Component to Project BOM -->
-    <v-dialog v-model="showAddDialog" max-width="650">
-      <v-card class="rounded-0 border bg-white">
-        <v-card-title class="bg-slate-50 py-3 px-4 font-weight-bold text-subtitle-1 border-b">
-          Add Component to {{ activeProject?.projectName }} BOM
-        </v-card-title>
-
-        <v-card-text class="pa-4">
-          <v-autocomplete
-            v-model="newBom.componentId"
-            :items="availableComponents"
-            item-title="component"
-            item-value="ID"
-            label="Search Electronic Component"
-            placeholder="Type part name, marking, or description..."
-            prepend-inner-icon="mdi-memory"
-            variant="outlined"
-            density="comfortable"
-            class="mb-3"
-            :loading="loadingCatalog"
-            @update:search="onSearchCatalog"
-          >
-            <template #item="{ props, item }">
-              <v-list-item v-bind="props">
-                <template #prepend>
-                  <v-avatar size="32" rounded="md" class="border me-2">
-                    <MediaImage type="component" :src="item.raw.photoURL" width="32px" height="32px" />
-                  </v-avatar>
-                </template>
-                <v-list-item-title class="font-mono font-weight-bold">
-                  {{ item.raw.component }}
-                </v-list-item-title>
-                <v-list-item-subtitle class="text-caption">
-                  <span v-if="item.raw.category" class="me-2">{{ item.raw.category }}</span>
-                  <span v-if="item.raw.package" class="font-mono me-2">{{ item.raw.package }}</span>
-                  <span class="text-disabled">Stock: {{ item.raw.qty }}</span>
-                </v-list-item-subtitle>
-              </v-list-item>
-            </template>
-          </v-autocomplete>
-
-          <v-row>
-            <v-col cols="12" sm="4">
-              <v-text-field
-                v-model.number="newBom.quantity"
-                label="Required Qty"
-                type="number"
-                min="1"
-                variant="outlined"
-                density="comfortable"
-              />
-            </v-col>
-            <v-col cols="12" sm="8">
-              <v-text-field
-                v-model="newBom.comment"
-                label="Designators / Notes"
-                placeholder="e.g. C1, C2, R1, Optional LED"
-                variant="outlined"
-                density="comfortable"
-              />
-            </v-col>
-          </v-row>
-        </v-card-text>
-
-        <v-divider />
-
-        <v-card-actions class="pa-3 bg-slate-50">
-          <v-spacer />
-          <v-btn variant="text" @click="showAddDialog = false">Cancel</v-btn>
-          <v-btn
-            color="primary"
-            variant="flat"
-            :disabled="!newBom.componentId || newBom.quantity < 1"
-            :loading="submittingBom"
-            @click="submitAddBom"
-          >
-            Add to BOM
-          </v-btn>
-        </v-card-actions>
-      </v-card>
-    </v-dialog>
+    <AddComponentDialog
+      v-model="showAddDialog"
+      :project-id="activeProject?.id"
+      :project-name="activeProject?.projectName"
+      @added="onComponentAdded"
+    />
 
     <!-- DIALOG: Edit BOM Item -->
     <v-dialog v-model="showEditDialog" max-width="500">
@@ -587,18 +514,17 @@
 import { ref, computed, onMounted } from 'vue';
 import api from '../services/api';
 import MediaImage from '../components/MediaImage.vue';
+import AddComponentDialog from '../components/AddComponentDialog.vue';
 
 // State
 const projects = ref([]);
 const activeProject = ref(null);
 const bomItems = ref([]);
-const availableComponents = ref([]);
 
 const searchQuery = ref('');
 const bomSearch = ref('');
 const loadingProjects = ref(false);
 const loadingBom = ref(false);
-const loadingCatalog = ref(false);
 const submittingBom = ref(false);
 const addingAllShortages = ref(false);
 
@@ -607,11 +533,6 @@ const showAddDialog = ref(false);
 const showEditDialog = ref(false);
 
 const editingBom = ref(null);
-const newBom = ref({
-  componentId: null,
-  quantity: 1,
-  comment: ''
-});
 
 const snackbar = ref({
   show: false,
@@ -688,56 +609,19 @@ const openBomModal = async (project) => {
   }
 };
 
-const onSearchCatalog = async (val) => {
-  if (!val || val.length < 2) return;
-  loadingCatalog.value = true;
-  try {
-    const res = await api.getComponents({ search: val, limit: 30 });
-    availableComponents.value = res.items;
-  } catch (err) {
-    console.error('Failed to search components:', err);
-  } finally {
-    loadingCatalog.value = false;
-  }
-};
-
-const openAddComponentDialog = async () => {
-  newBom.value = {
-    componentId: null,
-    quantity: 1,
-    comment: ''
-  };
+const openAddComponentDialog = () => {
   showAddDialog.value = true;
-  if (availableComponents.value.length === 0) {
-    loadingCatalog.value = true;
-    try {
-      const res = await api.getComponents({ limit: 50 });
-      availableComponents.value = res.items;
-    } catch (err) {
-      console.error(err);
-    } finally {
-      loadingCatalog.value = false;
-    }
-  }
 };
 
-const submitAddBom = async () => {
-  if (!newBom.value.componentId || !activeProject.value) return;
-  submittingBom.value = true;
-  try {
-    await api.addComponentToBom(activeProject.value.id, {
-      componentId: newBom.value.componentId,
-      quantity: newBom.value.quantity,
-      comment: newBom.value.comment
-    });
-    notify('Component added to BOM!');
-    showAddDialog.value = false;
-    bomItems.value = await api.getProjectBom(activeProject.value.id);
-    loadProjects();
-  } catch (err) {
-    notify('Error adding to BOM: ' + (err.response?.data?.details || err.message), 'error');
-  } finally {
-    submittingBom.value = false;
+const onComponentAdded = async (item) => {
+  notify(`Added ${item?.component || 'component'} to BOM!`);
+  if (activeProject.value) {
+    try {
+      bomItems.value = await api.getProjectBom(activeProject.value.id);
+      loadProjects();
+    } catch (err) {
+      console.error('Failed to reload project BOM:', err);
+    }
   }
 };
 

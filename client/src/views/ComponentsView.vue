@@ -326,7 +326,7 @@
     </v-card>
 
     <!-- COMPONENT DETAILS DIALOG -->
-    <v-dialog v-model="showDetailsDialog" max-width="650">
+    <v-dialog v-model="showDetailsDialog" max-width="850">
       <v-card class="rounded-0 border" v-if="selectedComponent">
         <v-card-title class="bg-surface-variant py-3 px-4 d-flex align-center justify-space-between">
           <div class="font-mono font-weight-bold text-subtitle-1 text-primary">
