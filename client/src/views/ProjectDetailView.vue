@@ -205,10 +205,7 @@
 
             <!-- Package -->
             <td>
-              <span v-if="item.package" class="font-mono text-body-2 font-weight-medium text-slate-800">
-                {{ item.package }}
-              </span>
-              <span v-else class="text-disabled text-caption">—</span>
+              <PackageLink :item="item" />
             </td>
 
             <!-- Required Qty -->
@@ -343,6 +340,7 @@ import { useRoute } from 'vue-router';
 import api from '../services/api';
 import MediaImage from '../components/MediaImage.vue';
 import AddComponentDialog from '../components/AddComponentDialog.vue';
+import PackageLink from '../components/PackageLink.vue';
 
 const route = useRoute();
 const projectId = route.params.id;

@@ -62,6 +62,7 @@ router.get('/:id/bom', async (req, res) => {
         pkg.package,
         pkg.pinQuantity,
         pkg.isSmd,
+        pkg.drawingURL,
         CASE 
           WHEN c.qty >= b.quantity THEN 1 
           ELSE 0 

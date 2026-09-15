@@ -360,10 +360,7 @@
 
                 <!-- Package / Footprint -->
                 <td>
-                  <span v-if="item.package" class="font-mono text-body-2 font-weight-medium text-slate-800">
-                    {{ item.package }}
-                  </span>
-                  <span v-else class="text-disabled text-caption">—</span>
+                  <PackageLink :item="item" />
                 </td>
 
                 <!-- Required Quantity -->
@@ -515,6 +512,7 @@ import { ref, computed, onMounted } from 'vue';
 import api from '../services/api';
 import MediaImage from '../components/MediaImage.vue';
 import AddComponentDialog from '../components/AddComponentDialog.vue';
+import PackageLink from '../components/PackageLink.vue';
 
 // State
 const projects = ref([]);

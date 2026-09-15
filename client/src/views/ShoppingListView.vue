@@ -92,8 +92,7 @@
 
             <!-- Package -->
             <td>
-              <span class="font-mono text-caption" v-if="item.package">{{ item.package }}</span>
-              <span v-else class="text-disabled text-caption">—</span>
+              <PackageLink :item="item" />
             </td>
 
             <!-- Stock -->
@@ -168,6 +167,7 @@
 import { ref, onMounted } from 'vue';
 import api from '../services/api';
 import MediaImage from '../components/MediaImage.vue';
+import PackageLink from '../components/PackageLink.vue';
 
 const items = ref([]);
 const loading = ref(false);

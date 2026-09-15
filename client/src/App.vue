@@ -112,6 +112,9 @@
         <router-view />
       </v-container>
     </v-main>
+
+    <!-- Global Package Details Modal -->
+    <PackageDetailsDialog />
   </v-app>
 </template>
 
@@ -120,6 +123,7 @@ import { ref, computed, onMounted } from 'vue';
 import { useRoute } from 'vue-router';
 import api from './services/api';
 import { useComponentsStore } from './stores/components';
+import PackageDetailsDialog from './components/PackageDetailsDialog.vue';
 
 const route = useRoute();
 const componentsStore = useComponentsStore();

@@ -227,10 +227,7 @@
 
             <!-- Package -->
             <td>
-              <span v-if="c.package" class="font-mono text-body-2 font-weight-medium text-slate-800">
-                {{ c.package }}
-              </span>
-              <span v-else class="text-disabled text-caption">—</span>
+              <PackageLink :item="c" />
             </td>
 
             <!-- Description -->
@@ -353,8 +350,8 @@
               <div class="text-body-2 font-weight-medium mb-2">{{ selectedComponent.category || '—' }}</div>
 
               <div class="text-caption text-disabled text-uppercase">Package / Footprint</div>
-              <div class="text-body-2 font-mono mb-2">
-                {{ selectedComponent.package || '—' }}
+              <div class="text-body-2 font-mono mb-2 d-flex align-center gap-1 flex-wrap">
+                <PackageLink :item="selectedComponent" />
                 <v-chip size="x-small" class="ms-1" v-if="selectedComponent.package">
                   {{ selectedComponent.isSmd ? 'SMD' : 'Through-Hole' }}
                 </v-chip>
@@ -433,6 +430,7 @@
 import { ref, computed, onMounted } from 'vue';
 import api, { resolveMediaUrl } from '../services/api';
 import MediaImage from '../components/MediaImage.vue';
+import PackageLink from '../components/PackageLink.vue';
 import { useComponentsStore } from '../stores/components';
 
 const componentsStore = useComponentsStore();
