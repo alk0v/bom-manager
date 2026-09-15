@@ -91,13 +91,14 @@
                 variant="outlined"
                 rounded="lg"
                 clearable
+                hide-details="auto"
                 :rules="[rules.requiredSelection]"
               />
             </v-col>
 
             <!-- Package / Footprint -->
             <v-col cols="12" sm="6">
-              <div class="d-flex align-center" style="gap: 8px;">
+              <div class="d-flex align-start" style="gap: 8px;">
                 <v-autocomplete
                   v-model="form.package_id"
                   :items="filteredPackagesList"
@@ -109,6 +110,7 @@
                   variant="outlined"
                   rounded="lg"
                   clearable
+                  hide-details="auto"
                   class="flex-grow-1"
                 >
                   <template #item="{ props: itemProps, item }">
@@ -508,13 +510,15 @@ const submitForm = async () => {
     emit('created', newComponent);
 
     if (addAnother.value) {
-      // Clear fields but keep category & package for rapid repetitive entries
+      // Clear fields but keep category, package, initial stock qty, and storage location for kits & rapid entry
       const prevCategory = form.category_id;
       const prevPackage = form.package_id;
+      const prevQty = form.qty;
       const prevStorage = form.storageId;
       resetFormFields();
       form.category_id = prevCategory;
       form.package_id = prevPackage;
+      form.qty = prevQty;
       form.storageId = prevStorage;
     } else {
       close();
