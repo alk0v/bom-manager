@@ -205,28 +205,68 @@ router.get('/:id', async (req, res) => {
 router.post('/', async (req, res) => {
   const {
     component,
-    category_id,
+    category_id = null,
     package_id = 28,
     description = '',
     shortDescription = '',
     marking = '',
     datasheetURL = null,
     photoURL = null,
-    qty = 0
+    qty = 0,
+    storageId = null
   } = req.body;
 
-  if (!component) {
+  if (!component || !component.trim()) {
     return res.status(400).json({ error: 'Component name is required' });
   }
+
+  const parsedQty = parseInt(qty, 10) || 0;
+  const parsedCategoryId = category_id ? parseInt(category_id, 10) : null;
+  const parsedPackageId = package_id ? parseInt(package_id, 10) : 28;
 
   try {
     const [result] = await pool.query(
       `INSERT INTO i_components 
        (component, category_id, package_id, description, shortDescription, marking, datasheetURL, photoURL, qty)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      [component, category_id, package_id, description, shortDescription, marking, datasheetURL, photoURL, qty]
+      [
+        component.trim(),
+        parsedCategoryId,
+        parsedPackageId,
+        description ? description.trim() : '',
+        shortDescription ? shortDescription.trim() : '',
+        marking ? marking.trim() : '',
+        datasheetURL ? datasheetURL.trim() : null,
+        photoURL ? photoURL.trim() : null,
+        parsedQty
+      ]
     );
-    res.status(201).json({ id: result.insertId, ...req.body });
+
+    const componentId = result.insertId;
+
+    // If initial stock and storageId provided, allocate to t_warehouse
+    if (parsedQty > 0 && storageId) {
+      const parsedStorageId = parseInt(storageId, 10);
+      if (!isNaN(parsedStorageId)) {
+        await pool.query(
+          'INSERT INTO t_warehouse (componentId, storageId, quantity) VALUES (?, ?, ?)',
+          [componentId, parsedStorageId, parsedQty]
+        );
+      }
+    }
+
+    res.status(201).json({
+      id: componentId,
+      component: component.trim(),
+      category_id: parsedCategoryId,
+      package_id: parsedPackageId,
+      description,
+      shortDescription,
+      marking,
+      datasheetURL,
+      photoURL,
+      qty: parsedQty
+    });
   } catch (error) {
     console.error('Error creating component:', error);
     res.status(500).json({ error: 'Failed to create component', details: error.message });

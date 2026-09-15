@@ -82,9 +82,10 @@ export const api = {
   createComponent: (data) => client.post('/components', data).then(res => res.data),
   updateComponent: (id, data) => client.put(`/components/${id}`, data).then(res => res.data),
 
-  // Categories & Packages
+  // Categories, Packages & Storages
   getCategories: () => client.get('/categories').then(res => res.data),
   getPackages: () => client.get('/packages').then(res => res.data),
+  getStorages: () => client.get('/storages').then(res => res.data),
 
   // Shopping List
   getShoppingList: () => client.get('/shopping-list').then(res => res.data),

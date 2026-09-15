@@ -143,7 +143,7 @@
             </div>
           </v-col>
 
-          <v-col cols="12" md="4" class="d-flex align-center justify-end gap-2">
+          <v-col cols="12" md="4" class="d-flex align-center justify-end gap-2 flex-wrap">
             <v-chip
               v-if="activeFilterCount > 0"
               color="primary"
@@ -173,6 +173,17 @@
               @click="fetchComponents"
               title="Refresh components"
             />
+
+            <v-btn
+              color="primary"
+              variant="flat"
+              size="small"
+              prepend-icon="mdi-plus"
+              class="font-weight-bold"
+              @click="showCreateDialog = true"
+            >
+              Add Component
+            </v-btn>
           </v-col>
         </v-row>
       </div>
@@ -420,6 +431,14 @@
       </v-card>
     </v-dialog>
 
+    <!-- CREATE COMPONENT DIALOG -->
+    <CreateComponentDialog
+      v-model="showCreateDialog"
+      :categories="categories"
+      :packages="packages"
+      @created="handleComponentCreated"
+    />
+
     <v-snackbar v-model="snackbar.show" :color="snackbar.color" timeout="3000">
       {{ snackbar.text }}
     </v-snackbar>
@@ -431,6 +450,7 @@ import { ref, computed, onMounted } from 'vue';
 import api, { resolveMediaUrl } from '../services/api';
 import MediaImage from '../components/MediaImage.vue';
 import PackageLink from '../components/PackageLink.vue';
+import CreateComponentDialog from '../components/CreateComponentDialog.vue';
 import { useComponentsStore } from '../stores/components';
 
 const componentsStore = useComponentsStore();
@@ -466,6 +486,12 @@ const offset = ref(0);
 
 const selectedComponent = ref(null);
 const showDetailsDialog = ref(false);
+const showCreateDialog = ref(false);
+
+const handleComponentCreated = (newComp) => {
+  notify(`Component "${newComp.component}" created successfully`, 'success');
+  fetchComponents();
+};
 
 const snackbar = ref({
   show: false,
