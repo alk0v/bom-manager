@@ -94,7 +94,7 @@
               variant="tonal"
               class="font-mono font-weight-bold"
             >
-              0.1.3
+              0.2.0
             </v-chip>
           </template>
         </v-list-item>
@@ -108,7 +108,7 @@
           >
             <span class="d-flex align-center font-mono">
               <v-icon size="14" color="primary" class="me-1">mdi-tag-outline</v-icon>
-              Version 0.1.3
+              Version 0.2.0
             </span>
             <span class="text-primary font-weight-medium">Notes &rarr;</span>
           </router-link>

@@ -138,15 +138,29 @@
             </div>
           </div>
 
-          <v-btn
-            color="primary"
-            prepend-icon="mdi-plus"
-            size="small"
-            class="font-weight-bold"
-            @click="openAddComponentDialog"
-          >
-            Add Component to BOM
-          </v-btn>
+          <div class="d-flex align-center gap-2">
+            <v-btn
+              color="primary"
+              variant="tonal"
+              prepend-icon="mdi-database-import-outline"
+              size="small"
+              class="font-weight-bold"
+              @click="openIbomDialog(null)"
+            >
+              Import iBOM
+            </v-btn>
+
+            <v-btn
+              color="primary"
+              variant="flat"
+              prepend-icon="mdi-plus"
+              size="small"
+              class="font-weight-bold"
+              @click="openAddComponentDialog"
+            >
+              Add Component to BOM
+            </v-btn>
+          </div>
         </div>
       </v-card-item>
 
@@ -211,8 +225,13 @@
 
             <!-- Part name & marking -->
             <td>
-              <div class="font-mono font-weight-bold text-body-2 text-primary">
-                {{ item.component }}
+              <div
+                class="font-mono font-weight-bold text-body-2 text-primary comp-name-link d-inline-flex align-center gap-1"
+                @click="openComponentDetails(item)"
+                title="Click to view component details"
+              >
+                <span class="hover-underline">{{ item.component }}</span>
+                <v-icon size="13" class="opacity-60 info-icon">mdi-information-outline</v-icon>
               </div>
               <div class="text-caption text-disabled" v-if="item.marking || item.shortDescription">
                 <span v-if="item.marking" class="font-mono me-2">Mark: {{ item.marking }}</span>
@@ -259,6 +278,14 @@
             <!-- Actions -->
             <td class="text-right">
               <v-btn
+                icon="mdi-information-outline"
+                size="x-small"
+                variant="text"
+                title="View component details"
+                @click="openComponentDetails(item)"
+              />
+
+              <v-btn
                 v-if="!item.isStockSufficient"
                 icon="mdi-cart-plus"
                 size="x-small"
@@ -302,6 +329,17 @@
         </tbody>
       </v-table>
     </v-card>
+
+    <!-- Project Files & Attachments Card -->
+    <div class="mt-6">
+      <ProjectFilesCard
+        ref="filesCardRef"
+        :project-id="Number(projectId)"
+        :project-name="project?.projectName"
+        @import-ibom="openIbomDialog"
+        @files-updated="onFilesUpdated"
+      />
+    </div>
 
     <!-- DIALOG: Add Component to BOM -->
     <AddComponentDialog
@@ -358,6 +396,16 @@
       v-model="showProjectDialog"
       :project="project"
       @saved="onProjectSaved"
+    />
+
+    <!-- DIALOG: KiCAD iBOM Import & Mapping -->
+    <IbomImportDialog
+      v-model="showIbomDialog"
+      :project-id="Number(projectId)"
+      :project-name="project?.projectName"
+      :initial-file="selectedIbomFile"
+      :project-files="projectFilesList"
+      @bom-imported="onBomImported"
     />
 
     <!-- FULL SIZE MEDIA LIGHTBOX DIALOG (NO SCROLLBARS, FIT RATIO) -->
@@ -439,6 +487,13 @@
       </v-card>
     </v-dialog>
 
+    <!-- Component Details Dialog -->
+    <ComponentDetailsDialog
+      v-model="showDetailsDialog"
+      :component="selectedDetailComponent"
+      :component-id="selectedDetailComponent?.componentId || selectedDetailComponent?.ID"
+    />
+
     <v-snackbar v-model="snackbar.show" :color="snackbar.color" timeout="3000" location="bottom right">
       {{ snackbar.text }}
     </v-snackbar>
@@ -453,6 +508,9 @@ import MediaImage from '../components/MediaImage.vue';
 import AddComponentDialog from '../components/AddComponentDialog.vue';
 import PackageLink from '../components/PackageLink.vue';
 import ProjectFormDialog from '../components/ProjectFormDialog.vue';
+import ProjectFilesCard from '../components/ProjectFilesCard.vue';
+import IbomImportDialog from '../components/IbomImportDialog.vue';
+import ComponentDetailsDialog from '../components/ComponentDetailsDialog.vue';
 
 const route = useRoute();
 const projectId = route.params.id;
@@ -467,6 +525,42 @@ const submittingBom = ref(false);
 const showAddDialog = ref(false);
 const showEditDialog = ref(false);
 const showProjectDialog = ref(false);
+const showIbomDialog = ref(false);
+const showDetailsDialog = ref(false);
+const selectedDetailComponent = ref(null);
+const selectedIbomFile = ref(null);
+const filesCardRef = ref(null);
+const projectFilesList = ref([]);
+
+function openComponentDetails(item) {
+  selectedDetailComponent.value = {
+    ...item,
+    ID: item.componentId || item.ID,
+    id: item.componentId || item.id
+  };
+  showDetailsDialog.value = true;
+}
+
+function openIbomDialog(file = null) {
+  selectedIbomFile.value = file;
+  showIbomDialog.value = true;
+}
+
+function onFilesUpdated(files) {
+  projectFilesList.value = files || [];
+}
+
+async function onBomImported(result) {
+  await loadData();
+  snackbar.value = {
+    show: true,
+    text: `Successfully imported ${result.importedCount} components into BOM!`,
+    color: 'success'
+  };
+  if (filesCardRef.value) {
+    filesCardRef.value.loadFiles();
+  }
+}
 
 const lightbox = ref({
   show: false,
@@ -695,5 +789,22 @@ onMounted(() => {
   border: 1px solid #E2E8F0;
   box-shadow: 0 4px 20px rgba(15, 23, 42, 0.08);
   border-radius: 4px;
+}
+
+.comp-name-link {
+  cursor: pointer;
+  transition: color 0.15s ease;
+}
+
+.comp-name-link:hover {
+  color: #1d4ed8 !important;
+}
+
+.comp-name-link:hover .hover-underline {
+  text-decoration: underline;
+}
+
+.comp-name-link:hover .info-icon {
+  opacity: 1 !important;
 }
 </style>

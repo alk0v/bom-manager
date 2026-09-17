@@ -10,88 +10,75 @@
                 Release Notes
               </h1>
               <v-chip color="primary" variant="flat" size="small" class="font-mono font-weight-bold">
-                v0.1.3
+                v{{ currentVersion }}
               </v-chip>
               <v-chip color="slate-600" variant="tonal" size="small" class="font-weight-medium">
                 Latest Release • September 2026
               </v-chip>
             </div>
-            <div class="text-body-2 text-disabled mt-1">
-              Changelog and overview of new features, bug fixes, and architectural improvements.
+            <div class="text-body-2 text-slate-500 mt-1">
+              New features, workflow improvements, and updates in BOM Manager.
             </div>
           </div>
         </div>
       </v-card-item>
     </v-card>
 
-    <!-- Release Content Card -->
-    <v-card elevation="1" class="rounded-0 border bg-white overflow-hidden mb-6">
+    <!-- Version Cards (Data-driven) -->
+    <v-card
+      v-for="rel in releases"
+      :key="rel.version"
+      elevation="1"
+      class="rounded-0 border bg-white overflow-hidden mb-6"
+    >
+      <!-- Release Header -->
       <v-card-title class="bg-slate-50 py-3 px-5 border-b d-flex align-center justify-space-between">
         <div class="d-flex align-center gap-2">
-          <v-icon color="primary" size="22">mdi-tag-outline</v-icon>
-          <span class="text-subtitle-1 font-weight-bold text-slate-900">
-            Version 0.1.3
+          <v-icon :color="rel.isCurrent ? 'primary' : 'slate-500'" size="22">mdi-tag-outline</v-icon>
+          <span class="text-subtitle-1 font-weight-bold" :class="rel.isCurrent ? 'text-slate-900' : 'text-slate-700'">
+            Version {{ rel.version }}
           </span>
-          <v-chip size="x-small" color="success" variant="flat" class="font-weight-bold ms-1">
+          <v-chip
+            v-if="rel.isCurrent"
+            size="x-small"
+            color="success"
+            variant="flat"
+            class="font-weight-bold ms-1"
+          >
             Current
           </v-chip>
         </div>
         <span class="text-caption font-mono text-slate-500">
-          2026-09-17
+          {{ rel.date }}
         </span>
       </v-card-title>
 
+      <!-- Release Body -->
       <v-card-text class="pa-5">
-        <p class="text-body-1 text-slate-700 mb-5">
-          Version 0.1.3 introduces full self-hosted local media storage and serving, in-place and global media asset uploading, complete project creation and editing UI, absent parts shortage tracking in the gallery, and enhanced full-size media preview with proportional scaling.
+        <p class="text-body-1 text-slate-700 mb-4">
+          {{ rel.summary }}
         </p>
 
-        <!-- Highlights Grid -->
-        <v-row dense class="mb-5">
-          <v-col cols="12" md="6" v-for="item in highlights" :key="item.title">
-            <v-card variant="outlined" class="pa-4 rounded-lg h-100 bg-slate-50 border">
-              <div class="d-flex align-start gap-3">
-                <v-avatar color="primary" variant="tonal" rounded="lg" size="40" class="flex-shrink-0">
-                  <v-icon :icon="item.icon" size="22" color="primary" />
-                </v-avatar>
-                <div>
-                  <div class="text-subtitle-2 font-weight-bold text-slate-900 mb-1">
-                    {{ item.title }}
-                  </div>
-                  <div class="text-body-2 text-slate-600">
-                    {{ item.description }}
-                  </div>
-                </div>
-              </div>
-            </v-card>
-          </v-col>
-        </v-row>
-
-        <!-- Detailed Bullet Points -->
-        <div class="border-t pt-5">
-          <h2 class="text-subtitle-1 font-weight-bold text-slate-900 mb-3">
-            Detailed Changelog
-          </h2>
-
-          <div class="mb-4" v-for="group in changelogGroups" :key="group.category">
-            <div class="text-caption font-weight-bold text-primary text-uppercase tracking-wider mb-2">
-              {{ group.category }}
-            </div>
-            <v-list density="compact" class="pa-0 bg-transparent">
-              <v-list-item
-                v-for="(point, idx) in group.items"
-                :key="idx"
-                class="px-0 py-1"
-              >
-                <template #prepend>
-                  <v-icon icon="mdi-check-circle-outline" size="16" color="success" class="me-2" />
-                </template>
-                <div class="text-body-2 text-slate-700">
-                  {{ point }}
-                </div>
-              </v-list-item>
-            </v-list>
+        <!-- Feature Points -->
+        <div class="border-t pt-4">
+          <div class="text-caption font-weight-bold text-primary text-uppercase tracking-wider mb-2">
+            What's New
           </div>
+
+          <v-list density="compact" class="pa-0 bg-transparent">
+            <v-list-item
+              v-for="(item, idx) in rel.features"
+              :key="idx"
+              class="px-0 py-1"
+            >
+              <template #prepend>
+                <v-icon icon="mdi-check-circle-outline" size="18" color="success" class="me-2" />
+              </template>
+              <div class="text-body-2 text-slate-800">
+                <strong class="font-weight-bold">{{ item.title }}</strong>: {{ item.description }}
+              </div>
+            </v-list-item>
+          </v-list>
         </div>
       </v-card-text>
     </v-card>
@@ -99,65 +86,76 @@
 </template>
 
 <script setup>
-const highlights = [
+import { computed } from 'vue';
+
+const releases = [
   {
-    icon: 'mdi-server-network',
-    title: 'Self-Hosted Media Serving',
-    description: 'Removed external media dependency. The server now hosts all assets locally from the media/ directory under /media/.'
+    version: '0.2.0',
+    date: '2026-09-17',
+    isCurrent: true,
+    summary: 'Version 0.2.0 adds project file attachments, KiCAD Interactive BOM viewing, smart BOM importing with automatic part matching, and component details pop-ups throughout the workflow.',
+    features: [
+      {
+        title: 'Project File Attachments',
+        description: 'Attach and download files (CAD schematics, firmware binaries, Gerber archives, datasheets, and KiCAD files) directly inside any project.'
+      },
+      {
+        title: 'KiCAD Interactive BOM Viewer',
+        description: 'Open and explore interactive PCB layouts directly in your browser with 1-click launch from project attachments.'
+      },
+      {
+        title: 'Smart BOM Importer',
+        description: 'Import parts from KiCAD iBOM files with automatic component matching against your catalog, consolidated quantities, and sorted reference designators.'
+      },
+      {
+        title: 'In-Place Component Creation',
+        description: 'Quickly catalog missing components during BOM import with pre-filled category, package, marking, and descriptions.'
+      },
+      {
+        title: 'Component Details Pop-up',
+        description: 'Click any component name in the "Add Component to BOM" dialog or catalog to view stock, warehouse box locations, photos, and datasheets.'
+      }
+    ]
   },
   {
-    icon: 'mdi-cloud-upload-outline',
-    title: 'Media Asset Uploading',
-    description: 'Upload files directly into packages, components, datasheets, or projects folders with sanitization and live preview.'
-  },
-  {
-    icon: 'mdi-folder-plus-outline',
-    title: 'Project Management UI',
-    description: 'Create new hardware projects and edit existing project metadata directly with live photo previews.'
-  },
-  {
-    icon: 'mdi-alert-circle-outline',
-    title: 'Absent Parts Badges',
-    description: 'Immediate visibility of missing BOM components via color-coded chips in the projects gallery.'
+    version: '0.1.3',
+    date: '2026-09-17',
+    isCurrent: false,
+    summary: 'Version 0.1.3 introduces local media storage and uploading, project creation and editing, part shortage tracking in the gallery, and photo lightbox previews.',
+    features: [
+      {
+        title: 'Built-In Media Storage',
+        description: 'Component photos, package drawings, and datasheets are now stored and served directly by the application.'
+      },
+      {
+        title: 'Easy Media Uploads',
+        description: 'Upload component photos, datasheets, and drawings with live previews from the top bar or directly inside edit dialogs.'
+      },
+      {
+        title: 'Project Management',
+        description: 'Create and edit hardware projects directly from the gallery with real-time photo previews.'
+      },
+      {
+        title: 'Part Shortage Indicators',
+        description: 'Project cards highlight missing components with clear shortage badges so you know what needs ordering.'
+      },
+      {
+        title: 'Photo Lightbox Preview',
+        description: 'Click any project photo or component thumbnail to view it in full resolution scaled to your screen.'
+      }
+    ]
   }
 ];
 
-const changelogGroups = [
-  {
-    category: 'Media & Storage',
-    items: [
-      'Self-hosted media served at /media/ with automatic directory scaffolding (packages, components, datasheets, projects).',
-      'Folder alias compatibility ensuring both projects and projecs spellings work without broken links.',
-      'Backend multipart file upload endpoint (POST /api/media/upload) using multer with sanitization.',
-      'In-place upload buttons added to project and component creation/edit dialogs.',
-      'Global Media Upload modal dialog accessible from the top navigation bar.'
-    ]
-  },
-  {
-    category: 'Projects & Gallery',
-    items: [
-      'Implemented ProjectFormDialog component for creating new projects and editing existing ones.',
-      'Added Absent Parts Chip in gallery cards showing missing component counts (e.g. "2 absent" / "0 absent").',
-      'Added total projects with shortages count in the gallery header statistics.',
-      'Clicking a project card in the gallery now directly navigates to the full project page (/projects/:id).',
-      'Clicking "View BOM" continues to open the quick pop-up BOM modal dialog.',
-      'Removed project ID badges from gallery cards for a cleaner layout.'
-    ]
-  },
-  {
-    category: 'User Interface & Navigation',
-    items: [
-      'Full-size media preview on the project page with proportional scaling and zero scrollbars.',
-      'Strict pure light theme aesthetic enforced across all components and recorded in project skills.',
-      'Added left-side menu version indicator (v0.1.3) and dedicated Release Notes page.'
-    ]
-  }
-];
+const currentVersion = computed(() => releases.find(r => r.isCurrent)?.version || '0.2.0');
 </script>
 
 <style scoped>
 .release-notes-view :deep(.v-list-item__prepend) {
   align-self: flex-start;
   margin-top: 2px;
+}
+.tracking-wider {
+  letter-spacing: 0.05em;
 }
 </style>

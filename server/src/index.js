@@ -32,6 +32,11 @@ standardSubdirs.forEach(sub => {
   }
 });
 
+const attachmentsDir = path.join(mediaDir, 'projects', 'attachments');
+if (!fs.existsSync(attachmentsDir)) {
+  fs.mkdirSync(attachmentsDir, { recursive: true });
+}
+
 // Serve media static assets
 app.use('/media', express.static(mediaDir, {
   maxAge: '1d',

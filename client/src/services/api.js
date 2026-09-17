@@ -67,6 +67,21 @@ export const api = {
   createProject: (data) => client.post('/projects', data).then(res => res.data),
   updateProject: (id, data) => client.put(`/projects/${id}`, data).then(res => res.data),
 
+  // Project Files & Attachments
+  getProjectFiles: (projectId) => client.get(`/projects/${projectId}/files`).then(res => res.data),
+  uploadProjectFile: (projectId, formData) => client.post(`/projects/${projectId}/files`, formData, {
+    headers: { 'Content-Type': 'multipart/form-data' }
+  }).then(res => res.data),
+  deleteProjectFile: (projectId, fileId) => client.delete(`/projects/${projectId}/files/${fileId}`).then(res => res.data),
+
+  // KiCAD iBOM Parsing and Import
+  parseIbom: (projectId, data, isFormData = false) => client.post(
+    `/projects/${projectId}/bom/parse-ibom`,
+    data,
+    isFormData ? { headers: { 'Content-Type': 'multipart/form-data' } } : {}
+  ).then(res => res.data),
+  importIbom: (projectId, payload) => client.post(`/projects/${projectId}/bom/import-ibom`, payload).then(res => res.data),
+
   // Components
   getComponents: (params = {}) => {
     const cleanParams = { ...params };

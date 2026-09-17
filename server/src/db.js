@@ -14,10 +14,33 @@ const pool = mysql.createPool({
   charset: 'utf8mb4'
 });
 
+async function ensureTables() {
+  try {
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS t_project_files (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        projectId INT NOT NULL,
+        fileName VARCHAR(255) NOT NULL,
+        originalName VARCHAR(255) NOT NULL,
+        fileSize BIGINT DEFAULT 0,
+        fileType VARCHAR(50) DEFAULT 'other',
+        mimeType VARCHAR(100) DEFAULT NULL,
+        description VARCHAR(500) DEFAULT NULL,
+        uploadedAt DATETIME DEFAULT CURRENT_TIMESTAMP,
+        INDEX idx_project_id (projectId)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+    `);
+    console.log('[Database] Verified table "t_project_files" exists.');
+  } catch (err) {
+    console.warn('[Database] Table verification note (t_project_files):', err.message);
+  }
+}
+
 pool.getConnection()
-  .then((conn) => {
+  .then(async (conn) => {
     console.log(`[Database] Connected to MySQL database "${process.env.DB_NAME}" as "${process.env.DB_USER}"`);
     conn.release();
+    await ensureTables();
   })
   .catch((err) => {
     console.error('[Database] Connection failed:', err.message);

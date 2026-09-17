@@ -333,103 +333,11 @@
       </div>
     </v-card>
 
-    <!-- COMPONENT DETAILS DIALOG -->
-    <v-dialog v-model="showDetailsDialog" max-width="850">
-      <v-card class="rounded-0 border" v-if="selectedComponent">
-        <v-card-title class="bg-surface-variant py-3 px-4 d-flex align-center justify-space-between">
-          <div class="font-mono font-weight-bold text-subtitle-1 text-primary">
-            {{ selectedComponent.component }}
-          </div>
-          <v-btn icon="mdi-close" variant="text" size="small" @click="showDetailsDialog = false" />
-        </v-card-title>
-
-        <v-divider />
-
-        <v-card-text class="pa-4">
-          <v-row>
-            <v-col cols="12" sm="5" class="d-flex justify-center">
-              <MediaImage
-                type="component"
-                :src="selectedComponent.photoURL"
-                height="180px"
-                width="100%"
-                :cover="false"
-              />
-            </v-col>
-            <v-col cols="12" sm="7">
-              <div class="text-caption text-disabled text-uppercase">Category</div>
-              <div class="text-body-2 font-weight-medium mb-2">{{ selectedComponent.category || '—' }}</div>
-
-              <div class="text-caption text-disabled text-uppercase">Package / Footprint</div>
-              <div class="text-body-2 font-mono mb-2 d-flex align-center gap-1 flex-wrap">
-                <PackageLink :item="selectedComponent" />
-                <v-chip size="x-small" class="ms-1" v-if="selectedComponent.package">
-                  {{ selectedComponent.isSmd ? 'SMD' : 'Through-Hole' }}
-                </v-chip>
-                <v-chip size="x-small" variant="tonal" color="blue-grey" class="ms-1 font-mono" v-if="selectedComponent.pinQuantity">
-                  {{ selectedComponent.pinQuantity }} pins
-                </v-chip>
-              </div>
-
-              <div class="text-caption text-disabled text-uppercase">Marking</div>
-              <div class="text-body-2 font-mono mb-2">{{ selectedComponent.marking || '—' }}</div>
-
-              <div class="text-caption text-disabled text-uppercase">Total Stock Quantity</div>
-              <v-chip size="small" color="success" class="font-mono font-weight-bold">
-                {{ selectedComponent.qty }} in stock
-              </v-chip>
-            </v-col>
-          </v-row>
-
-          <v-divider class="my-3" />
-
-          <div class="text-caption text-disabled text-uppercase mb-1">Description</div>
-          <p class="text-body-2 mb-3">
-            {{ selectedComponent.description || selectedComponent.shortDescription || 'No description provided.' }}
-          </p>
-
-          <!-- Warehouse allocations -->
-          <div v-if="selectedComponent.warehouse && selectedComponent.warehouse.length > 0">
-            <div class="text-caption text-disabled text-uppercase mb-1">Warehouse Storage Locations</div>
-            <v-chip-group>
-              <v-chip
-                v-for="w in selectedComponent.warehouse"
-                :key="w.id"
-                size="small"
-                variant="outlined"
-              >
-                <v-icon start size="14">mdi-archive-outline</v-icon>
-                {{ w.storage || 'Box #' + w.storageId }}: {{ w.quantity }} pcs
-              </v-chip>
-            </v-chip-group>
-          </div>
-        </v-card-text>
-
-        <v-divider />
-
-        <v-card-actions class="pa-3">
-          <v-btn
-            v-if="selectedComponent.datasheetURL"
-            color="red-darken-1"
-            variant="text"
-            prepend-icon="mdi-file-pdf-box"
-            :href="getDatasheetUrl(selectedComponent.datasheetURL)"
-            target="_blank"
-          >
-            Open Datasheet
-          </v-btn>
-          <v-spacer />
-          <v-btn
-            color="amber-darken-3"
-            variant="tonal"
-            prepend-icon="mdi-cart-plus"
-            @click="addToShoppingList(selectedComponent)"
-          >
-            Add to Shopping List
-          </v-btn>
-        </v-card-actions>
-      </v-card>
-    </v-dialog>
+    <!-- COMPONENT DETAILS DIALOG (Re-used ComponentDetailsDialog) -->
+    <ComponentDetailsDialog
+      v-model="showDetailsDialog"
+      :component="selectedComponent"
+    />
 
     <!-- CREATE COMPONENT DIALOG -->
     <CreateComponentDialog
@@ -451,6 +359,7 @@ import api, { resolveMediaUrl } from '../services/api';
 import MediaImage from '../components/MediaImage.vue';
 import PackageLink from '../components/PackageLink.vue';
 import CreateComponentDialog from '../components/CreateComponentDialog.vue';
+import ComponentDetailsDialog from '../components/ComponentDetailsDialog.vue';
 import { useComponentsStore } from '../stores/components';
 
 const componentsStore = useComponentsStore();
@@ -590,13 +499,9 @@ const nextPage = () => {
   }
 };
 
-const viewDetails = async (c) => {
-  try {
-    selectedComponent.value = await api.getComponent(c.ID);
-    showDetailsDialog.value = true;
-  } catch (err) {
-    notify('Failed to load component details', 'error');
-  }
+const viewDetails = (c) => {
+  selectedComponent.value = c;
+  showDetailsDialog.value = true;
 };
 
 const addToShoppingList = async (c) => {

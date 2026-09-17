@@ -144,6 +144,32 @@
                   <v-icon start size="12">mdi-check-circle-outline</v-icon>
                   0 absent
                 </v-chip>
+
+                <!-- Attached files chip -->
+                <v-chip
+                  v-if="p.filesCount > 0"
+                  size="x-small"
+                  color="slate-700"
+                  variant="tonal"
+                  class="font-weight-medium"
+                  :title="`${p.filesCount} file(s) attached`"
+                >
+                  <v-icon start size="12">mdi-paperclip</v-icon>
+                  {{ p.filesCount }} {{ p.filesCount === 1 ? 'file' : 'files' }}
+                </v-chip>
+
+                <!-- iBOM indicator chip -->
+                <v-chip
+                  v-if="p.ibomFilesCount > 0"
+                  size="x-small"
+                  color="success"
+                  variant="flat"
+                  class="font-weight-bold"
+                  title="KiCAD Interactive HTML BOM attached"
+                >
+                  <v-icon start size="12">mdi-chip</v-icon>
+                  iBOM
+                </v-chip>
               </div>
 
               <!-- Action Buttons -->
