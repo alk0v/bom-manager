@@ -19,7 +19,10 @@ router.get('/', async (req, res) => {
         c.photoURL,
         c.qty AS stockQuantity,
         cat.category,
-        pkg.package
+        pkg.package,
+        pkg.pinQuantity,
+        pkg.isSmd,
+        pkg.drawingURL
       FROM t_busket b
       LEFT JOIN i_components c ON b.componentId = c.ID
       LEFT JOIN i_categories cat ON c.category_id = cat.ID

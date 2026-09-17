@@ -29,13 +29,13 @@
       <v-divider />
 
       <!-- Main Navigation Menu -->
-      <v-list density="comfortable" nav class="mt-2">
+      <v-list density="comfortable" nav class="mt-2 nav-menu">
         <v-list-item
           prepend-icon="mdi-folder-cog-outline"
           title="Projects"
           value="projects"
           to="/projects"
-          active-class="primary text-white"
+          active-class="bg-primary text-white"
           rounded="lg"
         />
 
@@ -44,7 +44,7 @@
           title="Components"
           value="components"
           to="/components"
-          active-class="primary text-white"
+          active-class="bg-primary text-white"
           rounded="lg"
         />
 
@@ -53,7 +53,7 @@
           title="Shopping List"
           value="shopping-list"
           to="/shopping-list"
-          active-class="primary text-white"
+          active-class="bg-primary text-white"
           rounded="lg"
         >
           <template #append v-if="shoppingCount > 0">
@@ -76,10 +76,21 @@
       />
 
       <v-app-bar-title class="font-weight-bold text-subtitle-1 text-md-h6 text-slate-800">
-        <v-icon start color="primary" size="22">
-          {{ currentIcon }}
-        </v-icon>
-        {{ currentTitle }}
+        <div class="d-flex align-center">
+          <v-icon start color="primary" size="22">
+            {{ currentIcon }}
+          </v-icon>
+          <span>{{ currentTitle }}</span>
+          <v-chip
+            v-if="route.path === '/components'"
+            size="small"
+            color="primary"
+            variant="flat"
+            class="ms-2 font-weight-bold"
+          >
+            {{ componentsStore.totalComponents }} items
+          </v-chip>
+        </div>
       </v-app-bar-title>
 
       <v-spacer />
@@ -101,6 +112,9 @@
         <router-view />
       </v-container>
     </v-main>
+
+    <!-- Global Package Details Modal -->
+    <PackageDetailsDialog />
   </v-app>
 </template>
 
@@ -108,8 +122,11 @@
 import { ref, computed, onMounted } from 'vue';
 import { useRoute } from 'vue-router';
 import api from './services/api';
+import { useComponentsStore } from './stores/components';
+import PackageDetailsDialog from './components/PackageDetailsDialog.vue';
 
 const route = useRoute();
+const componentsStore = useComponentsStore();
 
 const drawer = ref(true);
 const rail = ref(false);
@@ -162,5 +179,21 @@ onMounted(() => {
   font-weight: 700;
   font-size: 1.1rem;
   letter-spacing: -0.01em;
+}
+
+.nav-menu :deep(.v-list-item--active) {
+  background-color: rgb(var(--v-theme-primary)) !important;
+  color: #ffffff !important;
+  font-weight: 600;
+  box-shadow: 0 2px 4px rgba(29, 78, 216, 0.25);
+}
+
+.nav-menu :deep(.v-list-item--active .v-icon) {
+  color: #ffffff !important;
+}
+
+.nav-menu :deep(.v-list-item--active .v-list-item-title) {
+  color: #ffffff !important;
+  font-weight: 600;
 }
 </style>

@@ -1,18 +1,18 @@
 <template>
   <div class="shopping-list-view">
-    <v-card elevation="1" class="rounded-xl border overflow-hidden">
-      <v-card-item class="bg-surface-variant py-3 px-4">
+    <v-card elevation="1" class="rounded-0 border overflow-hidden">
+      <v-card-item class="bg-slate-50 py-3 px-4 border-b">
         <div class="d-flex flex-wrap align-center justify-space-between gap-3">
           <div class="d-flex align-center">
             <v-icon color="amber-darken-2" class="me-2">mdi-cart-outline</v-icon>
             <div>
-              <div class="text-subtitle-1 font-weight-bold">
+              <div class="text-subtitle-1 font-weight-bold text-slate-900">
                 Procurement Shopping List
                 <v-chip size="x-small" color="amber-darken-2" class="ms-1 font-weight-bold">
                   {{ items.length }} items
                 </v-chip>
               </div>
-              <div class="text-caption text-disabled">
+              <div class="text-caption text-slate-500">
                 Planned electronic parts purchases and BOM shortage replenishment
               </div>
             </div>
@@ -92,8 +92,7 @@
 
             <!-- Package -->
             <td>
-              <span class="font-mono text-caption" v-if="item.package">{{ item.package }}</span>
-              <span v-else class="text-disabled text-caption">—</span>
+              <PackageLink :item="item" />
             </td>
 
             <!-- Stock -->
@@ -168,6 +167,7 @@
 import { ref, onMounted } from 'vue';
 import api from '../services/api';
 import MediaImage from '../components/MediaImage.vue';
+import PackageLink from '../components/PackageLink.vue';
 
 const items = ref([]);
 const loading = ref(false);
@@ -238,6 +238,8 @@ onMounted(() => {
 <style scoped>
 .shopping-table :deep(th) {
   background-color: var(--v-theme-surface-variant);
+  color: #0F172A !important;
+  font-weight: 700 !important;
   font-size: 0.82rem;
 }
 </style>

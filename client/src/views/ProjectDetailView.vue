@@ -35,7 +35,7 @@
     </div>
 
     <!-- Project Properties Header Card -->
-    <v-card elevation="1" class="rounded-xl border bg-white mb-6 overflow-hidden">
+    <v-card elevation="1" class="rounded-0 border bg-white mb-6 overflow-hidden">
       <v-row no-gutters>
         <!-- Photo (Fit, not crop) -->
         <v-col cols="12" md="3" class="bg-slate-50 d-flex align-center justify-center p-3 border-e">
@@ -46,7 +46,7 @@
               height="200px"
               width="100%"
               :cover="false"
-              class="rounded-lg border cursor-pointer"
+              class="rounded-0 border cursor-pointer"
             />
           </div>
         </v-col>
@@ -105,7 +105,7 @@
     </v-card>
 
     <!-- BOM List Card -->
-    <v-card elevation="1" class="rounded-xl border bg-white overflow-hidden">
+    <v-card elevation="1" class="rounded-0 border bg-white overflow-hidden">
       <v-card-item class="bg-slate-50 py-3 px-5 border-b">
         <div class="d-flex flex-wrap align-center justify-space-between gap-3">
           <div class="d-flex align-center">
@@ -205,10 +205,7 @@
 
             <!-- Package -->
             <td>
-              <span v-if="item.package" class="font-mono text-body-2 font-weight-medium text-slate-800">
-                {{ item.package }}
-              </span>
-              <span v-else class="text-disabled text-caption">—</span>
+              <PackageLink :item="item" />
             </td>
 
             <!-- Required Qty -->
@@ -282,87 +279,16 @@
     </v-card>
 
     <!-- DIALOG: Add Component to BOM -->
-    <v-dialog v-model="showAddDialog" max-width="650">
-      <v-card class="rounded-xl border bg-white">
-        <v-card-title class="bg-slate-50 py-3 px-4 font-weight-bold text-subtitle-1 border-b">
-          Add Component to BOM
-        </v-card-title>
-        <v-card-text class="pa-4">
-          <v-autocomplete
-            v-model="newBom.componentId"
-            :items="availableComponents"
-            item-title="component"
-            item-value="ID"
-            label="Search Component"
-            placeholder="Type component name or part number..."
-            prepend-inner-icon="mdi-memory"
-            variant="outlined"
-            density="comfortable"
-            class="mb-3"
-            :loading="loadingCatalog"
-            @update:search="onSearchCatalog"
-          >
-            <template #item="{ props, item }">
-              <v-list-item v-bind="props">
-                <template #prepend>
-                  <v-avatar size="32" rounded="md" class="border me-2">
-                    <MediaImage type="component" :src="item.raw.photoURL" width="32px" height="32px" />
-                  </v-avatar>
-                </template>
-                <v-list-item-title class="font-mono font-weight-bold">
-                  {{ item.raw.component }}
-                </v-list-item-title>
-                <v-list-item-subtitle class="text-caption">
-                  <span v-if="item.raw.category" class="me-2">{{ item.raw.category }}</span>
-                  <span v-if="item.raw.package" class="font-mono me-2">{{ item.raw.package }}</span>
-                  <span class="text-disabled">Stock: {{ item.raw.qty }}</span>
-                </v-list-item-subtitle>
-              </v-list-item>
-            </template>
-          </v-autocomplete>
-
-          <v-row>
-            <v-col cols="12" sm="4">
-              <v-text-field
-                v-model.number="newBom.quantity"
-                label="Required Quantity"
-                type="number"
-                min="1"
-                variant="outlined"
-                density="comfortable"
-              />
-            </v-col>
-            <v-col cols="12" sm="8">
-              <v-text-field
-                v-model="newBom.comment"
-                label="Designators / Notes"
-                placeholder="e.g. C1, C2, R1"
-                variant="outlined"
-                density="comfortable"
-              />
-            </v-col>
-          </v-row>
-        </v-card-text>
-        <v-divider />
-        <v-card-actions class="pa-3 bg-slate-50">
-          <v-spacer />
-          <v-btn variant="text" @click="showAddDialog = false">Cancel</v-btn>
-          <v-btn
-            color="primary"
-            variant="flat"
-            :disabled="!newBom.componentId || newBom.quantity < 1"
-            :loading="submittingBom"
-            @click="submitAddBom"
-          >
-            Add to BOM
-          </v-btn>
-        </v-card-actions>
-      </v-card>
-    </v-dialog>
+    <AddComponentDialog
+      v-model="showAddDialog"
+      :project-id="projectId"
+      :project-name="project?.projectName"
+      @added="onComponentAdded"
+    />
 
     <!-- DIALOG: Edit BOM Item -->
     <v-dialog v-model="showEditDialog" max-width="500">
-      <v-card class="rounded-xl border bg-white" v-if="editingBom">
+      <v-card class="rounded-0 border bg-white" v-if="editingBom">
         <v-card-title class="bg-slate-50 py-3 px-4 font-weight-bold text-subtitle-1 border-b">
           Edit BOM Item
         </v-card-title>
@@ -413,28 +339,23 @@ import { ref, computed, onMounted } from 'vue';
 import { useRoute } from 'vue-router';
 import api from '../services/api';
 import MediaImage from '../components/MediaImage.vue';
+import AddComponentDialog from '../components/AddComponentDialog.vue';
+import PackageLink from '../components/PackageLink.vue';
 
 const route = useRoute();
 const projectId = route.params.id;
 
 const project = ref(null);
 const bomItems = ref([]);
-const availableComponents = ref([]);
 
 const bomSearch = ref('');
 const loading = ref(false);
-const loadingCatalog = ref(false);
 const submittingBom = ref(false);
 
 const showAddDialog = ref(false);
 const showEditDialog = ref(false);
 
 const editingBom = ref(null);
-const newBom = ref({
-  componentId: null,
-  quantity: 1,
-  comment: ''
-});
 
 const snackbar = ref({
   show: false,
@@ -487,45 +408,16 @@ const loadData = async () => {
   }
 };
 
-const onSearchCatalog = async (val) => {
-  if (!val || val.length < 2) return;
-  loadingCatalog.value = true;
-  try {
-    const res = await api.getComponents({ search: val, limit: 30 });
-    availableComponents.value = res.items;
-  } catch (err) {
-    console.error(err);
-  } finally {
-    loadingCatalog.value = false;
-  }
-};
-
-const openAddComponentDialog = async () => {
-  newBom.value = { componentId: null, quantity: 1, comment: '' };
+const openAddComponentDialog = () => {
   showAddDialog.value = true;
-  if (availableComponents.value.length === 0) {
-    loadingCatalog.value = true;
-    try {
-      const res = await api.getComponents({ limit: 50 });
-      availableComponents.value = res.items;
-    } finally {
-      loadingCatalog.value = false;
-    }
-  }
 };
 
-const submitAddBom = async () => {
-  if (!newBom.value.componentId) return;
-  submittingBom.value = true;
+const onComponentAdded = async (item) => {
+  notify(`Added ${item?.component || 'component'} to BOM!`);
   try {
-    await api.addComponentToBom(projectId, newBom.value);
-    notify('Component added to BOM!');
-    showAddDialog.value = false;
     bomItems.value = await api.getProjectBom(projectId);
   } catch (err) {
-    notify('Error adding to BOM: ' + err.message, 'error');
-  } finally {
-    submittingBom.value = false;
+    console.error('Failed to reload project BOM:', err);
   }
 };
 

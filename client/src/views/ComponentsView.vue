@@ -1,43 +1,15 @@
 <template>
   <div class="components-view">
-    <v-card elevation="1" class="rounded-xl border overflow-hidden">
-      <v-card-item class="bg-surface-variant py-3 px-4">
-        <div class="d-flex flex-wrap align-center justify-space-between gap-3">
-          <div class="d-flex align-center">
-            <v-icon color="primary" class="me-2">mdi-memory</v-icon>
-            <div>
-              <div class="text-subtitle-1 font-weight-bold">
-                Components Catalog
-                <v-chip size="x-small" color="primary" class="ms-1 font-weight-bold">
-                  {{ totalComponents }} items
-                </v-chip>
-              </div>
-              <div class="text-caption text-disabled">
-                Electronic components, ICs, passives, datasheets, and stock levels
-              </div>
-            </div>
-          </div>
-
-          <v-btn
-            icon="mdi-refresh"
-            size="small"
-            variant="text"
-            :loading="loading"
-            @click="fetchComponents"
-          />
-        </div>
-      </v-card-item>
-
-      <v-divider />
-
+    <v-card elevation="1" class="rounded-0 border overflow-hidden">
       <!-- Search & Filters -->
-      <div class="pa-4 bg-surface">
-        <v-row dense>
-          <v-col cols="12" md="6">
+      <div class="pa-4 bg-surface border-b">
+        <!-- Row 1: Search, Categories (multi-choice), Packages (multi-choice) -->
+        <v-row dense class="mb-1">
+          <v-col cols="12" md="4">
             <v-text-field
               v-model="search"
               prepend-inner-icon="mdi-magnify"
-              placeholder="Search component name, marking, description..."
+              placeholder="Search part name, marking, description..."
               density="compact"
               variant="outlined"
               hide-details
@@ -48,19 +20,170 @@
           </v-col>
 
           <v-col cols="12" sm="6" md="4">
-            <v-select
-              v-model="selectedCategory"
+            <v-autocomplete
+              v-model="selectedCategories"
               :items="categories"
               item-title="category"
               item-value="ID"
-              label="Filter by Category"
+              label="Categories (multi-choice)"
+              placeholder="All categories"
+              density="compact"
+              variant="outlined"
+              hide-details
+              clearable
+              multiple
+              chips
+              closable-chips
+              rounded="lg"
+              @update:model-value="onFilterChange"
+            />
+          </v-col>
+
+          <v-col cols="12" sm="6" md="4">
+            <div class="d-flex align-center" style="gap: 12px;">
+              <v-autocomplete
+                v-model="selectedPackages"
+                :items="filteredPackagesList"
+                item-title="package"
+                item-value="ID"
+                :label="packageMountType === 'all' ? 'Packages (multi-choice)' : `Packages (${packageMountType.toUpperCase()})`"
+                placeholder="All packages"
+                density="compact"
+                variant="outlined"
+                hide-details
+                clearable
+                multiple
+                chips
+                closable-chips
+                rounded="lg"
+                class="flex-grow-1"
+                @update:model-value="onFilterChange"
+              >
+                <template #item="{ props, item }">
+                  <v-list-item v-bind="props" :title="item.raw.package">
+                    <template #append>
+                      <v-chip
+                        size="x-small"
+                        :color="item.raw.isSmd ? 'secondary' : 'default'"
+                        variant="flat"
+                        class="ms-2 font-weight-bold"
+                      >
+                        {{ item.raw.isSmd ? 'SMD' : 'THT' }}
+                      </v-chip>
+                    </template>
+                  </v-list-item>
+                </template>
+              </v-autocomplete>
+
+              <v-btn-toggle
+                v-model="packageMountType"
+                mandatory
+                density="compact"
+                variant="outlined"
+                rounded="lg"
+                color="primary"
+                class="flex-shrink-0"
+                style="height: 40px;"
+                @update:model-value="onMountTypeChange"
+              >
+                <v-btn value="all" size="small" class="px-2 text-caption">All</v-btn>
+                <v-btn value="smd" size="small" class="px-2 text-caption">SMD</v-btn>
+                <v-btn value="tht" size="small" class="px-2 text-caption">THT</v-btn>
+              </v-btn-toggle>
+            </div>
+          </v-col>
+        </v-row>
+
+        <!-- Row 2: Project, Pin Range, and Filter Summary/Reset -->
+        <v-row dense align="center" class="mt-1">
+          <v-col cols="12" sm="6" md="4">
+            <v-autocomplete
+              v-model="selectedProject"
+              :items="projects"
+              item-title="projectName"
+              item-value="id"
+              label="Used in Project"
+              placeholder="Filter components in project BOM"
               density="compact"
               variant="outlined"
               hide-details
               clearable
               rounded="lg"
-              @update:model-value="fetchComponents"
+              @update:model-value="onFilterChange"
             />
+          </v-col>
+
+          <v-col cols="12" sm="6" md="4">
+            <div class="d-flex align-center gap-2">
+              <v-text-field
+                v-model.number="minPins"
+                label="Min Pins"
+                type="number"
+                min="0"
+                density="compact"
+                variant="outlined"
+                hide-details
+                clearable
+                rounded="lg"
+                @update:model-value="debounceFetch"
+              />
+              <span class="text-caption text-disabled font-weight-bold px-1">—</span>
+              <v-text-field
+                v-model.number="maxPins"
+                label="Max Pins"
+                type="number"
+                min="0"
+                density="compact"
+                variant="outlined"
+                hide-details
+                clearable
+                rounded="lg"
+                @update:model-value="debounceFetch"
+              />
+            </div>
+          </v-col>
+
+          <v-col cols="12" md="4" class="d-flex align-center justify-end gap-2 flex-wrap">
+            <v-chip
+              v-if="activeFilterCount > 0"
+              color="primary"
+              variant="tonal"
+              size="small"
+              class="font-weight-medium"
+            >
+              {{ activeFilterCount }} active {{ activeFilterCount === 1 ? 'filter' : 'filters' }}
+            </v-chip>
+
+            <v-btn
+              v-if="activeFilterCount > 0"
+              size="small"
+              variant="text"
+              color="error"
+              prepend-icon="mdi-filter-off-outline"
+              @click="resetFilters"
+            >
+              Reset Filters
+            </v-btn>
+
+            <v-btn
+              icon="mdi-refresh"
+              size="small"
+              variant="outlined"
+              :loading="loading"
+              @click="fetchComponents"
+              title="Refresh components"
+            />
+
+            <v-btn
+              color="primary"
+              variant="flat"
+              size="small"
+              prepend-icon="mdi-plus"
+              class="font-weight-bold"
+              @click="showCreateDialog = true"
+            >
+              Add Component
+            </v-btn>
           </v-col>
         </v-row>
       </div>
@@ -82,7 +205,7 @@
         </thead>
 
         <tbody>
-          <tr v-for="c in components" :key="c.ID">
+          <tr v-for="c in components" :key="c.ID" :class="{ 'row-shortage': !c.qty || c.qty <= 0 }">
             <!-- Photo Thumbnail -->
             <td>
               <v-avatar rounded="lg" size="38" class="border">
@@ -115,37 +238,21 @@
 
             <!-- Package -->
             <td>
-              <div v-if="c.package" class="d-flex align-center">
-                <span class="font-mono text-caption">{{ c.package }}</span>
-                <v-chip
-                  size="x-small"
-                  :color="c.isSmd ? 'secondary' : 'default'"
-                  variant="flat"
-                  class="ms-1"
-                >
-                  {{ c.isSmd ? 'SMD' : 'THT' }}
-                </v-chip>
-              </div>
-              <span v-else class="text-disabled text-caption">—</span>
+              <PackageLink :item="c" />
             </td>
 
             <!-- Description -->
             <td>
-              <div class="text-body-2 text-truncate" style="max-width: 320px;" :title="c.description || c.shortDescription">
+              <div class="text-body-2 text-truncate text-slate-700" style="max-width: 320px;" :title="c.description || c.shortDescription">
                 {{ c.description || c.shortDescription || '—' }}
               </div>
             </td>
 
             <!-- Stock Quantity -->
-            <td class="text-center">
-              <v-chip
-                size="small"
-                :color="c.qty > 0 ? 'success' : 'default'"
-                variant="flat"
-                class="font-mono font-weight-bold"
-              >
-                {{ c.qty }}
-              </v-chip>
+            <td class="text-center font-mono font-weight-bold text-body-2">
+              <span :class="c.qty > 0 ? 'text-slate-800' : 'text-error font-weight-bold'">
+                {{ c.qty ?? 0 }}
+              </span>
             </td>
 
             <!-- Actions -->
@@ -227,8 +334,8 @@
     </v-card>
 
     <!-- COMPONENT DETAILS DIALOG -->
-    <v-dialog v-model="showDetailsDialog" max-width="650">
-      <v-card class="rounded-xl border" v-if="selectedComponent">
+    <v-dialog v-model="showDetailsDialog" max-width="850">
+      <v-card class="rounded-0 border" v-if="selectedComponent">
         <v-card-title class="bg-surface-variant py-3 px-4 d-flex align-center justify-space-between">
           <div class="font-mono font-weight-bold text-subtitle-1 text-primary">
             {{ selectedComponent.component }}
@@ -254,10 +361,13 @@
               <div class="text-body-2 font-weight-medium mb-2">{{ selectedComponent.category || '—' }}</div>
 
               <div class="text-caption text-disabled text-uppercase">Package / Footprint</div>
-              <div class="text-body-2 font-mono mb-2">
-                {{ selectedComponent.package || '—' }}
+              <div class="text-body-2 font-mono mb-2 d-flex align-center gap-1 flex-wrap">
+                <PackageLink :item="selectedComponent" />
                 <v-chip size="x-small" class="ms-1" v-if="selectedComponent.package">
                   {{ selectedComponent.isSmd ? 'SMD' : 'Through-Hole' }}
+                </v-chip>
+                <v-chip size="x-small" variant="tonal" color="blue-grey" class="ms-1 font-mono" v-if="selectedComponent.pinQuantity">
+                  {{ selectedComponent.pinQuantity }} pins
                 </v-chip>
               </div>
 
@@ -321,6 +431,14 @@
       </v-card>
     </v-dialog>
 
+    <!-- CREATE COMPONENT DIALOG -->
+    <CreateComponentDialog
+      v-model="showCreateDialog"
+      :categories="categories"
+      :packages="packages"
+      @created="handleComponentCreated"
+    />
+
     <v-snackbar v-model="snackbar.show" :color="snackbar.color" timeout="3000">
       {{ snackbar.text }}
     </v-snackbar>
@@ -331,19 +449,49 @@
 import { ref, computed, onMounted } from 'vue';
 import api, { resolveMediaUrl } from '../services/api';
 import MediaImage from '../components/MediaImage.vue';
+import PackageLink from '../components/PackageLink.vue';
+import CreateComponentDialog from '../components/CreateComponentDialog.vue';
+import { useComponentsStore } from '../stores/components';
+
+const componentsStore = useComponentsStore();
 
 const components = ref([]);
 const categories = ref([]);
+const packages = ref([]);
+const projects = ref([]);
 const totalComponents = ref(0);
 const loading = ref(false);
 
+// Filter states
 const search = ref('');
-const selectedCategory = ref(null);
+const selectedCategories = ref([]);
+const selectedPackages = ref([]);
+const packageMountType = ref('all'); // 'all' | 'smd' | 'tht'
+const selectedProject = ref(null);
+const minPins = ref(null);
+const maxPins = ref(null);
+
+const filteredPackagesList = computed(() => {
+  if (packageMountType.value === 'smd') {
+    return packages.value.filter(p => p.isSmd === 1);
+  }
+  if (packageMountType.value === 'tht') {
+    return packages.value.filter(p => p.isSmd === 0);
+  }
+  return packages.value;
+});
+
 const limit = ref(50);
 const offset = ref(0);
 
 const selectedComponent = ref(null);
 const showDetailsDialog = ref(false);
+const showCreateDialog = ref(false);
+
+const handleComponentCreated = (newComp) => {
+  notify(`Component "${newComp.component}" created successfully`, 'success');
+  fetchComponents();
+};
 
 const snackbar = ref({
   show: false,
@@ -357,6 +505,18 @@ const notify = (text, color = 'success') => {
 
 const currentPage = computed(() => Math.floor(offset.value / limit.value) + 1);
 
+const activeFilterCount = computed(() => {
+  let count = 0;
+  if (search.value && search.value.trim()) count++;
+  if (selectedCategories.value && selectedCategories.value.length > 0) count++;
+  if (selectedPackages.value && selectedPackages.value.length > 0) count++;
+  if (packageMountType.value !== 'all') count++;
+  if (selectedProject.value !== null && selectedProject.value !== undefined) count++;
+  if (minPins.value !== null && minPins.value !== undefined && minPins.value !== '') count++;
+  if (maxPins.value !== null && maxPins.value !== undefined && maxPins.value !== '') count++;
+  return count;
+});
+
 let debounceTimer = null;
 const debounceFetch = () => {
   clearTimeout(debounceTimer);
@@ -366,17 +526,49 @@ const debounceFetch = () => {
   }, 350);
 };
 
+const onFilterChange = () => {
+  offset.value = 0;
+  fetchComponents();
+};
+
+const onMountTypeChange = () => {
+  if (packageMountType.value !== 'all') {
+    const validIds = new Set(filteredPackagesList.value.map(p => p.ID));
+    selectedPackages.value = selectedPackages.value.filter(id => validIds.has(id));
+  }
+  offset.value = 0;
+  fetchComponents();
+};
+
+const resetFilters = () => {
+  search.value = '';
+  selectedCategories.value = [];
+  selectedPackages.value = [];
+  packageMountType.value = 'all';
+  selectedProject.value = null;
+  minPins.value = null;
+  maxPins.value = null;
+  offset.value = 0;
+  fetchComponents();
+};
+
 const fetchComponents = async () => {
   loading.value = true;
   try {
     const res = await api.getComponents({
       search: search.value,
-      categoryId: selectedCategory.value,
+      categoryIds: selectedCategories.value,
+      packageIds: selectedPackages.value,
+      projectId: selectedProject.value,
+      isSmd: packageMountType.value === 'smd' ? 1 : (packageMountType.value === 'tht' ? 0 : undefined),
+      minPins: minPins.value,
+      maxPins: maxPins.value,
       limit: limit.value,
       offset: offset.value
     });
     components.value = res.items;
     totalComponents.value = res.total;
+    componentsStore.setTotalComponents(res.total);
   } catch (err) {
     notify('Failed to load components: ' + err.message, 'error');
   } finally {
@@ -422,9 +614,16 @@ const getDatasheetUrl = (url) => {
 
 onMounted(async () => {
   try {
-    categories.value = await api.getCategories();
+    const [cats, pkgs, projs] = await Promise.all([
+      api.getCategories(),
+      api.getPackages(),
+      api.getProjects()
+    ]);
+    categories.value = cats || [];
+    packages.value = pkgs || [];
+    projects.value = projs || [];
   } catch (err) {
-    console.error(err);
+    console.error('Failed to load metadata for filters:', err);
   }
   fetchComponents();
 });
@@ -433,6 +632,16 @@ onMounted(async () => {
 <style scoped>
 .components-table :deep(th) {
   background-color: var(--v-theme-surface-variant);
+  color: #0F172A !important;
+  font-weight: 700 !important;
   font-size: 0.82rem;
+}
+
+.row-shortage {
+  background-color: #FEF2F2 !important;
+}
+
+.row-shortage:hover {
+  background-color: #FEE2E2 !important;
 }
 </style>

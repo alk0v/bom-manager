@@ -24,6 +24,17 @@ router.get('/packages', async (req, res) => {
   }
 });
 
+// GET /api/storages
+router.get('/storages', async (req, res) => {
+  try {
+    const [rows] = await pool.query('SELECT ID, storage FROM i_storages ORDER BY storage ASC');
+    res.json(rows);
+  } catch (error) {
+    console.error('Error fetching storages:', error);
+    res.status(500).json({ error: 'Failed to fetch storages', details: error.message });
+  }
+});
+
 // GET /api/config - media server URLs and paths
 router.get('/config', async (req, res) => {
   try {

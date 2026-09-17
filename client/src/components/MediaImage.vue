@@ -5,7 +5,7 @@
       :src="resolvedUrl"
       :aspect-ratio="aspectRatio"
       :cover="cover"
-      class="rounded-lg fill-height w-100"
+      class="rounded-0 fill-height w-100"
       :class="customClass"
       @error="hasError = true"
     >
@@ -18,7 +18,7 @@
 
     <div
       v-if="!resolvedUrl || hasError"
-      class="d-flex flex-column align-center justify-center fill-height w-100 bg-slate-50 rounded-lg text-disabled pa-2 text-center"
+      class="d-flex flex-column align-center justify-center fill-height w-100 bg-slate-50 rounded-0 text-disabled pa-2 text-center"
       :style="{ minHeight: height || '120px' }"
     >
       <v-icon size="36" color="slate-400" class="mb-1">{{ fallbackIcon }}</v-icon>
