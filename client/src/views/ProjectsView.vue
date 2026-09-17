@@ -13,8 +13,17 @@
               <v-chip color="primary" variant="flat" size="small" class="font-weight-bold me-3">
                 {{ projects.length }} Projects
               </v-chip>
-              <v-chip color="secondary" variant="tonal" size="small" class="font-weight-bold">
+              <v-chip color="secondary" variant="tonal" size="small" class="font-weight-bold me-3">
                 {{ totalBomEntries }} Total BOM Items
+              </v-chip>
+              <v-chip
+                v-if="shortageProjectsCount > 0"
+                color="error"
+                variant="tonal"
+                size="small"
+                class="font-weight-bold"
+              >
+                {{ shortageProjectsCount }} with Shortages
               </v-chip>
             </div>
             <div class="text-body-2 text-disabled mt-1">
@@ -35,6 +44,17 @@
               rounded="lg"
               style="min-width: 280px;"
             />
+
+            <v-btn
+              color="primary"
+              variant="flat"
+              size="small"
+              class="font-weight-bold"
+              prepend-icon="mdi-plus"
+              @click="openNewProjectDialog"
+            >
+              New Project
+            </v-btn>
 
             <v-btn
               icon="mdi-refresh"
@@ -61,9 +81,9 @@
       >
         <v-card
           elevation="1"
-          class="rounded-0 border project-card h-100 d-flex flex-column"
+          class="rounded-0 border project-card h-100 d-flex flex-column cursor-pointer"
           hover
-          @click="openBomModal(p)"
+          @click="navigateToProject(p.id)"
         >
           <!-- Project Photo Cover (Fit without cropping) -->
           <div class="position-relative bg-slate-50 border-b d-flex align-center justify-center pa-2" style="height: 190px;">
@@ -74,17 +94,6 @@
               width="100%"
               :cover="false"
             />
-
-            <!-- Project ID Badge -->
-            <v-chip
-              size="x-small"
-              color="primary"
-              variant="flat"
-              class="position-absolute font-mono font-weight-bold"
-              style="top: 10px; right: 10px; z-index: 2;"
-            >
-              #{{ p.id }}
-            </v-chip>
           </div>
 
           <!-- Project Details Body -->
@@ -103,7 +112,7 @@
 
             <!-- Chips / Stats with clear spacing -->
             <div>
-              <div class="d-flex flex-wrap align-center mb-3" style="gap: 10px;">
+              <div class="d-flex flex-wrap align-center mb-3" style="gap: 8px;">
                 <v-chip size="x-small" color="primary" variant="tonal" class="font-weight-medium">
                   <v-icon start size="12">mdi-chip</v-icon>
                   {{ p.bomItemCount }} BOM parts
@@ -113,24 +122,56 @@
                   <v-icon start size="12">mdi-numeric</v-icon>
                   {{ p.totalQuantityNeeded }} pcs total
                 </v-chip>
+
+                <!-- Absent parts chip -->
+                <v-chip
+                  v-if="p.absentPartsCount > 0"
+                  size="x-small"
+                  color="error"
+                  variant="flat"
+                  class="font-weight-bold"
+                >
+                  <v-icon start size="12">mdi-alert-circle-outline</v-icon>
+                  {{ p.absentPartsCount }} absent
+                </v-chip>
+                <v-chip
+                  v-else-if="p.bomItemCount > 0"
+                  size="x-small"
+                  color="success"
+                  variant="tonal"
+                  class="font-weight-medium"
+                >
+                  <v-icon start size="12">mdi-check-circle-outline</v-icon>
+                  0 absent
+                </v-chip>
               </div>
 
               <!-- Action Buttons -->
               <div class="d-flex align-center justify-space-between pt-2 border-t">
-                <!-- External URL button -->
-                <v-btn
-                  v-if="p.url"
-                  :href="p.url"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  icon="mdi-open-in-new"
-                  size="small"
-                  variant="text"
-                  color="primary"
-                  title="Open external documentation link"
-                  @click.stop
-                />
-                <div v-else class="text-caption text-disabled">No link</div>
+                <div class="d-flex align-center gap-1">
+                  <!-- External URL button -->
+                  <v-btn
+                    v-if="p.url"
+                    :href="p.url"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    icon="mdi-open-in-new"
+                    size="small"
+                    variant="text"
+                    color="primary"
+                    title="Open external documentation link"
+                    @click.stop
+                  />
+                  <!-- Edit Project button -->
+                  <v-btn
+                    icon="mdi-pencil-outline"
+                    size="small"
+                    variant="text"
+                    color="slate-600"
+                    title="Edit project details"
+                    @click.stop="openEditProjectDialog(p)"
+                  />
+                </div>
 
                 <!-- Open BOM Button -->
                 <v-btn
@@ -211,6 +252,17 @@
               prepend-icon="mdi-open-in-new"
             >
               Project URL
+            </v-btn>
+
+            <!-- Edit Project Button -->
+            <v-btn
+              variant="outlined"
+              size="small"
+              prepend-icon="mdi-pencil-outline"
+              title="Edit project details"
+              @click="openEditProjectDialog(activeProject)"
+            >
+              Edit Project
             </v-btn>
 
             <!-- Dedicated Page Button -->
@@ -500,6 +552,13 @@
       </v-card>
     </v-dialog>
 
+    <!-- DIALOG: Create / Edit Project -->
+    <ProjectFormDialog
+      v-model="showProjectDialog"
+      :project="selectedProjectForEdit"
+      @saved="onProjectSaved"
+    />
+
     <!-- Notification Snackbar -->
     <v-snackbar v-model="snackbar.show" :color="snackbar.color" timeout="3000" location="bottom right">
       {{ snackbar.text }}
@@ -509,12 +568,15 @@
 
 <script setup>
 import { ref, computed, onMounted } from 'vue';
+import { useRouter } from 'vue-router';
 import api from '../services/api';
 import MediaImage from '../components/MediaImage.vue';
 import AddComponentDialog from '../components/AddComponentDialog.vue';
 import PackageLink from '../components/PackageLink.vue';
+import ProjectFormDialog from '../components/ProjectFormDialog.vue';
 
 // State
+const router = useRouter();
 const projects = ref([]);
 const activeProject = ref(null);
 const bomItems = ref([]);
@@ -529,8 +591,10 @@ const addingAllShortages = ref(false);
 const showBomDialog = ref(false);
 const showAddDialog = ref(false);
 const showEditDialog = ref(false);
+const showProjectDialog = ref(false);
 
 const editingBom = ref(null);
+const selectedProjectForEdit = ref(null);
 
 const snackbar = ref({
   show: false,
@@ -581,7 +645,33 @@ const shortageItems = computed(() => {
 
 const hasShortages = computed(() => shortageItems.value.length > 0);
 
+const shortageProjectsCount = computed(() => {
+  return projects.value.filter(p => (p.absentPartsCount || 0) > 0).length;
+});
+
 // Methods
+const navigateToProject = (id) => {
+  router.push(`/projects/${id}`);
+};
+
+const openNewProjectDialog = () => {
+  selectedProjectForEdit.value = null;
+  showProjectDialog.value = true;
+};
+
+const openEditProjectDialog = (project) => {
+  selectedProjectForEdit.value = { ...project };
+  showProjectDialog.value = true;
+};
+
+const onProjectSaved = async ({ project, isEdit }) => {
+  notify(isEdit ? `Project "${project.projectName}" updated!` : `Project "${project.projectName}" created!`);
+  await loadProjects();
+  if (activeProject.value && activeProject.value.id === project.id) {
+    activeProject.value = { ...activeProject.value, ...project };
+  }
+};
+
 const loadProjects = async () => {
   loadingProjects.value = true;
   try {

@@ -13,9 +13,12 @@ router.get('/', async (req, res) => {
         p.url,
         p.photoUrl,
         COUNT(b.id) AS bomItemCount,
-        COALESCE(SUM(b.quantity), 0) AS totalQuantityNeeded
+        COALESCE(SUM(b.quantity), 0) AS totalQuantityNeeded,
+        COUNT(CASE WHEN b.id IS NOT NULL AND COALESCE(c.qty, 0) < b.quantity THEN 1 END) AS absentPartsCount,
+        COALESCE(SUM(CASE WHEN b.id IS NOT NULL THEN GREATEST(0, b.quantity - COALESCE(c.qty, 0)) ELSE 0 END), 0) AS totalShortageQty
       FROM i_projects p
       LEFT JOIN t_bom b ON p.id = b.projectId
+      LEFT JOIN i_components c ON b.componentId = c.ID
       GROUP BY p.id, p.projectName, p.description, p.url, p.photoUrl
       ORDER BY p.projectName ASC
     `;
@@ -136,16 +139,26 @@ router.delete('/:id/bom/:bomId', async (req, res) => {
 // POST /api/projects - create new project
 router.post('/', async (req, res) => {
   const { projectName, description = '', url = '', photoUrl = '' } = req.body;
-  if (!projectName) {
+  if (!projectName || !projectName.trim()) {
     return res.status(400).json({ error: 'projectName is required' });
   }
 
   try {
     const [result] = await pool.query(
       'INSERT INTO i_projects (projectName, description, url, photoUrl) VALUES (?, ?, ?, ?)',
-      [projectName, description, url, photoUrl]
+      [projectName.trim(), description.trim(), url.trim(), photoUrl.trim()]
     );
-    res.status(201).json({ id: result.insertId, projectName, description, url, photoUrl });
+    res.status(201).json({
+      id: result.insertId,
+      projectName: projectName.trim(),
+      description: description.trim(),
+      url: url.trim(),
+      photoUrl: photoUrl.trim(),
+      bomItemCount: 0,
+      totalQuantityNeeded: 0,
+      absentPartsCount: 0,
+      totalShortageQty: 0
+    });
   } catch (error) {
     console.error('Error creating project:', error);
     res.status(500).json({ error: 'Failed to create project', details: error.message });
@@ -155,17 +168,34 @@ router.post('/', async (req, res) => {
 // PUT /api/projects/:id - update project
 router.put('/:id', async (req, res) => {
   const { projectName, description, url, photoUrl } = req.body;
+  if (!projectName || !projectName.trim()) {
+    return res.status(400).json({ error: 'projectName is required' });
+  }
+
   try {
     await pool.query(
       `UPDATE i_projects 
-       SET projectName = COALESCE(?, projectName), 
-           description = COALESCE(?, description), 
-           url = COALESCE(?, url), 
-           photoUrl = COALESCE(?, photoUrl) 
+       SET projectName = ?, 
+           description = ?, 
+           url = ?, 
+           photoUrl = ? 
        WHERE id = ?`,
-      [projectName, description, url, photoUrl, req.params.id]
+      [
+        projectName.trim(),
+        description !== undefined ? description.trim() : '',
+        url !== undefined ? url.trim() : '',
+        photoUrl !== undefined ? photoUrl.trim() : '',
+        req.params.id
+      ]
     );
-    res.json({ success: true, id: req.params.id });
+    res.json({
+      success: true,
+      id: Number(req.params.id),
+      projectName: projectName.trim(),
+      description: description !== undefined ? description.trim() : '',
+      url: url !== undefined ? url.trim() : '',
+      photoUrl: photoUrl !== undefined ? photoUrl.trim() : ''
+    });
   } catch (error) {
     console.error('Error updating project:', error);
     res.status(500).json({ error: 'Failed to update project', details: error.message });

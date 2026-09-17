@@ -95,6 +95,17 @@
 
       <v-spacer />
 
+      <v-btn
+        variant="tonal"
+        color="primary"
+        size="small"
+        prepend-icon="mdi-cloud-upload-outline"
+        class="me-3 font-weight-medium"
+        @click="showUploadDialog = true"
+      >
+        Upload Media
+      </v-btn>
+
       <v-chip
         size="small"
         color="primary"
@@ -115,6 +126,9 @@
 
     <!-- Global Package Details Modal -->
     <PackageDetailsDialog />
+
+    <!-- Global Media Upload Modal -->
+    <MediaUploadDialog v-model="showUploadDialog" />
   </v-app>
 </template>
 
@@ -124,6 +138,7 @@ import { useRoute } from 'vue-router';
 import api from './services/api';
 import { useComponentsStore } from './stores/components';
 import PackageDetailsDialog from './components/PackageDetailsDialog.vue';
+import MediaUploadDialog from './components/MediaUploadDialog.vue';
 
 const route = useRoute();
 const componentsStore = useComponentsStore();
@@ -131,6 +146,7 @@ const componentsStore = useComponentsStore();
 const drawer = ref(true);
 const rail = ref(false);
 const shoppingCount = ref(0);
+const showUploadDialog = ref(false);
 
 const currentTitle = computed(() => {
   if (route.path.startsWith('/projects')) {

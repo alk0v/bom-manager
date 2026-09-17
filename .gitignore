@@ -17,6 +17,11 @@ dist/
 build/
 client/dist/
 
+# Local media storage (keep placeholder)
+media/*
+!media/.gitkeep
+!media/**/.gitkeep
+
 # Logs
 logs/
 *.log

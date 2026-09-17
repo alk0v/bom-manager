@@ -8,7 +8,7 @@ const client = axios.create({
 });
 
 let mediaConfig = {
-  mediaBaseUrl: 'http://192.168.31.122:8085',
+  mediaBaseUrl: '/media',
   projectPhotoFolder: 'projects/',
   componentPhotoFolder: 'components/',
   packagePhotoFolder: 'packages/',
@@ -93,6 +93,21 @@ export const api = {
   addToShoppingList: (data) => client.post('/shopping-list', data).then(res => res.data),
   updateShoppingListItem: (id, data) => client.put(`/shopping-list/${id}`, data).then(res => res.data),
   deleteShoppingListItem: (id) => client.delete(`/shopping-list/${id}`).then(res => res.data),
+
+  // Media upload
+  uploadMedia: (folder, file, filename) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('folder', folder);
+    if (filename) {
+      formData.append('filename', filename);
+    }
+    return client.post('/media/upload', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data'
+      }
+    }).then(res => res.data);
+  }
 };
 
 export default api;

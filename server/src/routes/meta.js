@@ -44,8 +44,10 @@ router.get('/config', async (req, res) => {
       configMap[r.c_key] = r.c_value;
     });
 
-    // Fallbacks or overrides from environment
-    const mediaBaseUrl = process.env.MEDIA_BASE_URL || configMap.rootPath || 'http://192.168.31.122:8085';
+    // Fallbacks or overrides from environment: default to local serving '/media'
+    const mediaBaseUrl = process.env.MEDIA_BASE_URL !== undefined
+      ? process.env.MEDIA_BASE_URL
+      : '/media';
 
     res.json({
       mediaBaseUrl,
