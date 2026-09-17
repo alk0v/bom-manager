@@ -14,4 +14,8 @@ services:
       - DB_USER=bommanager_admin
       - DB_PASSWORD=Hm7dgJ5ggHKebPM8
       - DB_NAME=bommanager_dev
-      - MEDIA_BASE_URL=http://192.168.31.122:8085
+      - MEDIA_BASE_URL=/media
+      - MEDIA_DIR=/app/media
+    volumes:
+      - ./media:/app/media
+

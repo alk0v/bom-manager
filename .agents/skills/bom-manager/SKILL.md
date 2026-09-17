@@ -141,7 +141,7 @@ Locations and stock quantity per storage bin/box.
 ### Tech Stack
 - **Frontend**:
   - Vue 3 (Composition API, `<script setup>`)
-  - Vuetify 3 (Material Design 3 with rich custom dark/light theme, modern cards, data tables)
+  - Vuetify 3 (Material Design 3 with crisp light theme only, modern cards, data tables)
   - Pinia (State management)
   - Vue Router (Client-side routing)
   - Vite (Fast development and bundling)
@@ -155,6 +155,15 @@ Locations and stock quantity per storage bin/box.
     - `"dev": "concurrently -k -n \"api,web\" -c \"blue,green\" \"npm run dev --workspace=server\" \"npm run dev --workspace=client\""`
 - **Production Containerization**:
   - Multi-stage `Dockerfile` creating an optimized single container (Node.js API serving static client assets) or `docker-compose.yml` (Nginx + Node API).
+
+### STRICT DIRECTIVE: Pure Light Theme Only (No Dark Mode)
+- **Do NOT use dark mode or dark styles at all** across the entire project.
+- Never use `theme="dark"`, dark surfaces/backgrounds (`bg-slate-900`, `bg-slate-950`, `bg-black`), dark backdrops, or inverted dark dialogs.
+- Keep styling 100% consistent across all components, popups, lightboxes, and modals:
+  - Surface backgrounds: Crisp white (`bg-white`) and soft off-white (`bg-slate-50`).
+  - Borders: Clean subtle borders (`border`, `border-slate-200`).
+  - Typography: High contrast slate text (`text-slate-900`, `text-slate-700`, `text-slate-500`).
+  - Primary accents: Tech blue buttons and active states (`color="primary"`).
 
 ### Core UI Layout
 - Persistent `v-navigation-drawer` with brand logo and navigation items:

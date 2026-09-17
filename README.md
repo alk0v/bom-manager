@@ -68,10 +68,21 @@ Built with **Vue 3**, **Vuetify 3**, **Node.js/Express**, and **MySQL**.
    DB_USER=admin_ro
    DB_PASSWORD=your_password
    DB_NAME=retool_bommanager
-   MEDIA_BASE_URL=http://192.168.31.122:8085
+   MEDIA_BASE_URL=/media
    ```
 
-3. **Start Development Environment**:
+3. **Media Files Setup**:
+   Place your media files inside the `media/` folder in the project root:
+   ```
+   media/
+   ├── packages/      # Package drawings and pinout diagrams
+   ├── components/    # Component photos
+   ├── datasheets/    # Datasheet PDF documents
+   └── projects/      # Project photos (also supports 'projecs' folder alias)
+   ```
+   The server serves these static assets directly from `/media/`.
+
+4. **Start Development Environment**:
    ```bash
    npm run dev
    ```
@@ -83,7 +94,10 @@ Built with **Vue 3**, **Vuetify 3**, **Node.js/Express**, and **MySQL**.
 
 ## Production Deployment (Docker)
 
+Ensure your `media/` directory has been populated with your assets, then run:
+
 ```bash
 docker compose up -d --build
 ```
-The application will be available at `http://localhost:3001`.
+The application will be available at `http://localhost:3001`. The media assets in `./media` are mounted automatically into `/app/media` in the container.
+

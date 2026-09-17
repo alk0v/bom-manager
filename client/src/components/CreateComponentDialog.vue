@@ -271,32 +271,76 @@
           </v-row>
 
           <v-row dense class="mt-1">
-            <!-- Datasheet URL or filename -->
+            <!-- Datasheet URL or filename with Upload -->
             <v-col cols="12" sm="6">
-              <v-text-field
-                v-model="form.datasheetURL"
-                label="Datasheet (URL or PDF filename)"
-                placeholder="e.g. stm32f103.pdf or https://..."
-                density="compact"
-                variant="outlined"
-                rounded="lg"
-                prepend-inner-icon="mdi-file-pdf-box"
-                clearable
-              />
+              <div class="d-flex align-center gap-2">
+                <v-text-field
+                  v-model="form.datasheetURL"
+                  label="Datasheet (URL or PDF filename)"
+                  placeholder="e.g. stm32f103.pdf or https://..."
+                  density="compact"
+                  variant="outlined"
+                  rounded="lg"
+                  prepend-inner-icon="mdi-file-pdf-box"
+                  clearable
+                  class="flex-grow-1"
+                />
+                <v-btn
+                  variant="tonal"
+                  color="primary"
+                  size="small"
+                  height="40"
+                  prepend-icon="mdi-upload"
+                  :loading="uploadingDatasheet"
+                  @click="datasheetInputRef?.click()"
+                  title="Upload PDF to media/datasheets/"
+                >
+                  Upload
+                </v-btn>
+                <input
+                  ref="datasheetInputRef"
+                  type="file"
+                  accept=".pdf,application/pdf"
+                  style="display: none;"
+                  @change="handleDatasheetUpload"
+                />
+              </div>
             </v-col>
 
-            <!-- Photo URL or filename -->
+            <!-- Photo URL or filename with Upload -->
             <v-col cols="12" sm="6">
-              <v-text-field
-                v-model="form.photoURL"
-                label="Component Photo (URL or filename)"
-                placeholder="e.g. stm32.jpg or https://..."
-                density="compact"
-                variant="outlined"
-                rounded="lg"
-                prepend-inner-icon="mdi-camera-outline"
-                clearable
-              />
+              <div class="d-flex align-center gap-2">
+                <v-text-field
+                  v-model="form.photoURL"
+                  label="Component Photo (URL or filename)"
+                  placeholder="e.g. stm32.jpg or https://..."
+                  density="compact"
+                  variant="outlined"
+                  rounded="lg"
+                  prepend-inner-icon="mdi-camera-outline"
+                  clearable
+                  class="flex-grow-1"
+                />
+                <v-btn
+                  variant="tonal"
+                  color="primary"
+                  size="small"
+                  height="40"
+                  prepend-icon="mdi-upload"
+                  :loading="uploadingPhoto"
+                  @click="photoInputRef?.click()"
+                  title="Upload image to media/components/"
+                >
+                  Upload
+                </v-btn>
+                <input
+                  ref="photoInputRef"
+                  type="file"
+                  accept="image/*"
+                  style="display: none;"
+                  @change="handlePhotoUpload"
+                />
+              </div>
             </v-col>
           </v-row>
 
@@ -472,6 +516,45 @@ const storages = ref([]);
 const packageMountType = ref('all');
 const showDuplicateWarning = ref(false);
 const duplicateMatches = ref([]);
+
+const datasheetInputRef = ref(null);
+const photoInputRef = ref(null);
+const uploadingDatasheet = ref(false);
+const uploadingPhoto = ref(false);
+
+const handleDatasheetUpload = async (event) => {
+  const file = event.target?.files?.[0];
+  if (!file) return;
+
+  uploadingDatasheet.value = true;
+  try {
+    const res = await api.uploadMedia('datasheets', file);
+    form.datasheetURL = res.filename;
+  } catch (err) {
+    console.error('Failed to upload datasheet:', err);
+    alert('Failed to upload datasheet: ' + (err.response?.data?.error || err.message));
+  } finally {
+    uploadingDatasheet.value = false;
+    if (event.target) event.target.value = '';
+  }
+};
+
+const handlePhotoUpload = async (event) => {
+  const file = event.target?.files?.[0];
+  if (!file) return;
+
+  uploadingPhoto.value = true;
+  try {
+    const res = await api.uploadMedia('components', file);
+    form.photoURL = res.filename;
+  } catch (err) {
+    console.error('Failed to upload component photo:', err);
+    alert('Failed to upload photo: ' + (err.response?.data?.error || err.message));
+  } finally {
+    uploadingPhoto.value = false;
+    if (event.target) event.target.value = '';
+  }
+};
 
 const initialForm = () => ({
   component: '',

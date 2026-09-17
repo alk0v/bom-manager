@@ -11,11 +11,25 @@
       <!-- Brand Header -->
       <v-list-item
         prepend-icon="mdi-chip"
-        title="BOM Manager"
-        subtitle="Electronic Parts & Projects"
-        class="py-4 brand-item text-primary"
+        class="py-3 brand-item text-primary"
         @click="rail = !rail"
       >
+        <template #title>
+          <div class="d-flex align-center">
+            <span class="font-weight-bold">BOM Manager</span>
+            <v-chip
+              size="x-small"
+              color="primary"
+              variant="flat"
+              class="ms-2 font-mono font-weight-bold"
+            >
+              0.1.3
+            </v-chip>
+          </div>
+        </template>
+        <template #subtitle>
+          <span class="text-caption text-slate-500">Electronic Parts & Projects</span>
+        </template>
         <template #append>
           <v-btn
             variant="text"
@@ -64,7 +78,42 @@
             />
           </template>
         </v-list-item>
+
+        <v-list-item
+          prepend-icon="mdi-text-box-search-outline"
+          title="Release Notes"
+          value="release-notes"
+          to="/release-notes"
+          active-class="bg-primary text-white"
+          rounded="lg"
+        >
+          <template #append>
+            <v-chip
+              size="x-small"
+              color="primary"
+              variant="tonal"
+              class="font-mono font-weight-bold"
+            >
+              0.1.3
+            </v-chip>
+          </template>
+        </v-list-item>
       </v-list>
+
+      <template #append>
+        <div class="pa-3 border-t bg-slate-50" v-if="!rail">
+          <router-link
+            to="/release-notes"
+            class="text-decoration-none d-flex align-center justify-space-between text-caption text-slate-600"
+          >
+            <span class="d-flex align-center font-mono">
+              <v-icon size="14" color="primary" class="me-1">mdi-tag-outline</v-icon>
+              Version 0.1.3
+            </span>
+            <span class="text-primary font-weight-medium">Notes &rarr;</span>
+          </router-link>
+        </div>
+      </template>
     </v-navigation-drawer>
 
     <!-- Top App Bar -->
@@ -95,6 +144,17 @@
 
       <v-spacer />
 
+      <v-btn
+        variant="tonal"
+        color="primary"
+        size="small"
+        prepend-icon="mdi-cloud-upload-outline"
+        class="me-3 font-weight-medium"
+        @click="showUploadDialog = true"
+      >
+        Upload Media
+      </v-btn>
+
       <v-chip
         size="small"
         color="primary"
@@ -115,6 +175,9 @@
 
     <!-- Global Package Details Modal -->
     <PackageDetailsDialog />
+
+    <!-- Global Media Upload Modal -->
+    <MediaUploadDialog v-model="showUploadDialog" />
   </v-app>
 </template>
 
@@ -124,6 +187,7 @@ import { useRoute } from 'vue-router';
 import api from './services/api';
 import { useComponentsStore } from './stores/components';
 import PackageDetailsDialog from './components/PackageDetailsDialog.vue';
+import MediaUploadDialog from './components/MediaUploadDialog.vue';
 
 const route = useRoute();
 const componentsStore = useComponentsStore();
@@ -131,6 +195,7 @@ const componentsStore = useComponentsStore();
 const drawer = ref(true);
 const rail = ref(false);
 const shoppingCount = ref(0);
+const showUploadDialog = ref(false);
 
 const currentTitle = computed(() => {
   if (route.path.startsWith('/projects')) {
@@ -141,6 +206,8 @@ const currentTitle = computed(() => {
       return 'Components Catalog';
     case '/shopping-list':
       return 'Procurement Shopping List';
+    case '/release-notes':
+      return 'Release Notes (v0.1.3)';
     default:
       return 'BOM Manager';
   }
@@ -155,6 +222,8 @@ const currentIcon = computed(() => {
       return 'mdi-memory';
     case '/shopping-list':
       return 'mdi-cart-outline';
+    case '/release-notes':
+      return 'mdi-tag-outline';
     default:
       return 'mdi-chip';
   }
