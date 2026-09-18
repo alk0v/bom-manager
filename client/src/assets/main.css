@@ -1,0 +1,109 @@
+:root {
+  font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+  line-height: 1.5;
+  font-weight: 400;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background-color: #F1F5F9;
+  color: #0F172A;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Monospace font for Part Numbers, Markings & Values */
+.font-mono {
+  font-family: 'JetBrains Mono', monospace !important;
+}
+
+/* Squared corners for main containers and cards */
+.v-card,
+.v-card--variant-elevated,
+.project-card,
+.v-dialog > .v-overlay__content > .v-card,
+.media-image-wrapper {
+  border-radius: 0px !important;
+}
+
+/* Card Hover Animation */
+.project-card {
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
+  background: #FFFFFF !important;
+  border: 1px solid #E2E8F0 !important;
+}
+
+.project-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 24px -4px rgba(15, 23, 42, 0.08), 0 4px 8px -2px rgba(15, 23, 42, 0.04) !important;
+  border-color: #CBD5E1 !important;
+}
+
+/* Multiline text clamping */
+.line-clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.line-clamp-3 {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* Custom Scrollbars */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: #F1F5F9;
+}
+::-webkit-scrollbar-thumb {
+  background: #CBD5E1;
+  border-radius: 0px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #94A3B8;
+}
+
+/* Subtle transitions */
+.v-btn {
+  letter-spacing: 0.015em;
+  text-transform: none !important;
+  font-weight: 500 !important;
+}
+
+/* Color & Text Contrast Utilities */
+.text-slate-900 { color: #0F172A !important; }
+.text-slate-800 { color: #1E293B !important; }
+.text-slate-700 { color: #334155 !important; }
+.text-slate-600 { color: #475569 !important; }
+.text-slate-500 { color: #64748B !important; }
+.text-slate-400 { color: #94A3B8 !important; }
+.bg-slate-50 { background-color: #F8FAFC !important; }
+.bg-slate-100 { background-color: #F1F5F9 !important; }
+.bg-slate-200 { background-color: #E2E8F0 !important; }
+.border-slate-200 { border-color: #E2E8F0 !important; }
+
+/* Flex Gap Utilities */
+.gap-1 { gap: 4px !important; }
+.gap-2 { gap: 8px !important; }
+.gap-3 { gap: 12px !important; }
+.gap-4 { gap: 16px !important; }
+.gap-5 { gap: 20px !important; }
+.gap-6 { gap: 24px !important; }
+
+/* Suppress native browser number input spin buttons in custom steppers */
+input[type=number]::-webkit-outer-spin-button,
+input[type=number]::-webkit-inner-spin-button {
+  -webkit-appearance: none !important;
+  margin: 0 !important;
+}
+input[type=number] {
+  -moz-appearance: textfield !important;
+}
