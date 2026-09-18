@@ -1,5 +1,17 @@
 # Release Notes - BOM Manager
 
+## Version 0.2.3 (September 2026)
+
+### Summary
+Version 0.2.3 delivers complete hardware project deletion with dependency safeguards, streamlines new project onboarding with direct routing to the main window, and adds rapid BOM population shortcuts.
+
+### What's New
+- **Project Deletion with Dependency Safeguards**: Easily delete hardware projects directly from project cards, the BOM modal, the dedicated project page, or the project edit modal. A detailed confirmation dialog lists constituent BOM items and attached files, and atomically cascades removals across BOM and attachments without touching global catalog components.
+- **Immediate Navigation to New Projects**: Creating a new hardware project now instantly routes the user to its dedicated main project detail window (`/projects/:id`) instead of staying on the projects gallery grid.
+- **BOM Empty State Quick Actions**: New projects without components now display an enhanced empty state with prominent "Add Component" and "Import iBOM" action buttons to rapidly start building the Bill of Materials.
+
+---
+
 ## Version 0.2.2 (September 2026)
 
 ### Summary

@@ -46,6 +46,16 @@
         </v-btn>
 
         <v-btn
+          variant="outlined"
+          size="small"
+          color="error"
+          prepend-icon="mdi-delete-outline"
+          @click="showDeleteDialog = true"
+        >
+          Delete Project
+        </v-btn>
+
+        <v-btn
           icon="mdi-refresh"
           size="small"
           variant="outlined"
@@ -361,10 +371,54 @@
             </td>
           </tr>
 
-          <tr v-if="filteredBomItems.length === 0 && !loading">
+          <!-- Empty State: No components in project at all -->
+          <tr v-if="bomItems.length === 0 && !loading">
+            <td colspan="10" class="text-center py-10">
+              <v-icon size="48" color="primary" class="mb-3 opacity-60">mdi-package-variant-closed-plus</v-icon>
+              <div class="text-subtitle-1 font-weight-bold text-slate-800 mb-1">
+                This project has no BOM components yet
+              </div>
+              <div class="text-body-2 text-slate-500 mb-4" style="max-width: 480px; margin: 0 auto;">
+                Start building your Bill of Materials by adding electronic components from the catalog or importing an interactive BOM file.
+              </div>
+              <div class="d-flex align-center justify-center" style="gap: 12px;">
+                <v-btn
+                  color="primary"
+                  variant="flat"
+                  size="small"
+                  class="font-weight-bold"
+                  prepend-icon="mdi-plus"
+                  @click="openAddComponentDialog"
+                >
+                  Add Component
+                </v-btn>
+                <v-btn
+                  color="primary"
+                  variant="tonal"
+                  size="small"
+                  class="font-weight-bold"
+                  prepend-icon="mdi-database-import-outline"
+                  @click="openIbomDialog(null)"
+                >
+                  Import iBOM
+                </v-btn>
+              </div>
+            </td>
+          </tr>
+
+          <!-- Empty State: Filter yielded no matches -->
+          <tr v-else-if="filteredBomItems.length === 0 && !loading">
             <td colspan="10" class="text-center py-8 text-disabled">
               <v-icon size="40" class="mb-2">mdi-cube-off-outline</v-icon>
-              <div>No components found in this BOM.</div>
+              <div class="text-subtitle-2 text-slate-700 mb-2">No components match your search filter</div>
+              <v-btn
+                variant="outlined"
+                color="primary"
+                size="small"
+                @click="bomSearch = ''"
+              >
+                Clear Filter
+              </v-btn>
             </td>
           </tr>
 
@@ -463,6 +517,14 @@
       v-model="showProjectDialog"
       :project="project"
       @saved="onProjectSaved"
+      @delete="showDeleteDialog = true"
+    />
+
+    <!-- DIALOG: Delete Project -->
+    <DeleteProjectDialog
+      v-model="showDeleteDialog"
+      :project="projectForDelete"
+      @deleted="onProjectDeleted"
     />
 
     <!-- DIALOG: KiCAD iBOM Import & Mapping -->
@@ -508,13 +570,14 @@
 
 <script setup>
 import { ref, computed, onMounted } from 'vue';
-import { useRoute } from 'vue-router';
+import { useRoute, useRouter } from 'vue-router';
 import api, { resolveMediaUrl } from '../services/api';
 import MediaImage from '../components/MediaImage.vue';
 import MediaLightboxDialog from '../components/MediaLightboxDialog.vue';
 import AddComponentDialog from '../components/AddComponentDialog.vue';
 import PackageLink from '../components/PackageLink.vue';
 import ProjectFormDialog from '../components/ProjectFormDialog.vue';
+import DeleteProjectDialog from '../components/DeleteProjectDialog.vue';
 import ProjectFilesCard from '../components/ProjectFilesCard.vue';
 import IbomImportDialog from '../components/IbomImportDialog.vue';
 import ComponentDetailsDialog from '../components/ComponentDetailsDialog.vue';
@@ -522,6 +585,7 @@ import ProduceProjectDialog from '../components/ProduceProjectDialog.vue';
 import { formatCurrency, formatDate } from '../utils/formatters';
 
 const route = useRoute();
+const router = useRouter();
 const projectId = route.params.id;
 
 const project = ref(null);
@@ -534,6 +598,7 @@ const submittingBom = ref(false);
 const showAddDialog = ref(false);
 const showEditDialog = ref(false);
 const showProjectDialog = ref(false);
+const showDeleteDialog = ref(false);
 const showIbomDialog = ref(false);
 const showProduceDialog = ref(false);
 const showDetailsDialog = ref(false);
@@ -599,6 +664,22 @@ const lightboxResolvedUrl = computed(() => {
 });
 
 const editingBom = ref(null);
+
+const projectForDelete = computed(() => {
+  if (!project.value) return null;
+  return {
+    ...project.value,
+    bomItemCount: bomItems.value.length,
+    filesCount: projectFilesList.value.length
+  };
+});
+
+function onProjectDeleted(deletedProj) {
+  showDeleteDialog.value = false;
+  showProjectDialog.value = false;
+  sessionStorage.setItem('flashMessage', `Project "${deletedProj.projectName}" deleted successfully!`);
+  router.push('/projects');
+}
 
 const onProjectSaved = async ({ project: updatedProject }) => {
   notify(`Project "${updatedProject.projectName}" updated!`);

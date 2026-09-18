@@ -167,15 +167,28 @@
 
       <!-- Footer Actions -->
       <v-card-actions class="pa-4 bg-slate-50 d-flex align-center justify-space-between">
-        <v-btn
-          variant="outlined"
-          color="slate-600"
-          size="small"
-          @click="close"
-          :disabled="submitting"
-        >
-          Cancel
-        </v-btn>
+        <div class="d-flex align-center gap-2">
+          <v-btn
+            variant="outlined"
+            color="slate-600"
+            size="small"
+            @click="close"
+            :disabled="submitting"
+          >
+            Cancel
+          </v-btn>
+          <v-btn
+            v-if="isEdit"
+            variant="text"
+            color="error"
+            size="small"
+            prepend-icon="mdi-delete-outline"
+            :disabled="submitting"
+            @click="handleDelete"
+          >
+            Delete
+          </v-btn>
+        </div>
 
         <v-btn
           color="primary"
@@ -209,7 +222,7 @@ const props = defineProps({
   }
 });
 
-const emit = defineEmits(['update:modelValue', 'saved']);
+const emit = defineEmits(['update:modelValue', 'saved', 'delete']);
 
 const formRef = ref(null);
 const fileInputRef = ref(null);
@@ -276,6 +289,11 @@ watch(
 
 const close = () => {
   emit('update:modelValue', false);
+};
+
+const handleDelete = () => {
+  close();
+  emit('delete', props.project);
 };
 
 const handleSubmit = async () => {

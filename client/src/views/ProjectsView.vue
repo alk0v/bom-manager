@@ -229,6 +229,15 @@
                     title="Produce project units and deduct parts"
                     @click.stop="openProduceDialog(p)"
                   />
+                  <!-- Delete Project button -->
+                  <v-btn
+                    icon="mdi-delete-outline"
+                    size="small"
+                    variant="text"
+                    color="error"
+                    title="Delete project"
+                    @click.stop="openDeleteProjectDialog(p)"
+                  />
                 </div>
 
                 <!-- Open BOM Button -->
@@ -346,6 +355,18 @@
               title="Open dedicated page for this project"
             >
               Full Page
+            </v-btn>
+
+            <!-- Delete Project Button -->
+            <v-btn
+              variant="outlined"
+              size="small"
+              color="error"
+              prepend-icon="mdi-delete-outline"
+              title="Delete project"
+              @click="openDeleteProjectDialog(activeProject)"
+            >
+              Delete
             </v-btn>
 
             <!-- Close Button -->
@@ -693,6 +714,14 @@
       v-model="showProjectDialog"
       :project="selectedProjectForEdit"
       @saved="onProjectSaved"
+      @delete="openDeleteProjectDialog"
+    />
+
+    <!-- DIALOG: Delete Project -->
+    <DeleteProjectDialog
+      v-model="showDeleteDialog"
+      :project="selectedProjectForDelete"
+      @deleted="onProjectDeleted"
     />
 
     <!-- DIALOG: Produce Project -->
@@ -728,6 +757,7 @@ import AddComponentDialog from '../components/AddComponentDialog.vue';
 import PackageLink from '../components/PackageLink.vue';
 import ProjectFormDialog from '../components/ProjectFormDialog.vue';
 import ProduceProjectDialog from '../components/ProduceProjectDialog.vue';
+import DeleteProjectDialog from '../components/DeleteProjectDialog.vue';
 import { formatCurrency, formatDate } from '../utils/formatters';
 
 // State
@@ -765,6 +795,8 @@ const showAddDialog = ref(false);
 const showEditDialog = ref(false);
 const showProjectDialog = ref(false);
 const showProduceDialog = ref(false);
+const showDeleteDialog = ref(false);
+const selectedProjectForDelete = ref(null);
 
 const editingBom = ref(null);
 const selectedProjectForEdit = ref(null);
@@ -859,6 +891,23 @@ const openProduceDialog = (project) => {
   showProduceDialog.value = true;
 };
 
+const openDeleteProjectDialog = (project) => {
+  selectedProjectForDelete.value = project;
+  showDeleteDialog.value = true;
+};
+
+const onProjectDeleted = async (deletedProject) => {
+  showDeleteDialog.value = false;
+  showProjectDialog.value = false;
+  selectedProjectForDelete.value = null;
+  notify(`Project "${deletedProject.projectName}" deleted successfully!`);
+  if (showBomDialog.value && activeProject.value?.id === deletedProject.id) {
+    showBomDialog.value = false;
+    activeProject.value = null;
+  }
+  await loadProjects();
+};
+
 const onProduced = async () => {
   await loadProjects();
   if (showBomDialog.value && activeProject.value) {
@@ -876,6 +925,10 @@ const onProduced = async () => {
 
 const onProjectSaved = async ({ project, isEdit }) => {
   notify(isEdit ? `Project "${project.projectName}" updated!` : `Project "${project.projectName}" created!`);
+  if (!isEdit && project?.id) {
+    router.push(`/projects/${project.id}`);
+    return;
+  }
   await loadProjects();
   if (activeProject.value && activeProject.value.id === project.id) {
     activeProject.value = { ...activeProject.value, ...project };
@@ -989,6 +1042,11 @@ const addAllShortagesToCart = async () => {
 };
 
 onMounted(() => {
+  const flash = sessionStorage.getItem('flashMessage');
+  if (flash) {
+    sessionStorage.removeItem('flashMessage');
+    notify(flash);
+  }
   loadProjects();
 });
 </script>

@@ -72,6 +72,7 @@ export const api = {
   deleteBomItem: (projectId, bomId) => client.delete(`/projects/${projectId}/bom/${bomId}`).then(res => res.data),
   createProject: (data) => client.post('/projects', data).then(res => res.data),
   updateProject: (id, data) => client.put(`/projects/${id}`, data).then(res => res.data),
+  deleteProject: (id) => client.delete(`/projects/${id}`).then(res => res.data),
   produceProject: (id, data) => client.post(`/projects/${id}/produce`, data).then(res => res.data),
 
   // Project Files & Attachments

@@ -90,9 +90,28 @@ import { computed } from 'vue';
 
 const releases = [
   {
-    version: '0.2.2',
+    version: '0.2.3',
     date: '2026-09-18',
     isCurrent: true,
+    summary: 'Version 0.2.3 delivers complete project deletion with dependency safeguards, streamlines new project onboarding with direct routing to the main window, and adds rapid BOM population shortcuts.',
+    features: [
+      {
+        title: 'Project Deletion with Dependency Safeguards',
+        description: 'Delete hardware projects directly from project cards, the BOM modal, project detail page, or edit form. Includes a comprehensive confirmation modal showing constituent BOM parts and file counts, and atomically cascades deletions across BOM items and attachment files.'
+      },
+      {
+        title: 'Immediate Navigation to New Projects',
+        description: 'Creating a new hardware project now instantly opens its dedicated main detail page instead of remaining on the projects gallery grid.'
+      },
+      {
+        title: 'BOM Empty State Quick Actions',
+        description: 'New projects feature prominent "Add Component" and "Import iBOM" buttons in the Bill of Materials table empty state to rapidly start populating components.'
+      }
+    ]
+  },
+  {
+    version: '0.2.2',
+    date: '2026-09-18',
     summary: 'Version 0.2.2 delivers catalog management for packages and categories, rapid in-place creation during component cataloging, safe component deletion with project Bill of Materials dependencies warnings, and responsive layout improvements to the Projects gallery.',
     features: [
       {
@@ -234,7 +253,7 @@ const releases = [
   }
 ];
 
-const currentVersion = computed(() => releases.find(r => r.isCurrent)?.version || '0.2.1');
+const currentVersion = computed(() => releases.find(r => r.isCurrent)?.version || '0.2.3');
 </script>
 
 <style scoped>

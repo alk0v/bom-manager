@@ -273,6 +273,75 @@ router.put('/:id', async (req, res) => {
   }
 });
 
+// DELETE /api/projects/:id - delete project and its cascade dependencies
+router.delete('/:id', async (req, res) => {
+  const projectId = parseInt(req.params.id, 10);
+  if (isNaN(projectId)) {
+    return res.status(400).json({ error: 'Invalid project ID' });
+  }
+
+  try {
+    // 1. Check if project exists
+    const [projs] = await pool.query('SELECT id, projectName FROM i_projects WHERE id = ?', [projectId]);
+    if (projs.length === 0) {
+      return res.status(404).json({ error: 'Project not found' });
+    }
+    const project = projs[0];
+
+    // 2. Perform cascade deletion inside transaction
+    const conn = await pool.getConnection();
+    try {
+      await conn.beginTransaction();
+
+      // Delete production items for any production runs of this project
+      await conn.query(`
+        DELETE pi FROM t_production_items pi
+        INNER JOIN t_production_runs pr ON pi.runId = pr.id
+        WHERE pr.projectId = ?
+      `, [projectId]);
+
+      // Delete production runs
+      await conn.query('DELETE FROM t_production_runs WHERE projectId = ?', [projectId]);
+
+      // Delete BOM records
+      await conn.query('DELETE FROM t_bom WHERE projectId = ?', [projectId]);
+
+      // Delete project files metadata from database
+      await conn.query('DELETE FROM t_project_files WHERE projectId = ?', [projectId]);
+
+      // Delete project record
+      await conn.query('DELETE FROM i_projects WHERE id = ?', [projectId]);
+
+      await conn.commit();
+    } catch (err) {
+      await conn.rollback();
+      throw err;
+    } finally {
+      conn.release();
+    }
+
+    // 3. Clean up physical attachment files on disk if directory exists
+    try {
+      const attachDir = path.join(mediaDir, 'projects', 'attachments', String(projectId));
+      if (fs.existsSync(attachDir)) {
+        await fs.promises.rm(attachDir, { recursive: true, force: true });
+      }
+    } catch (fsErr) {
+      console.warn(`[Warning] Could not clean attachment directory for project ${projectId}:`, fsErr.message);
+    }
+
+    res.json({
+      success: true,
+      id: projectId,
+      projectName: project.projectName,
+      message: `Project "${project.projectName}" deleted successfully`
+    });
+  } catch (error) {
+    console.error('Error deleting project:', error);
+    res.status(500).json({ error: 'Failed to delete project', details: error.message });
+  }
+});
+
 // POST /api/projects/:id/bom/parse-ibom - Parse iBOM file and provide DB match candidates
 router.post('/:id/bom/parse-ibom', (req, res) => {
   upload.single('file')(req, res, async (err) => {

@@ -23,7 +23,7 @@
               variant="flat"
               class="ms-2 font-mono font-weight-bold"
             >
-              0.2.2
+              0.2.3
             </v-chip>
           </div>
         </template>
@@ -103,7 +103,7 @@
               variant="tonal"
               class="font-mono font-weight-bold"
             >
-              0.2.2
+              0.2.3
             </v-chip>
           </template>
         </v-list-item>
@@ -117,7 +117,7 @@
           >
             <span class="d-flex align-center font-mono">
               <v-icon size="14" color="primary" class="me-1">mdi-tag-outline</v-icon>
-              Version 0.2.2
+              Version 0.2.3
             </span>
             <span class="text-primary font-weight-medium">Notes &rarr;</span>
           </router-link>
@@ -207,7 +207,7 @@ const currentTitle = computed(() => {
     case '/reports':
       return 'Production & Inventory Reports';
     case '/release-notes':
-      return 'Release Notes (v0.2.2)';
+      return 'Release Notes (v0.2.3)';
     default:
       return 'BOM Manager';
   }
