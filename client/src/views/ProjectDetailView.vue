@@ -25,6 +25,17 @@
         </v-btn>
 
         <v-btn
+          variant="flat"
+          size="small"
+          color="primary"
+          class="font-weight-bold"
+          prepend-icon="mdi-factory"
+          @click="showProduceDialog = true"
+        >
+          Produce
+        </v-btn>
+
+        <v-btn
           variant="outlined"
           size="small"
           color="primary"
@@ -86,6 +97,19 @@
                 class="font-weight-bold"
               >
                 {{ bomHealth.inStockCount }} / {{ bomItems.length }} Parts in Stock
+              </v-chip>
+              <v-chip
+                size="small"
+                color="primary"
+                variant="tonal"
+                class="font-mono font-weight-bold"
+                :title="`${projectCost.pricedCount} of ${bomItems.length} parts priced in database`"
+              >
+                <v-icon start size="14">mdi-currency-usd</v-icon>
+                Est. BOM Cost: {{ formatCurrency(projectCost.totalCost) }}
+                <span class="ms-1 text-caption opacity-80" v-if="bomItems.length > 0">
+                  ({{ projectCost.pricedCount }}/{{ bomItems.length }})
+                </span>
               </v-chip>
             </div>
 
@@ -158,7 +182,7 @@
               class="font-weight-bold"
               @click="openAddComponentDialog"
             >
-              Add Component to BOM
+              Add Component
             </v-btn>
           </div>
         </div>
@@ -193,6 +217,8 @@
             <th class="text-left font-weight-bold">Package</th>
             <th class="text-center font-weight-bold">Required</th>
             <th class="text-center font-weight-bold">In Stock</th>
+            <th class="text-right font-weight-bold">Unit Price</th>
+            <th class="text-right font-weight-bold">Total Cost</th>
             <th class="text-left font-weight-bold">Designators / Comment</th>
             <th class="text-right font-weight-bold" style="width: 140px;">Actions</th>
           </tr>
@@ -267,6 +293,26 @@
               </span>
             </td>
 
+            <!-- Unit Price -->
+            <td class="text-right font-mono text-body-2">
+              <span
+                v-if="item.unitPrice != null"
+                class="text-slate-800"
+                :title="item.latestOrderDate ? `Purchased: ${formatDate(item.latestOrderDate)}` : ''"
+              >
+                {{ formatCurrency(item.unitPrice) }}
+              </span>
+              <span v-else class="text-disabled text-caption italic">—</span>
+            </td>
+
+            <!-- Total Item Cost -->
+            <td class="text-right font-mono text-body-2 font-weight-bold">
+              <span v-if="item.totalItemCost != null" class="text-primary">
+                {{ formatCurrency(item.totalItemCost) }}
+              </span>
+              <span v-else class="text-disabled text-caption italic">—</span>
+            </td>
+
             <!-- Comment -->
             <td>
               <span v-if="item.comment" class="text-body-2 font-mono text-slate-700">
@@ -315,18 +361,38 @@
           </tr>
 
           <tr v-if="filteredBomItems.length === 0 && !loading">
-            <td colspan="8" class="text-center py-8 text-disabled">
+            <td colspan="10" class="text-center py-8 text-disabled">
               <v-icon size="40" class="mb-2">mdi-cube-off-outline</v-icon>
               <div>No components found in this BOM.</div>
             </td>
           </tr>
 
           <tr v-if="loading">
-            <td colspan="8" class="text-center py-8">
+            <td colspan="10" class="text-center py-8">
               <v-progress-circular indeterminate color="primary" />
             </td>
           </tr>
         </tbody>
+
+        <!-- BOM Table Footer with Totals -->
+        <tfoot v-if="filteredBomItems.length > 0">
+          <tr class="bg-slate-50 font-weight-bold border-t">
+            <td colspan="4" class="py-3 px-4 text-subtitle-2 font-weight-bold text-slate-800">
+              Total Estimated BOM Cost
+              <span class="text-caption text-disabled ms-2 font-normal">
+                ({{ projectCost.pricedCount }} of {{ bomItems.length }} parts priced)
+              </span>
+            </td>
+            <td class="text-center font-mono font-weight-bold py-3 text-body-2">
+              {{ bomItems.reduce((acc, i) => acc + (Number(i.requiredQuantity) || 0), 0) }}
+            </td>
+            <td colspan="2"></td>
+            <td class="text-right font-mono font-weight-bold text-subtitle-2 text-primary py-3">
+              {{ formatCurrency(projectCost.totalCost) }}
+            </td>
+            <td colspan="2"></td>
+          </tr>
+        </tfoot>
       </v-table>
     </v-card>
 
@@ -487,13 +553,21 @@
       </v-card>
     </v-dialog>
 
+    <!-- DIALOG: Produce Project -->
+    <ProduceProjectDialog
+      v-model="showProduceDialog"
+      :project="project"
+      @produced="onProduced"
+      @notify="notify"
+    />
+
     <!-- Component Details Dialog -->
     <ComponentDetailsDialog
       v-model="showDetailsDialog"
       :component="selectedDetailComponent"
-      :component-id="selectedDetailComponent?.componentId || selectedDetailComponent?.ID"
     />
 
+    <!-- Notification Snackbar -->
     <v-snackbar v-model="snackbar.show" :color="snackbar.color" timeout="3000" location="bottom right">
       {{ snackbar.text }}
     </v-snackbar>
@@ -511,6 +585,8 @@ import ProjectFormDialog from '../components/ProjectFormDialog.vue';
 import ProjectFilesCard from '../components/ProjectFilesCard.vue';
 import IbomImportDialog from '../components/IbomImportDialog.vue';
 import ComponentDetailsDialog from '../components/ComponentDetailsDialog.vue';
+import ProduceProjectDialog from '../components/ProduceProjectDialog.vue';
+import { formatCurrency, formatDate } from '../utils/formatters';
 
 const route = useRoute();
 const projectId = route.params.id;
@@ -526,6 +602,7 @@ const showAddDialog = ref(false);
 const showEditDialog = ref(false);
 const showProjectDialog = ref(false);
 const showIbomDialog = ref(false);
+const showProduceDialog = ref(false);
 const showDetailsDialog = ref(false);
 const selectedDetailComponent = ref(null);
 const selectedIbomFile = ref(null);
@@ -560,6 +637,10 @@ async function onBomImported(result) {
   if (filesCardRef.value) {
     filesCardRef.value.loadFiles();
   }
+}
+
+async function onProduced() {
+  await loadData();
 }
 
 const lightbox = ref({
@@ -622,6 +703,22 @@ const bomHealth = computed(() => {
 
 const shortageItems = computed(() => {
   return bomItems.value.filter(i => !i.isStockSufficient);
+});
+
+const projectCost = computed(() => {
+  let totalCost = 0;
+  let pricedCount = 0;
+  for (const item of bomItems.value) {
+    if (item.totalItemCost != null) {
+      totalCost += Number(item.totalItemCost);
+      pricedCount++;
+    }
+  }
+  return {
+    totalCost: Math.round(totalCost * 100) / 100,
+    pricedCount,
+    unpricedCount: bomItems.value.length - pricedCount
+  };
 });
 
 const hasShortages = computed(() => shortageItems.value.length > 0);

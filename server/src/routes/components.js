@@ -15,6 +15,7 @@ router.get('/', async (req, res) => {
       isSmd,
       minPins,
       maxPins,
+      stockStatus,
       limit = 100,
       offset = 0
     } = req.query;
@@ -102,6 +103,17 @@ router.get('/', async (req, res) => {
       }
     }
 
+    // Stock status filter:
+    if (stockStatus === 'absent') {
+      whereClauses.push('COALESCE(c.qty, 0) <= 0');
+    } else if (stockStatus === 'low') {
+      whereClauses.push('c.minQty > 0 AND COALESCE(c.qty, 0) <= c.minQty AND COALESCE(c.qty, 0) > 0');
+    } else if (stockStatus === 'absent_or_low') {
+      whereClauses.push('(COALESCE(c.qty, 0) <= 0 OR (c.minQty > 0 AND COALESCE(c.qty, 0) <= c.minQty))');
+    } else if (stockStatus === 'in_stock') {
+      whereClauses.push('COALESCE(c.qty, 0) > 0');
+    }
+
     const whereSql = whereClauses.length > 0 ? `WHERE ${whereClauses.join(' AND ')}` : '';
 
     const countQuery = `
@@ -125,6 +137,7 @@ router.get('/', async (req, res) => {
         c.datasheetURL,
         c.photoURL,
         c.qty,
+        COALESCE(c.minQty, 0) AS minQty,
         cat.category,
         pkg.package,
         pkg.pinQuantity,
@@ -231,6 +244,7 @@ router.get('/:id', async (req, res) => {
         c.datasheetURL,
         c.photoURL,
         c.qty,
+        COALESCE(c.minQty, 0) AS minQty,
         cat.category,
         pkg.package,
         pkg.pinQuantity,
@@ -258,6 +272,82 @@ router.get('/:id', async (req, res) => {
 
     component.warehouse = warehouseRows;
 
+    // Fetch purchase orders history
+    const [orderRows] = await pool.query(`
+      SELECT 
+        id,
+        componentId,
+        price,
+        qty,
+        date,
+        url,
+        details
+      FROM t_orders
+      WHERE componentId = ?
+      ORDER BY date DESC, id DESC
+    `, [req.params.id]);
+
+    let totalQtyPurchased = 0;
+    let totalSpent = 0;
+    const orders = orderRows.map(o => {
+      const unitPrice = o.price != null ? Number(o.price) : 0;
+      const orderQty = o.qty != null ? Number(o.qty) : 0;
+      const orderTotal = Math.round(unitPrice * orderQty * 10000) / 10000;
+      totalQtyPurchased += orderQty;
+      totalSpent += (unitPrice * orderQty);
+      return {
+        id: o.id,
+        componentId: o.componentId,
+        price: unitPrice,
+        qty: orderQty,
+        totalCost: Math.round(orderTotal * 100) / 100,
+        date: o.date,
+        url: o.url || '',
+        details: o.details || ''
+      };
+    });
+
+    const latestOrder = orders.length > 0 ? orders[0] : null;
+    const latestPrice = latestOrder ? latestOrder.price : null;
+    const avgPrice = totalQtyPurchased > 0 
+      ? Math.round((totalSpent / totalQtyPurchased) * 10000) / 10000 
+      : (latestPrice ?? null);
+
+    component.latestPrice = latestPrice;
+    component.pricing = {
+      latestPrice,
+      latestOrderDate: latestOrder?.date || null,
+      latestOrderUrl: latestOrder?.url || null,
+      latestOrderDetails: latestOrder?.details || null,
+      avgPrice,
+      totalQuantityPurchased: totalQtyPurchased,
+      totalSpent: Math.round(totalSpent * 100) / 100,
+      orderCount: orders.length,
+      orders
+    };
+
+    // Fetch projects where component is used in BOM
+    const [projects] = await pool.query(`
+      SELECT 
+        p.id,
+        p.projectName,
+        p.description,
+        p.photoUrl,
+        p.url,
+        SUM(b.quantity) AS requiredQuantity,
+        GROUP_CONCAT(NULLIF(TRIM(b.comment), '') SEPARATOR ', ') AS designators
+      FROM t_bom b
+      INNER JOIN i_projects p ON b.projectId = p.id
+      WHERE b.componentId = ?
+      GROUP BY p.id, p.projectName, p.description, p.photoUrl, p.url
+      ORDER BY p.projectName ASC
+    `, [req.params.id]);
+
+    component.projects = projects.map(p => ({
+      ...p,
+      requiredQuantity: Number(p.requiredQuantity) || 1
+    }));
+
     res.json(component);
   } catch (error) {
     console.error('Error fetching component:', error);
@@ -277,6 +367,7 @@ router.post('/', async (req, res) => {
     datasheetURL = null,
     photoURL = null,
     qty = 0,
+    minQty = 0,
     storageId = null
   } = req.body;
 
@@ -285,14 +376,15 @@ router.post('/', async (req, res) => {
   }
 
   const parsedQty = parseInt(qty, 10) || 0;
+  const parsedMinQty = minQty !== undefined && minQty !== null ? (parseInt(minQty, 10) || 0) : 0;
   const parsedCategoryId = category_id ? parseInt(category_id, 10) : null;
   const parsedPackageId = package_id ? parseInt(package_id, 10) : 28;
 
   try {
     const [result] = await pool.query(
       `INSERT INTO i_components 
-       (component, category_id, package_id, description, shortDescription, marking, datasheetURL, photoURL, qty)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+       (component, category_id, package_id, description, shortDescription, marking, datasheetURL, photoURL, qty, minQty)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         component.trim(),
         parsedCategoryId,
@@ -302,7 +394,8 @@ router.post('/', async (req, res) => {
         marking ? marking.trim() : '',
         datasheetURL ? datasheetURL.trim() : null,
         photoURL ? photoURL.trim() : null,
-        parsedQty
+        parsedQty,
+        parsedMinQty
       ]
     );
 
@@ -329,7 +422,8 @@ router.post('/', async (req, res) => {
       marking,
       datasheetURL,
       photoURL,
-      qty: parsedQty
+      qty: parsedQty,
+      minQty: parsedMinQty
     });
   } catch (error) {
     console.error('Error creating component:', error);
@@ -348,10 +442,12 @@ router.put('/:id', async (req, res) => {
     marking,
     datasheetURL,
     photoURL,
-    qty
+    qty,
+    minQty
   } = req.body;
 
   try {
+    const parsedMinQty = minQty !== undefined && minQty !== null ? parseInt(minQty, 10) : null;
     await pool.query(
       `UPDATE i_components SET
         component = COALESCE(?, component),
@@ -362,14 +458,166 @@ router.put('/:id', async (req, res) => {
         marking = COALESCE(?, marking),
         datasheetURL = COALESCE(?, datasheetURL),
         photoURL = COALESCE(?, photoURL),
-        qty = COALESCE(?, qty)
+        qty = COALESCE(?, qty),
+        minQty = COALESCE(?, minQty)
        WHERE ID = ?`,
-      [component, category_id, package_id, description, shortDescription, marking, datasheetURL, photoURL, qty, req.params.id]
+      [component, category_id, package_id, description, shortDescription, marking, datasheetURL, photoURL, qty, parsedMinQty, req.params.id]
     );
-    res.json({ success: true, id: req.params.id });
+    res.json({ success: true, id: req.params.id, minQty: parsedMinQty });
   } catch (error) {
     console.error('Error updating component:', error);
     res.status(500).json({ error: 'Failed to update component', details: error.message });
+  }
+});
+
+// PATCH /api/components/:id/min-qty - quickly update minimal acceptable quantity
+router.patch('/:id/min-qty', async (req, res) => {
+  const { minQty } = req.body;
+  const parsed = parseInt(minQty, 10);
+  if (isNaN(parsed) || parsed < 0) {
+    return res.status(400).json({ error: 'minQty must be a non-negative integer' });
+  }
+  try {
+    await pool.query('UPDATE i_components SET minQty = ? WHERE ID = ?', [parsed, req.params.id]);
+    res.json({ success: true, id: req.params.id, minQty: parsed });
+  } catch (error) {
+    console.error('Error updating component minQty:', error);
+    res.status(500).json({ error: 'Failed to update minimal quantity', details: error.message });
+  }
+});
+
+// PATCH /api/components/:id/qty - quickly update in stock quantity
+router.patch('/:id/qty', async (req, res) => {
+  const { qty } = req.body;
+  const parsed = parseInt(qty, 10);
+  if (isNaN(parsed) || parsed < 0) {
+    return res.status(400).json({ error: 'qty must be a non-negative integer' });
+  }
+  try {
+    await pool.query('UPDATE i_components SET qty = ? WHERE ID = ?', [parsed, req.params.id]);
+    res.json({ success: true, id: req.params.id, qty: parsed });
+  } catch (error) {
+    console.error('Error updating component qty:', error);
+    res.status(500).json({ error: 'Failed to update stock quantity', details: error.message });
+  }
+});
+
+// POST /api/components/:id/purchase - record purchase order directly for a component
+router.post('/:id/purchase', async (req, res) => {
+  const componentId = req.params.id;
+  const {
+    qty,
+    price,
+    date = new Date().toISOString().slice(0, 10),
+    url = '',
+    details = '',
+    addToStock = true,
+    storageId = null
+  } = req.body;
+
+  const purchaseQty = parseInt(qty, 10);
+  if (isNaN(purchaseQty) || purchaseQty <= 0) {
+    return res.status(400).json({ error: 'Quantity must be greater than 0' });
+  }
+
+  const unitPrice = parseFloat(price) || 0;
+
+  const conn = await pool.getConnection();
+  try {
+    await conn.beginTransaction();
+
+    // 1. Fetch component
+    const [compRows] = await conn.query(
+      'SELECT ID, component, qty AS currentStock FROM i_components WHERE ID = ?',
+      [componentId]
+    );
+
+    if (compRows.length === 0) {
+      await conn.rollback();
+      return res.status(404).json({ error: 'Component not found' });
+    }
+
+    const component = compRows[0];
+
+    // 2. Insert into t_orders
+    const [orderResult] = await conn.query(
+      `INSERT INTO t_orders (componentId, price, qty, date, url, details) 
+       VALUES (?, ?, ?, ?, ?, ?)`,
+      [
+        componentId,
+        unitPrice,
+        purchaseQty,
+        date,
+        url ? url.trim() : '',
+        details ? details.trim() : ''
+      ]
+    );
+    const orderId = orderResult.insertId;
+
+    // 3. Update stock in i_components (if requested)
+    let newStock = component.currentStock || 0;
+    if (addToStock) {
+      await conn.query(
+        'UPDATE i_components SET qty = COALESCE(qty, 0) + ? WHERE ID = ?',
+        [purchaseQty, componentId]
+      );
+      newStock += purchaseQty;
+
+      // Handle warehouse allocation if storageId provided
+      if (storageId !== null && storageId !== undefined) {
+        const parsedStorageId = parseInt(storageId, 10);
+        if (!isNaN(parsedStorageId)) {
+          const [whRows] = await conn.query(
+            'SELECT id, quantity FROM t_warehouse WHERE componentId = ? AND storageId = ?',
+            [componentId, parsedStorageId]
+          );
+          if (whRows.length > 0) {
+            await conn.query(
+              'UPDATE t_warehouse SET quantity = quantity + ? WHERE id = ?',
+              [purchaseQty, whRows[0].id]
+            );
+          } else {
+            await conn.query(
+              'INSERT INTO t_warehouse (componentId, storageId, quantity) VALUES (?, ?, ?)',
+              [componentId, parsedStorageId, purchaseQty]
+            );
+          }
+        }
+      }
+    }
+
+    // 4. If component is in shopping list (t_busket), clear or decrement it
+    const [basketRows] = await conn.query(
+      'SELECT id, qty FROM t_busket WHERE componentId = ?',
+      [componentId]
+    );
+    if (basketRows.length > 0) {
+      for (const b of basketRows) {
+        if (purchaseQty >= b.qty) {
+          await conn.query('DELETE FROM t_busket WHERE id = ?', [b.id]);
+        } else {
+          await conn.query('UPDATE t_busket SET qty = qty - ? WHERE id = ?', [purchaseQty, b.id]);
+        }
+      }
+    }
+
+    await conn.commit();
+
+    res.json({
+      success: true,
+      orderId,
+      componentId,
+      component: component.component,
+      qty: purchaseQty,
+      price: unitPrice,
+      newStock
+    });
+  } catch (err) {
+    await conn.rollback();
+    console.error('Error confirming purchase for component:', err);
+    res.status(500).json({ error: 'Failed to record purchase order', details: err.message });
+  } finally {
+    conn.release();
   }
 });
 

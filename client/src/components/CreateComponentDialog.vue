@@ -260,21 +260,38 @@
               />
             </v-col>
 
+            <!-- Minimal Acceptable Quantity -->
+            <v-col cols="12" md="4">
+              <v-text-field
+                v-model.number="form.minQty"
+                label="Min. Acceptable Qty"
+                type="number"
+                min="0"
+                density="compact"
+                variant="outlined"
+                rounded="lg"
+                class="font-mono"
+                prepend-inner-icon="mdi-alert-circle-check-outline"
+                hint="Default 0. Warns when stock is low"
+                persistent-hint
+              />
+            </v-col>
+
             <!-- Storage Location -->
-            <v-col cols="12" md="8">
+            <v-col cols="12" md="4">
               <v-autocomplete
                 v-model="form.storageId"
                 :items="storages"
                 item-title="storage"
                 item-value="ID"
-                label="Warehouse Storage Location"
-                placeholder="Select bin, shelf, or drawer"
+                label="Storage Location"
+                placeholder="Select bin or drawer"
                 density="compact"
                 variant="outlined"
                 rounded="lg"
                 prepend-inner-icon="mdi-map-marker-outline"
                 clearable
-                :hint="form.qty > 0 ? 'Allocates initial stock to this location' : 'Optional default storage location'"
+                :hint="form.qty > 0 ? 'Allocates initial stock' : 'Optional storage'"
                 persistent-hint
               />
             </v-col>
@@ -653,6 +670,7 @@ const initialForm = () => ({
   shortDescription: '',
   description: '',
   qty: 0,
+  minQty: 0,
   storageId: null,
   datasheetURL: '',
   photoURL: ''

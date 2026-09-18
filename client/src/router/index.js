@@ -3,6 +3,7 @@ import ProjectsView from '../views/ProjectsView.vue';
 import ProjectDetailView from '../views/ProjectDetailView.vue';
 import ComponentsView from '../views/ComponentsView.vue';
 import ShoppingListView from '../views/ShoppingListView.vue';
+import ReportsView from '../views/ReportsView.vue';
 import ReleaseNotesView from '../views/ReleaseNotesView.vue';
 
 const routes = [
@@ -29,6 +30,11 @@ const routes = [
     path: '/shopping-list',
     name: 'ShoppingList',
     component: ShoppingListView
+  },
+  {
+    path: '/reports',
+    name: 'Reports',
+    component: ReportsView
   },
   {
     path: '/release-notes',

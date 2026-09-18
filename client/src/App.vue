@@ -23,7 +23,7 @@
               variant="flat"
               class="ms-2 font-mono font-weight-bold"
             >
-              0.1.3
+              0.2.1
             </v-chip>
           </div>
         </template>
@@ -80,6 +80,15 @@
         </v-list-item>
 
         <v-list-item
+          prepend-icon="mdi-chart-box-outline"
+          title="Reports"
+          value="reports"
+          to="/reports"
+          active-class="bg-primary text-white"
+          rounded="lg"
+        />
+
+        <v-list-item
           prepend-icon="mdi-text-box-search-outline"
           title="Release Notes"
           value="release-notes"
@@ -94,7 +103,7 @@
               variant="tonal"
               class="font-mono font-weight-bold"
             >
-              0.2.0
+              0.2.1
             </v-chip>
           </template>
         </v-list-item>
@@ -108,7 +117,7 @@
           >
             <span class="d-flex align-center font-mono">
               <v-icon size="14" color="primary" class="me-1">mdi-tag-outline</v-icon>
-              Version 0.2.0
+              Version 0.2.1
             </span>
             <span class="text-primary font-weight-medium">Notes &rarr;</span>
           </router-link>
@@ -206,8 +215,10 @@ const currentTitle = computed(() => {
       return 'Components Catalog';
     case '/shopping-list':
       return 'Procurement Shopping List';
+    case '/reports':
+      return 'Production & Inventory Reports';
     case '/release-notes':
-      return 'Release Notes (v0.1.3)';
+      return 'Release Notes (v0.2.1)';
     default:
       return 'BOM Manager';
   }
@@ -222,6 +233,8 @@ const currentIcon = computed(() => {
       return 'mdi-memory';
     case '/shopping-list':
       return 'mdi-cart-outline';
+    case '/reports':
+      return 'mdi-chart-box-outline';
     case '/release-notes':
       return 'mdi-tag-outline';
     default:

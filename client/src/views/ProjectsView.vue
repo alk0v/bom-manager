@@ -42,7 +42,7 @@
               hide-details
               clearable
               rounded="lg"
-              style="min-width: 280px;"
+              style="width: 380px; min-width: 340px;"
             />
 
             <v-btn
@@ -123,6 +123,19 @@
                   {{ p.totalQuantityNeeded }} pcs total
                 </v-chip>
 
+                <!-- Estimated Cost chip -->
+                <v-chip
+                  v-if="p.bomItemCount > 0"
+                  size="x-small"
+                  color="primary"
+                  variant="tonal"
+                  class="font-weight-bold font-mono"
+                  :title="`${p.pricedItemsCount || 0} of ${p.bomItemCount} parts priced`"
+                >
+                  <v-icon start size="12">mdi-currency-usd</v-icon>
+                  Est. {{ formatCurrency(p.estimatedCost) }}
+                </v-chip>
+
                 <!-- Absent parts chip -->
                 <v-chip
                   v-if="p.absentPartsCount > 0"
@@ -196,6 +209,15 @@
                     color="slate-600"
                     title="Edit project details"
                     @click.stop="openEditProjectDialog(p)"
+                  />
+                  <!-- Produce Project button -->
+                  <v-btn
+                    icon="mdi-factory"
+                    size="small"
+                    variant="text"
+                    color="primary"
+                    title="Produce project units and deduct parts"
+                    @click.stop="openProduceDialog(p)"
                   />
                 </div>
 
@@ -280,10 +302,23 @@
               Project URL
             </v-btn>
 
+            <!-- Produce Button -->
+            <v-btn
+              variant="flat"
+              size="small"
+              color="primary"
+              class="font-weight-bold"
+              prepend-icon="mdi-factory"
+              @click="openProduceDialog(activeProject)"
+            >
+              Produce
+            </v-btn>
+
             <!-- Edit Project Button -->
             <v-btn
               variant="outlined"
               size="small"
+              color="primary"
               prepend-icon="mdi-pencil-outline"
               title="Edit project details"
               @click="openEditProjectDialog(activeProject)"
@@ -296,6 +331,7 @@
               :to="`/projects/${activeProject.id}`"
               variant="outlined"
               size="small"
+              color="primary"
               prepend-icon="mdi-window-maximize"
               title="Open dedicated page for this project"
             >
@@ -325,6 +361,20 @@
             </v-col>
 
             <v-col cols="12" md="4" class="d-flex flex-wrap align-center justify-md-end" style="gap: 12px;">
+              <v-chip
+                size="small"
+                color="primary"
+                variant="tonal"
+                class="font-mono font-weight-bold"
+                :title="`${modalBomCost.pricedCount} of ${bomItems.length} parts priced in database`"
+              >
+                <v-icon start size="14">mdi-currency-usd</v-icon>
+                Est. BOM Cost: {{ formatCurrency(modalBomCost.totalCost) }}
+                <span class="ms-1 text-caption opacity-80" v-if="bomItems.length > 0">
+                  ({{ modalBomCost.pricedCount }}/{{ bomItems.length }})
+                </span>
+              </v-chip>
+
               <v-chip
                 size="small"
                 :color="bomHealth.allSufficient ? 'success' : 'warning'"
@@ -363,7 +413,7 @@
             hide-details
             clearable
             rounded="lg"
-            style="max-width: 320px;"
+            style="width: 360px; max-width: 400px;"
           />
 
           <div class="d-flex align-center gap-2">
@@ -373,6 +423,7 @@
 
             <v-btn
               color="primary"
+              variant="flat"
               prepend-icon="mdi-plus"
               size="small"
               class="font-weight-bold"
@@ -394,6 +445,8 @@
                 <th class="text-left font-weight-bold">Package</th>
                 <th class="text-center font-weight-bold">Required</th>
                 <th class="text-center font-weight-bold">In Stock</th>
+                <th class="text-right font-weight-bold">Unit Price</th>
+                <th class="text-right font-weight-bold">Total Cost</th>
                 <th class="text-left font-weight-bold">Designators / Comment</th>
                 <th class="text-right font-weight-bold" style="width: 130px;">Actions</th>
               </tr>
@@ -456,6 +509,26 @@
                   </span>
                 </td>
 
+                <!-- Unit Price -->
+                <td class="text-right font-mono text-body-2">
+                  <span
+                    v-if="item.unitPrice != null"
+                    class="text-slate-800"
+                    :title="item.latestOrderDate ? `Purchased: ${formatDate(item.latestOrderDate)}` : ''"
+                  >
+                    {{ formatCurrency(item.unitPrice) }}
+                  </span>
+                  <span v-else class="text-disabled text-caption italic">—</span>
+                </td>
+
+                <!-- Total Item Cost -->
+                <td class="text-right font-mono text-body-2 font-weight-bold">
+                  <span v-if="item.totalItemCost != null" class="text-primary">
+                    {{ formatCurrency(item.totalItemCost) }}
+                  </span>
+                  <span v-else class="text-disabled text-caption italic">—</span>
+                </td>
+
                 <!-- Circuit Comment / Designators -->
                 <td>
                   <span v-if="item.comment" class="text-body-2 font-mono text-slate-700">
@@ -499,18 +572,38 @@
               </tr>
 
               <tr v-if="filteredBomItems.length === 0 && !loadingBom">
-                <td colspan="8" class="text-center py-8 text-disabled">
+                <td colspan="10" class="text-center py-8 text-disabled">
                   <v-icon size="40" class="mb-2">mdi-cube-off-outline</v-icon>
                   <div>No components match your search.</div>
                 </td>
               </tr>
 
               <tr v-if="loadingBom">
-                <td colspan="8" class="text-center py-8">
+                <td colspan="10" class="text-center py-8">
                   <v-progress-circular indeterminate color="primary" />
                 </td>
               </tr>
             </tbody>
+
+            <!-- Modal BOM Table Footer -->
+            <tfoot v-if="filteredBomItems.length > 0">
+              <tr class="bg-slate-50 font-weight-bold border-t">
+                <td colspan="4" class="py-3 px-4 text-subtitle-2 font-weight-bold text-slate-800">
+                  Total Estimated BOM Cost
+                  <span class="text-caption text-disabled ms-2 font-normal">
+                    ({{ modalBomCost.pricedCount }} of {{ bomItems.length }} parts priced)
+                  </span>
+                </td>
+                <td class="text-center font-mono font-weight-bold py-3 text-body-2">
+                  {{ bomItems.reduce((acc, i) => acc + (Number(i.requiredQuantity) || 0), 0) }}
+                </td>
+                <td colspan="2"></td>
+                <td class="text-right font-mono font-weight-bold text-subtitle-2 text-primary py-3">
+                  {{ formatCurrency(modalBomCost.totalCost) }}
+                </td>
+                <td colspan="2"></td>
+              </tr>
+            </tfoot>
           </v-table>
         </v-card-text>
 
@@ -585,6 +678,14 @@
       @saved="onProjectSaved"
     />
 
+    <!-- DIALOG: Produce Project -->
+    <ProduceProjectDialog
+      v-model="showProduceDialog"
+      :project="selectedProjectForProduce"
+      @produced="onProduced"
+      @notify="notify"
+    />
+
     <!-- Notification Snackbar -->
     <v-snackbar v-model="snackbar.show" :color="snackbar.color" timeout="3000" location="bottom right">
       {{ snackbar.text }}
@@ -600,6 +701,8 @@ import MediaImage from '../components/MediaImage.vue';
 import AddComponentDialog from '../components/AddComponentDialog.vue';
 import PackageLink from '../components/PackageLink.vue';
 import ProjectFormDialog from '../components/ProjectFormDialog.vue';
+import ProduceProjectDialog from '../components/ProduceProjectDialog.vue';
+import { formatCurrency, formatDate } from '../utils/formatters';
 
 // State
 const router = useRouter();
@@ -618,9 +721,11 @@ const showBomDialog = ref(false);
 const showAddDialog = ref(false);
 const showEditDialog = ref(false);
 const showProjectDialog = ref(false);
+const showProduceDialog = ref(false);
 
 const editingBom = ref(null);
 const selectedProjectForEdit = ref(null);
+const selectedProjectForProduce = ref(null);
 
 const snackbar = ref({
   show: false,
@@ -671,6 +776,22 @@ const shortageItems = computed(() => {
 
 const hasShortages = computed(() => shortageItems.value.length > 0);
 
+const modalBomCost = computed(() => {
+  let totalCost = 0;
+  let pricedCount = 0;
+  for (const item of bomItems.value) {
+    if (item.totalItemCost != null) {
+      totalCost += Number(item.totalItemCost);
+      pricedCount++;
+    }
+  }
+  return {
+    totalCost: Math.round(totalCost * 100) / 100,
+    pricedCount,
+    unpricedCount: bomItems.value.length - pricedCount
+  };
+});
+
 const shortageProjectsCount = computed(() => {
   return projects.value.filter(p => (p.absentPartsCount || 0) > 0).length;
 });
@@ -688,6 +809,26 @@ const openNewProjectDialog = () => {
 const openEditProjectDialog = (project) => {
   selectedProjectForEdit.value = { ...project };
   showProjectDialog.value = true;
+};
+
+const openProduceDialog = (project) => {
+  selectedProjectForProduce.value = project;
+  showProduceDialog.value = true;
+};
+
+const onProduced = async () => {
+  await loadProjects();
+  if (showBomDialog.value && activeProject.value) {
+    try {
+      bomItems.value = await api.getProjectBom(activeProject.value.id);
+      const updated = projects.value.find(p => p.id === activeProject.value.id);
+      if (updated) {
+        activeProject.value = { ...updated };
+      }
+    } catch (err) {
+      console.error('Failed to reload BOM after production:', err);
+    }
+  }
 };
 
 const onProjectSaved = async ({ project, isEdit }) => {

@@ -31,8 +31,47 @@ async function ensureTables() {
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
     `);
     console.log('[Database] Verified table "t_project_files" exists.');
+
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS t_production_runs (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        projectId INT NOT NULL,
+        count INT NOT NULL DEFAULT 1,
+        status VARCHAR(50) NOT NULL DEFAULT 'completed',
+        producedAt DATETIME DEFAULT CURRENT_TIMESTAMP,
+        cancelledAt DATETIME DEFAULT NULL,
+        notes VARCHAR(500) DEFAULT NULL,
+        INDEX idx_prod_project (projectId),
+        INDEX idx_prod_status (status),
+        INDEX idx_prod_date (producedAt)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+    `);
+    console.log('[Database] Verified table "t_production_runs" exists.');
+
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS t_production_items (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        runId INT NOT NULL,
+        componentId INT NOT NULL,
+        quantityPerUnit INT NOT NULL DEFAULT 1,
+        totalDeducted INT NOT NULL DEFAULT 1,
+        returnedStock INT NOT NULL DEFAULT 0,
+        INDEX idx_run_id (runId),
+        INDEX idx_comp_id (componentId)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+    `);
+    console.log('[Database] Verified table "t_production_items" exists.');
+
+    // Ensure minQty column in i_components
+    const [cols] = await pool.query("SHOW COLUMNS FROM i_components LIKE 'minQty'");
+    if (cols.length === 0) {
+      await pool.query('ALTER TABLE i_components ADD COLUMN minQty INT NOT NULL DEFAULT 0');
+      console.log('[Database] Added "minQty" column to i_components table.');
+    } else {
+      console.log('[Database] Verified column "minQty" exists in i_components.');
+    }
   } catch (err) {
-    console.warn('[Database] Table verification note (t_project_files):', err.message);
+    console.warn('[Database] Table verification note:', err.message);
   }
 }
 

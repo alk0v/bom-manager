@@ -90,9 +90,65 @@ import { computed } from 'vue';
 
 const releases = [
   {
+    version: '0.2.1',
+    date: '2026-09-18',
+    isCurrent: true,
+    summary: 'Version 0.2.1 introduces the "Produce" workflow for hardware projects, automatically calculating required quantities, previewing component inventory deductions, highlighting shortages, and decrementing stock levels in real time.',
+    features: [
+      {
+        title: 'Project Production Workflow',
+        description: 'Specify how many units you want to build and let the system calculate the complete component requirements from the Bill of Materials.'
+      },
+      {
+        title: 'Automatic Stock Deduction',
+        description: 'Executing a production run automatically deducts the necessary part quantities from in-stock warehouse inventory in a single database transaction.'
+      },
+      {
+        title: 'Interactive Deduction Preview',
+        description: 'Inspect exact stock changes per component, post-production remaining quantities, and maximum producible unit caps before confirming.'
+      },
+      {
+        title: 'Shortage Detection & Quick Shopping List',
+        description: 'Instant visual alerts for missing components with a 1-click action to add all shortage quantities directly into the procurement shopping list.'
+      },
+      {
+        title: 'Production History & Reports',
+        description: 'Dedicated Reports dashboard accessible from the main navigation with KPI metrics, searchable manufacturing logs, and filtering by project or status.'
+      },
+      {
+        title: '1-Click Rollback & Stock Restoration',
+        description: 'Cancel any completed production run to automatically restore the exact deducted component quantities back to storage inventory.'
+      },
+      {
+        title: 'Flexible Production Policies',
+        description: 'Optionally allow production runs with insufficient catalog stock when physical assemblies proceed before inventory logs are reconciled.'
+      },
+      {
+        title: 'Financial Insights & Purchase History',
+        description: 'View order history, latest purchase prices, weighted average costs, and direct supplier links inside component details.'
+      },
+      {
+        title: 'Project BOM Cost Calculation',
+        description: 'Automatic calculation of total estimated build costs, unit prices, and line-item totals in project views and BOM pop-ups.'
+      },
+      {
+        title: 'Production Batch Cost Estimation',
+        description: 'Live estimation of total manufacturing material costs when scheduling production runs.'
+      },
+      {
+        title: 'Shopping List Purchase Confirmation & Order Creation',
+        description: 'Confirm component purchases directly from the shopping list to log new orders in t_orders, automatically increment on-hand inventory stock, and update the shopping list.'
+      },
+      {
+        title: 'Shopping List Redesign & Aligned Quantity Steppers',
+        description: 'Interactive component details pop-ups, package links, photo zoom lightbox, real-time search filtering, procurement KPI totals, and vertically aligned quantity steppers.'
+      }
+    ]
+  },
+  {
     version: '0.2.0',
     date: '2026-09-17',
-    isCurrent: true,
+    isCurrent: false,
     summary: 'Version 0.2.0 adds project file attachments, KiCAD Interactive BOM viewing, smart BOM importing with automatic part matching, and component details pop-ups throughout the workflow.',
     features: [
       {
@@ -147,7 +203,7 @@ const releases = [
   }
 ];
 
-const currentVersion = computed(() => releases.find(r => r.isCurrent)?.version || '0.2.0');
+const currentVersion = computed(() => releases.find(r => r.isCurrent)?.version || '0.2.1');
 </script>
 
 <style scoped>
