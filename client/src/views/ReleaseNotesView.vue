@@ -96,6 +96,10 @@ const releases = [
     summary: 'Version 0.2.3 delivers complete project deletion with dependency safeguards, streamlines new project onboarding with direct routing to the main window, and adds rapid BOM population shortcuts.',
     features: [
       {
+        title: 'Clone & Map Existing Component during iBOM Import',
+        description: 'During iBOM component mapping, search and clone any existing catalog component as a template. Edit any parameters, packages, or storages in-place and immediately map the newly created component to the BOM item (with automatic match suggestion to identical items).'
+      },
+      {
         title: 'Project Deletion with Dependency Safeguards',
         description: 'Delete hardware projects directly from project cards, the BOM modal, project detail page, or edit form. Includes a comprehensive confirmation modal showing constituent BOM parts and file counts, and atomically cascades deletions across BOM items and attachment files.'
       },
@@ -106,6 +110,14 @@ const releases = [
       {
         title: 'BOM Empty State Quick Actions',
         description: 'New projects feature prominent "Add Component" and "Import iBOM" buttons in the Bill of Materials table empty state to rapidly start populating components.'
+      },
+      {
+        title: 'Real-Time Shopping List Navigation Counter',
+        description: 'The left sidebar Shopping list menu badge automatically reflects component additions and removals in real-time without needing a manual refresh.'
+      },
+      {
+        title: 'BOM Table Action Button Alignment & Cleanup',
+        description: 'Standardized and aligned action buttons in the Bill of Materials table across rows, and removed the redundant inline info button.'
       }
     ]
   },

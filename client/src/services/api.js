@@ -126,10 +126,22 @@ export const api = {
 
   // Shopping List
   getShoppingList: () => client.get('/shopping-list').then(res => res.data),
-  addToShoppingList: (data) => client.post('/shopping-list', data).then(res => res.data),
-  updateShoppingListItem: (id, data) => client.put(`/shopping-list/${id}`, data).then(res => res.data),
-  deleteShoppingListItem: (id) => client.delete(`/shopping-list/${id}`).then(res => res.data),
-  purchaseShoppingListItem: (id, data) => client.post(`/shopping-list/${id}/purchase`, data).then(res => res.data),
+  addToShoppingList: (data) => client.post('/shopping-list', data).then(res => {
+    if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('shopping-list-updated'));
+    return res.data;
+  }),
+  updateShoppingListItem: (id, data) => client.put(`/shopping-list/${id}`, data).then(res => {
+    if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('shopping-list-updated'));
+    return res.data;
+  }),
+  deleteShoppingListItem: (id) => client.delete(`/shopping-list/${id}`).then(res => {
+    if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('shopping-list-updated'));
+    return res.data;
+  }),
+  purchaseShoppingListItem: (id, data) => client.post(`/shopping-list/${id}/purchase`, data).then(res => {
+    if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('shopping-list-updated'));
+    return res.data;
+  }),
 
   // Reports
   getProductionReport: (params = {}) => client.get('/reports/production', { params }).then(res => res.data),

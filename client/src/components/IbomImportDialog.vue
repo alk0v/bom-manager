@@ -224,7 +224,7 @@
                   <th class="text-center font-weight-bold" style="width: 50px;">Qty</th>
                   <th class="text-left font-weight-bold" style="width: 120px;">Status</th>
                   <th class="text-left font-weight-bold">Target Database Component and package</th>
-                  <th class="text-center font-weight-bold" style="width: 100px;">Action</th>
+                  <th class="text-center font-weight-bold" style="width: 140px;">Action</th>
                 </tr>
               </thead>
               <tbody>
@@ -358,7 +358,7 @@
                     </div>
                   </td>
 
-                  <!-- Action Column (+ and magnify glass, matching style) -->
+                  <!-- Action Column (+, clone, and magnify glass, matching style) -->
                   <td class="text-center">
                     <div class="d-flex align-center justify-center gap-1">
                       <!-- Map to existing component button (magnify glass) -->
@@ -372,6 +372,21 @@
                             color="slate-700"
                             class="flex-shrink-0"
                             @click="openPickerFor(item)"
+                          />
+                        </template>
+                      </v-tooltip>
+
+                      <!-- Clone existing component to map (copy icon) -->
+                      <v-tooltip text="Find & clone existing component to map" location="top">
+                        <template #activator="{ props: tipProps }">
+                          <v-btn
+                            v-bind="tipProps"
+                            icon="mdi-content-copy"
+                            size="small"
+                            variant="tonal"
+                            color="indigo"
+                            class="flex-shrink-0"
+                            @click="openClonePickerFor(item)"
                           />
                         </template>
                       </v-tooltip>
@@ -440,12 +455,14 @@
   <AddComponentDialog
     v-model="pickerDialogOpen"
     :picker-mode="true"
-    :title="`Map Component for ${activeMapItem?.value || 'iBOM Part'}`"
-    :subtitle="activeMapItem ? `Row #${activeMapItem.index} · Footprint: ${activeMapItem.cleanedFootprint || activeMapItem.footprint} · Qty: ${activeMapItem.quantity}` : ''"
+    :clone-mode-only="isClonePickerMode"
+    :title="pickerTitle"
+    :subtitle="pickerSubtitle"
     :initial-search="pickerInitialSearch"
     :initial-categories="pickerInitialCategories"
     :initial-packages="pickerInitialPackages"
     @select="onComponentPicked"
+    @clone="onComponentToClonePicked"
   />
 
   <!-- RE-USE CREATE COMPONENT DIALOG TO ADD NEW COMPONENT -->
@@ -453,7 +470,9 @@
     v-model="createCompDialogOpen"
     :categories="categoryOptions"
     :packages="packageOptions"
+    :component="activeCloneCompSource"
     :initial-data="activeNewCompData"
+    :is-clone="isCloneMode"
     :title="newCompDialogTitle"
     :subtitle="newCompDialogSubtitle"
     :hide-add-another="true"
@@ -514,6 +533,7 @@ const packageOptions = ref([]);
 
 // Picker state (re-using AddComponentDialog)
 const pickerDialogOpen = ref(false);
+const isClonePickerMode = ref(false);
 const activeMapItem = ref(null);
 const pickerInitialSearch = ref('');
 const pickerInitialCategories = ref([]);
@@ -521,11 +541,25 @@ const pickerInitialPackages = ref([]);
 
 // Configure New Component Modal state (re-using CreateComponentDialog)
 const createCompDialogOpen = ref(false);
+const isCloneMode = ref(false);
+const activeCloneCompSource = ref(null);
 const activeNewCompItem = ref(null);
 const activeNewCompItemIndex = ref(null);
 const activeNewCompData = ref(null);
 const newCompDialogTitle = ref('Add New Component');
 const newCompDialogSubtitle = ref('');
+
+const pickerTitle = computed(() => {
+  if (isClonePickerMode.value) {
+    return `Find Component to Clone for ${activeMapItem.value?.value || 'iBOM Part'}`;
+  }
+  return `Map Component for ${activeMapItem.value?.value || 'iBOM Part'}`;
+});
+
+const pickerSubtitle = computed(() => {
+  if (!activeMapItem.value) return '';
+  return `Row #${activeMapItem.value.index} · Footprint: ${activeMapItem.value.cleanedFootprint || activeMapItem.value.footprint} · Qty: ${activeMapItem.value.quantity}`;
+});
 
 // Map of components by ID for O(1) lookups
 const componentMap = computed(() => {
@@ -684,6 +718,13 @@ function resetDialog() {
   uploadFile.value = null;
   mappedItems.value = [];
   searchFilter.value = '';
+  activeMapItem.value = null;
+  isClonePickerMode.value = false;
+  isCloneMode.value = false;
+  activeCloneCompSource.value = null;
+  activeNewCompItem.value = null;
+  activeNewCompItemIndex.value = null;
+  activeNewCompData.value = null;
 }
 
 function closeDialog() {
@@ -752,6 +793,17 @@ function initMappedItems(data) {
 // Open Component Picker (re-using AddComponentDialog)
 function openPickerFor(item) {
   activeMapItem.value = item;
+  isClonePickerMode.value = false;
+  pickerInitialSearch.value = item.value || item.mpn || '';
+  pickerInitialCategories.value = item.suggestedCategoryId ? [item.suggestedCategoryId] : [];
+  pickerInitialPackages.value = item.suggestedPackageId ? [item.suggestedPackageId] : [];
+  pickerDialogOpen.value = true;
+}
+
+// Open Component Picker in Clone Mode
+function openClonePickerFor(item) {
+  activeMapItem.value = item;
+  isClonePickerMode.value = true;
   pickerInitialSearch.value = item.value || item.mpn || '';
   pickerInitialCategories.value = item.suggestedCategoryId ? [item.suggestedCategoryId] : [];
   pickerInitialPackages.value = item.suggestedPackageId ? [item.suggestedPackageId] : [];
@@ -776,8 +828,45 @@ function onComponentPicked(comp) {
   activeMapItem.value = null;
 }
 
+// Callback when user picks a component to clone as a template
+function onComponentToClonePicked(comp) {
+  if (!activeMapItem.value || !comp) return;
+
+  const targetItem = activeMapItem.value;
+  activeNewCompItem.value = targetItem;
+  activeNewCompItemIndex.value = targetItem.index;
+
+  const normVal = targetItem.normalizedValue || targetItem.value || '';
+  const cleanFp = targetItem.cleanedFootprint || targetItem.footprint || '';
+
+  activeCloneCompSource.value = comp;
+  isCloneMode.value = true;
+
+  activeNewCompData.value = {
+    component: targetItem.mpn || targetItem.value || `${comp.component} (Copy)`,
+    category_id: comp.category_id || targetItem.suggestedCategoryId || null,
+    package_id: comp.package_id || targetItem.suggestedPackageId || (packageOptions.value.find(p => p.package.toLowerCase() === 'unknown')?.ID || 28),
+    marking: targetItem.value || comp.marking || '',
+    shortDescription: (normVal && cleanFp) ? `${normVal} ${cleanFp}`.trim() : (comp.shortDescription || ''),
+    description: comp.description || (targetItem.designators ? `KiCAD Designators: ${targetItem.designators}` : ''),
+    qty: 0,
+    minQty: comp.minQty || 0,
+    storageId: comp.storageId || comp.storage_id || comp.warehouse?.[0]?.storageId || null,
+    datasheetURL: comp.datasheetURL || '',
+    photoURL: comp.photoURL || ''
+  };
+
+  newCompDialogTitle.value = `Clone & Map Component (BOM Row #${targetItem.index})`;
+  newCompDialogSubtitle.value = `Cloning "${comp.component}" for "${targetItem.value || 'Part'}" (${targetItem.quantity} pcs · Footprint: ${cleanFp || 'Unknown'})`;
+
+  pickerDialogOpen.value = false;
+  createCompDialogOpen.value = true;
+}
+
 // Open modal to configure/create a new component
 function openNewCompModal(item) {
+  activeCloneCompSource.value = null;
+  isCloneMode.value = false;
   activeNewCompItem.value = item;
   activeNewCompItemIndex.value = item.index;
   const normVal = item.normalizedValue || item.value || '';
@@ -828,7 +917,9 @@ function onNewComponentCreated(newComp) {
     targetItem.selectedComponentId = compId;
     targetItem.matchedComponent = fullCompObj;
     targetItem.matchConfidence = 'exact';
-    targetItem.matchReason = 'Created new component';
+    targetItem.matchReason = isCloneMode.value
+      ? `Cloned from ${activeCloneCompSource.value?.component || 'catalog'}`
+      : 'Created new component';
     targetItem.createAsNew = false;
     targetItem.selected = true;
 
@@ -857,6 +948,8 @@ function onNewComponentCreated(newComp) {
   activeNewCompItem.value = null;
   activeNewCompItemIndex.value = null;
   activeNewCompData.value = null;
+  activeCloneCompSource.value = null;
+  isCloneMode.value = false;
 }
 
 function toggleSelectAll() {

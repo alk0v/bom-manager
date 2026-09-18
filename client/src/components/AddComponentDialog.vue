@@ -10,9 +10,9 @@
       <!-- Dialog Header -->
       <v-card-title class="bg-slate-50 py-3 px-4 d-flex align-center justify-space-between border-b flex-shrink-0">
         <div class="d-flex align-center">
-          <v-icon color="primary" class="me-2" size="22">{{ pickerMode ? 'mdi-database-search-outline' : 'mdi-memory' }}</v-icon>
+          <v-icon :color="cloneModeOnly ? 'indigo' : 'primary'" class="me-2" size="22">{{ cloneModeOnly ? 'mdi-content-copy' : (pickerMode ? 'mdi-database-search-outline' : 'mdi-memory') }}</v-icon>
           <span class="text-subtitle-1 font-weight-bold text-slate-900">
-            {{ title || (pickerMode ? 'Select Catalog Component' : 'Add Component to BOM') }}
+            {{ title || (cloneModeOnly ? 'Find Component to Clone' : (pickerMode ? 'Select Catalog Component' : 'Add Component to BOM')) }}
             <span v-if="projectName" class="text-caption font-weight-regular text-slate-500 ms-1">
               ({{ projectName }})
             </span>
@@ -195,6 +195,7 @@
               <th class="text-left font-weight-bold">Package</th>
               <th class="text-left font-weight-bold">Description</th>
               <th class="text-center font-weight-bold" style="width: 90px;">In Stock</th>
+              <th v-if="pickerMode" class="text-center font-weight-bold" style="width: 80px;">Action</th>
             </tr>
           </thead>
 
@@ -273,17 +274,33 @@
                   {{ c.qty ?? 0 }}
                 </span>
               </td>
+
+              <!-- Action Column in Picker Mode -->
+              <td v-if="pickerMode" class="text-center pa-1" @click.stop>
+                <v-tooltip :text="cloneModeOnly ? 'Clone this component' : 'Clone this component for mapping'" location="top">
+                  <template #activator="{ props: tipProps }">
+                    <v-btn
+                      v-bind="tipProps"
+                      icon="mdi-content-copy"
+                      size="x-small"
+                      variant="tonal"
+                      color="indigo"
+                      @click="triggerClone(c)"
+                    />
+                  </template>
+                </v-tooltip>
+              </td>
             </tr>
 
             <tr v-if="components.length === 0 && !loading">
-              <td colspan="7" class="text-center py-8 text-disabled">
+              <td :colspan="pickerMode ? 8 : 7" class="text-center py-8 text-disabled">
                 <v-icon size="36" class="mb-2">mdi-memory-off</v-icon>
                 <div>No components match your search.</div>
               </td>
             </tr>
 
             <tr v-if="loading">
-              <td colspan="7" class="text-center py-8">
+              <td :colspan="pickerMode ? 8 : 7" class="text-center py-8">
                 <v-progress-circular indeterminate color="primary" size="32" />
               </td>
             </tr>
@@ -350,6 +367,7 @@
                 Cancel
               </v-btn>
               <v-btn
+                v-if="!cloneModeOnly"
                 color="primary"
                 variant="flat"
                 rounded="lg"
@@ -359,6 +377,17 @@
                 @click="confirmPick"
               >
                 Select This Component
+              </v-btn>
+              <v-btn
+                color="indigo"
+                :variant="cloneModeOnly ? 'flat' : 'tonal'"
+                rounded="lg"
+                height="40"
+                prepend-icon="mdi-content-copy"
+                class="px-4 font-weight-bold"
+                @click="triggerClone(selectedComponent)"
+              >
+                {{ cloneModeOnly ? 'Clone This Component' : 'Clone & Map' }}
               </v-btn>
             </div>
 
@@ -419,7 +448,11 @@
           <div v-else class="d-flex align-center justify-space-between py-1">
             <span class="text-caption text-slate-500 d-flex align-center">
               <v-icon start size="16" color="primary">mdi-cursor-default-click</v-icon>
-              {{ pickerMode ? 'Click any row in the table above to pick a component, or double-click to select immediately.' : 'Click any row in the table above to select a component to add to this BOM.' }}
+              {{ cloneModeOnly
+                ? 'Click any row to select a component to clone as a template, or click the clone icon.'
+                : (pickerMode
+                  ? 'Click any row in the table above to pick a component, or double-click to select immediately.'
+                  : 'Click any row in the table above to select a component to add to this BOM.') }}
             </span>
             <v-btn variant="text" size="small" @click="close">
               Close
@@ -468,6 +501,10 @@ const props = defineProps({
     type: Boolean,
     default: false
   },
+  cloneModeOnly: {
+    type: Boolean,
+    default: false
+  },
   title: {
     type: String,
     default: ''
@@ -486,7 +523,7 @@ const props = defineProps({
   }
 });
 
-const emit = defineEmits(['update:modelValue', 'added', 'select']);
+const emit = defineEmits(['update:modelValue', 'added', 'select', 'clone']);
 
 const components = ref([]);
 const categories = ref([]);
@@ -662,8 +699,16 @@ const confirmPick = () => {
   close();
 };
 
+const triggerClone = (c) => {
+  if (!c) return;
+  emit('clone', c);
+  close();
+};
+
 const onRowDblClick = (c) => {
-  if (props.pickerMode) {
+  if (props.cloneModeOnly) {
+    triggerClone(c);
+  } else if (props.pickerMode) {
     selectedComponent.value = c;
     confirmPick();
   }

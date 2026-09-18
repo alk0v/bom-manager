@@ -577,35 +577,42 @@
 
                 <!-- Actions -->
                 <td class="text-left">
-                  <!-- Add to Cart -->
-                  <v-btn
-                    v-if="!item.isStockSufficient"
-                    icon="mdi-cart-plus"
-                    size="x-small"
-                    color="amber-darken-3"
-                    variant="text"
-                    title="Add shortage to shopping list"
-                    @click="addToCart(item)"
-                  />
+                  <div class="d-inline-flex align-center" style="gap: 2px;">
+                    <!-- Add to Cart (placeholder preserves column alignment when stock is sufficient) -->
+                    <v-btn
+                      icon="mdi-cart-plus"
+                      size="x-small"
+                      color="amber-darken-3"
+                      variant="text"
+                      title="Add shortage to shopping list"
+                      :style="{
+                        visibility: !item.isStockSufficient ? 'visible' : 'hidden',
+                        pointerEvents: !item.isStockSufficient ? 'auto' : 'none'
+                      }"
+                      :tabindex="!item.isStockSufficient ? 0 : -1"
+                      :aria-hidden="item.isStockSufficient"
+                      @click="!item.isStockSufficient && addToCart(item)"
+                    />
 
-                  <!-- Edit -->
-                  <v-btn
-                    icon="mdi-pencil-outline"
-                    size="x-small"
-                    variant="text"
-                    title="Edit quantity or comment"
-                    @click="openEditBomDialog(item)"
-                  />
+                    <!-- Edit -->
+                    <v-btn
+                      icon="mdi-pencil-outline"
+                      size="x-small"
+                      variant="text"
+                      title="Edit quantity or comment"
+                      @click="openEditBomDialog(item)"
+                    />
 
-                  <!-- Delete -->
-                  <v-btn
-                    icon="mdi-delete-outline"
-                    size="x-small"
-                    color="error"
-                    variant="text"
-                    title="Remove from BOM"
-                    @click="confirmDeleteBom(item)"
-                  />
+                    <!-- Delete -->
+                    <v-btn
+                      icon="mdi-delete-outline"
+                      size="x-small"
+                      color="error"
+                      variant="text"
+                      title="Remove from BOM"
+                      @click="confirmDeleteBom(item)"
+                    />
+                  </div>
                 </td>
               </tr>
 

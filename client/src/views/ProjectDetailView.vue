@@ -231,7 +231,7 @@
             <th class="text-right font-weight-bold">Unit Price</th>
             <th class="text-right font-weight-bold">Total Cost</th>
             <th class="text-left font-weight-bold">Designators / Comment</th>
-            <th class="text-left font-weight-bold" style="width: 140px;">Actions</th>
+            <th class="text-left font-weight-bold" style="width: 120px;">Actions</th>
           </tr>
         </thead>
 
@@ -334,40 +334,39 @@
 
             <!-- Actions -->
             <td class="text-left">
-              <v-btn
-                icon="mdi-information-outline"
-                size="x-small"
-                variant="text"
-                title="View component details"
-                @click="openComponentDetails(item)"
-              />
+              <div class="d-inline-flex align-center" style="gap: 2px;">
+                <v-btn
+                  icon="mdi-cart-plus"
+                  size="x-small"
+                  color="amber-darken-3"
+                  variant="text"
+                  title="Add to shopping list"
+                  :style="{
+                    visibility: !item.isStockSufficient ? 'visible' : 'hidden',
+                    pointerEvents: !item.isStockSufficient ? 'auto' : 'none'
+                  }"
+                  :tabindex="!item.isStockSufficient ? 0 : -1"
+                  :aria-hidden="item.isStockSufficient"
+                  @click="!item.isStockSufficient && addToCart(item)"
+                />
 
-              <v-btn
-                v-if="!item.isStockSufficient"
-                icon="mdi-cart-plus"
-                size="x-small"
-                color="amber-darken-3"
-                variant="text"
-                title="Add to shopping list"
-                @click="addToCart(item)"
-              />
+                <v-btn
+                  icon="mdi-pencil-outline"
+                  size="x-small"
+                  variant="text"
+                  title="Edit BOM item"
+                  @click="openEditBomDialog(item)"
+                />
 
-              <v-btn
-                icon="mdi-pencil-outline"
-                size="x-small"
-                variant="text"
-                title="Edit BOM item"
-                @click="openEditBomDialog(item)"
-              />
-
-              <v-btn
-                icon="mdi-delete-outline"
-                size="x-small"
-                color="error"
-                variant="text"
-                title="Remove from BOM"
-                @click="confirmDeleteBom(item)"
-              />
+                <v-btn
+                  icon="mdi-delete-outline"
+                  size="x-small"
+                  color="error"
+                  variant="text"
+                  title="Remove from BOM"
+                  @click="confirmDeleteBom(item)"
+                />
+              </div>
             </td>
           </tr>
 

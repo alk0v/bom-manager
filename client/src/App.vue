@@ -70,10 +70,10 @@
           active-class="bg-primary text-white"
           rounded="lg"
         >
-          <template #append v-if="shoppingCount > 0">
+          <template #append v-if="shoppingListStore.count > 0">
             <v-badge
               color="amber-darken-3"
-              :content="shoppingCount"
+              :content="shoppingListStore.count"
               inline
             />
           </template>
@@ -180,19 +180,20 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, watch, onMounted } from 'vue';
 import { useRoute } from 'vue-router';
 import api from './services/api';
 import { useComponentsStore } from './stores/components';
+import { useShoppingListStore } from './stores/shoppingList';
 import PackageDetailsDialog from './components/PackageDetailsDialog.vue';
 import MediaUploadDialog from './components/MediaUploadDialog.vue';
 
 const route = useRoute();
 const componentsStore = useComponentsStore();
+const shoppingListStore = useShoppingListStore();
 
 const drawer = ref(true);
 const rail = ref(false);
-const shoppingCount = ref(0);
 const showUploadDialog = ref(false);
 
 const currentTitle = computed(() => {
@@ -231,17 +232,12 @@ const currentIcon = computed(() => {
   }
 });
 
-const loadShoppingCount = async () => {
-  try {
-    const list = await api.getShoppingList();
-    shoppingCount.value = list.length;
-  } catch (err) {
-    console.error('Failed to load shopping list count:', err);
-  }
-};
+watch(() => route.path, () => {
+  shoppingListStore.refreshCount();
+});
 
 onMounted(() => {
-  loadShoppingCount();
+  shoppingListStore.refreshCount();
 });
 </script>
 

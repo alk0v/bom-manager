@@ -6,9 +6,12 @@
 Version 0.2.3 delivers complete hardware project deletion with dependency safeguards, streamlines new project onboarding with direct routing to the main window, and adds rapid BOM population shortcuts.
 
 ### What's New
+- **Clone & Map Existing Components During iBOM Import**: When mapping imported iBOM rows to catalog parts, users can now search and select any existing component to clone as a template. The component creation modal opens pre-filled with the template's category, package, storage location, datasheet, and specifications alongside the BOM row's values and designators. Upon saving/updating, the newly created component is immediately mapped to the BOM row (and automatically suggested to matching rows). Accessible directly from each mapping row via the clone button (`mdi-content-copy`) or within the component picker table and footer ("Clone & Map").
 - **Project Deletion with Dependency Safeguards**: Easily delete hardware projects directly from project cards, the BOM modal, the dedicated project page, or the project edit modal. A detailed confirmation dialog lists constituent BOM items and attached files, and atomically cascades removals across BOM and attachments without touching global catalog components.
 - **Immediate Navigation to New Projects**: Creating a new hardware project now instantly routes the user to its dedicated main project detail window (`/projects/:id`) instead of staying on the projects gallery grid.
 - **BOM Empty State Quick Actions**: New projects without components now display an enhanced empty state with prominent "Add Component" and "Import iBOM" action buttons to rapidly start building the Bill of Materials.
+- **Real-Time Shopping List Navigation Counter**: Added live badge updates to the left navigation drawer "Shopping list" menu item that immediately update when components are added or removed without requiring a full page refresh.
+- **BOM Table Action Button Alignment & Cleanup**: Action column buttons in the Bill of Materials table are now strictly aligned in fixed horizontal slots so action buttons line up predictably across all rows, and removed the redundant inline info button.
 
 ---
 

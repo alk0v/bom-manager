@@ -364,7 +364,10 @@ import MediaLightboxDialog from '../components/MediaLightboxDialog.vue';
 import PackageLink from '../components/PackageLink.vue';
 import PurchaseConfirmDialog from '../components/PurchaseConfirmDialog.vue';
 import ComponentDetailsDialog from '../components/ComponentDetailsDialog.vue';
+import { useShoppingListStore } from '../stores/shoppingList';
 import { formatCurrency, formatDate } from '../utils/formatters';
+
+const shoppingListStore = useShoppingListStore();
 
 const items = ref([]);
 const loading = ref(false);
@@ -440,6 +443,7 @@ const loadShoppingList = async () => {
   loading.value = true;
   try {
     items.value = await api.getShoppingList();
+    shoppingListStore.setCount(items.value.length);
   } catch (err) {
     notify('Failed to load shopping list: ' + err.message, 'error');
   } finally {

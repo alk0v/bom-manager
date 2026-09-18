@@ -1130,7 +1130,9 @@ const loadStorages = async () => {
 };
 
 const applyInitialDataOrDefaults = () => {
-  const source = props.component || props.initialData;
+  const source = (props.component && props.initialData)
+    ? { ...props.component, ...props.initialData }
+    : (props.component || props.initialData);
   if (source) {
     form.component = source.component || '';
     form.marking = source.marking || '';
@@ -1165,7 +1167,7 @@ watch(() => props.modelValue, (isOpen) => {
     clonedSourceName.value = props.isClone ? (props.component?.component || '') : '';
     loadStorages();
     applyInitialDataOrDefaults();
-    if (props.isClone && form.component && !form.component.endsWith('(Copy)')) {
+    if (props.isClone && form.component && clonedSourceName.value && form.component === clonedSourceName.value && !form.component.endsWith('(Copy)')) {
       form.component = `${form.component} (Copy)`;
     }
   } else {
