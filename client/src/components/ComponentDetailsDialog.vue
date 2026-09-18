@@ -76,9 +76,15 @@
           <!-- TAB 1: OVERVIEW & SPECS -->
           <v-window-item value="overview">
             <v-row>
-              <!-- Photo Thumbnail -->
+              <!-- Photo Thumbnail (Click to zoom full size) -->
               <v-col cols="12" sm="5" class="d-flex flex-column align-center justify-center">
-                <v-avatar rounded="lg" size="180" class="border bg-slate-50 w-100" style="max-height: 200px;">
+                <div
+                  class="position-relative border rounded-lg bg-slate-50 w-100 d-flex align-center justify-center overflow-hidden photo-zoom-wrapper"
+                  :class="{ 'cursor-pointer': !!displayComponent.photoURL }"
+                  :title="displayComponent.photoURL ? 'Click to view photo in full size' : ''"
+                  style="height: 180px; max-height: 200px;"
+                  @click="displayComponent.photoURL && (showPhotoLightbox = true)"
+                >
                   <MediaImage
                     type="component"
                     :src="displayComponent.photoURL"
@@ -86,7 +92,10 @@
                     width="100%"
                     :cover="false"
                   />
-                </v-avatar>
+                  <div v-if="displayComponent.photoURL" class="photo-overlay d-flex align-center justify-center">
+                    <v-icon icon="mdi-magnify-plus-outline" size="32" color="slate-800" />
+                  </div>
+                </div>
                 <span v-if="displayComponent.photoURL" class="text-caption text-slate-400 mt-1 font-mono text-truncate" style="max-width: 220px;">
                   {{ displayComponent.photoURL }}
                 </span>
@@ -255,7 +264,7 @@
                       <th class="text-left py-2 font-weight-bold">Project Name</th>
                       <th class="text-center py-2 font-weight-bold" style="width: 110px;">Qty in BOM</th>
                       <th class="text-left py-2 font-weight-bold">Designators / Notes</th>
-                      <th class="text-right py-2 font-weight-bold" style="width: 90px;">Action</th>
+                      <th class="text-left py-2 font-weight-bold" style="width: 90px;">Action</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -304,7 +313,7 @@
                       </td>
 
                       <!-- Action Button -->
-                      <td class="text-right py-2">
+                      <td class="text-left py-2">
                         <v-btn
                           size="small"
                           variant="outlined"
@@ -457,11 +466,47 @@
           variant="tonal"
           size="small"
           prepend-icon="mdi-file-pdf-box"
-          class="font-weight-medium"
+          class="font-weight-medium me-2"
           :href="getDatasheetUrl(displayComponent.datasheetURL)"
           target="_blank"
         >
           Open Datasheet
+        </v-btn>
+
+        <!-- Edit Component Button -->
+        <v-btn
+          color="slate-700"
+          variant="text"
+          size="small"
+          prepend-icon="mdi-pencil-outline"
+          class="font-weight-medium me-1"
+          @click="openEditDialog"
+        >
+          Edit
+        </v-btn>
+
+        <!-- Clone Component Button -->
+        <v-btn
+          color="slate-700"
+          variant="text"
+          size="small"
+          prepend-icon="mdi-content-copy"
+          class="font-weight-medium me-1"
+          @click="openCloneDialog"
+        >
+          Clone
+        </v-btn>
+
+        <!-- Delete Component Button -->
+        <v-btn
+          color="error"
+          variant="text"
+          size="small"
+          prepend-icon="mdi-delete-outline"
+          class="font-weight-medium"
+          @click="showDeleteDialog = true"
+        >
+          Delete
         </v-btn>
 
         <v-spacer />
@@ -506,12 +551,39 @@
       </v-card-actions>
     </v-card>
 
+    <!-- EDIT / CLONE COMPONENT DIALOG -->
+    <CreateComponentDialog
+      v-model="showEditDialog"
+      :is-edit="isEditMode"
+      :is-clone="isCloneMode"
+      :component="displayComponent"
+      :categories="categoriesList"
+      :packages="packagesList"
+      @created="handleComponentCreated"
+      @updated="handleComponentUpdated"
+    />
+
     <!-- PURCHASE CONFIRMATION DIALOG -->
     <PurchaseConfirmDialog
       v-model="showPurchaseDialog"
       :item="purchaseDialogItem"
       @purchased="handlePurchased"
       @notify="notify"
+    />
+
+    <!-- DELETE COMPONENT DIALOG (WITH PROJECT USAGE WARNING) -->
+    <DeleteComponentDialog
+      v-model="showDeleteDialog"
+      :component="displayComponent"
+      @deleted="onDeleted"
+    />
+
+    <!-- MEDIA LIGHTBOX FOR FULL SIZE COMPONENT PHOTO -->
+    <MediaLightboxDialog
+      v-model="showPhotoLightbox"
+      type="component"
+      :src="displayComponent.photoURL"
+      :title="displayComponent.component"
     />
 
     <v-snackbar v-model="snackbar.show" :color="snackbar.color" timeout="3000">
@@ -525,11 +597,63 @@ import { ref, computed, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import api, { resolveMediaUrl } from '../services/api';
 import MediaImage from './MediaImage.vue';
+import MediaLightboxDialog from './MediaLightboxDialog.vue';
 import PackageLink from './PackageLink.vue';
 import PurchaseConfirmDialog from './PurchaseConfirmDialog.vue';
+import DeleteComponentDialog from './DeleteComponentDialog.vue';
+import CreateComponentDialog from './CreateComponentDialog.vue';
 import { formatCurrency, formatDate } from '../utils/formatters';
 
 const router = useRouter();
+const showPhotoLightbox = ref(false);
+const showEditDialog = ref(false);
+const isEditMode = ref(true);
+const isCloneMode = ref(false);
+const categoriesList = ref([]);
+const packagesList = ref([]);
+
+const ensureMetaLoaded = async () => {
+  if (categoriesList.value.length === 0) {
+    try {
+      categoriesList.value = await api.getCategories();
+    } catch (e) {
+      console.warn('Failed to load categories for edit dialog', e);
+    }
+  }
+  if (packagesList.value.length === 0) {
+    try {
+      packagesList.value = await api.getPackages();
+    } catch (e) {
+      console.warn('Failed to load packages for edit dialog', e);
+    }
+  }
+};
+
+const openEditDialog = async () => {
+  await ensureMetaLoaded();
+  isEditMode.value = true;
+  isCloneMode.value = false;
+  showEditDialog.value = true;
+};
+
+const openCloneDialog = async () => {
+  await ensureMetaLoaded();
+  isEditMode.value = false;
+  isCloneMode.value = true;
+  showEditDialog.value = true;
+};
+
+const handleComponentCreated = async (newComp) => {
+  notify(`Component "${newComp.component}" created successfully!`);
+  emit('created', newComp);
+  emit('updated', newComp);
+};
+
+const handleComponentUpdated = async (updatedComp) => {
+  notify(`Component "${updatedComp.component}" updated successfully!`);
+  await loadFullDetails();
+  emit('updated', updatedComp);
+};
 
 const props = defineProps({
   modelValue: {
@@ -554,13 +678,19 @@ const props = defineProps({
   }
 });
 
-const emit = defineEmits(['update:modelValue', 'select', 'add-to-shopping-list', 'purchased']);
+const emit = defineEmits(['update:modelValue', 'select', 'add-to-shopping-list', 'purchased', 'deleted', 'updated', 'created']);
 
 const activeTab = ref('overview');
 const detailedComponent = ref(null);
 const loading = ref(false);
 const addingToShoppingList = ref(false);
 const showPurchaseDialog = ref(false);
+const showDeleteDialog = ref(false);
+
+const onDeleted = (payload) => {
+  emit('deleted', payload);
+  emit('update:modelValue', false);
+};
 const snackbar = ref({
   show: false,
   text: '',
@@ -733,5 +863,24 @@ watch(() => props.component, () => {
 }
 .hover-underline:hover {
   text-decoration: underline;
+}
+.photo-zoom-wrapper {
+  position: relative;
+  overflow: hidden;
+}
+.photo-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(255, 255, 255, 0.75);
+  backdrop-filter: blur(2px);
+  opacity: 0;
+  transition: opacity 0.2s ease-in-out;
+  pointer-events: none;
+}
+.photo-zoom-wrapper:hover .photo-overlay {
+  opacity: 1;
 }
 </style>

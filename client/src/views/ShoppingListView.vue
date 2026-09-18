@@ -134,7 +134,7 @@
             <th class="text-right font-weight-bold">Est. Unit Price</th>
             <th class="text-right font-weight-bold">Est. Total</th>
             <th class="text-center font-weight-bold">Date Added</th>
-            <th class="text-right font-weight-bold" style="width: 90px;">Actions</th>
+            <th class="text-left font-weight-bold" style="width: 100px;">Actions</th>
           </tr>
         </thead>
 
@@ -218,8 +218,8 @@
                   min="1"
                   :value="item.qty"
                   @change="e => onQtyInputChange(item, e.target.value)"
-                  class="font-mono font-weight-bold text-center text-slate-900 border-0 outline-none"
-                  style="width: 44px; font-size: 0.9rem;"
+                  class="font-mono font-weight-bold text-center text-slate-900 border-0 outline-none quantity-input"
+                  style="width: 48px; font-size: 0.9rem;"
                 />
                 <v-btn
                   icon="mdi-plus"
@@ -258,7 +258,7 @@
             </td>
 
             <!-- Actions -->
-            <td class="text-right text-no-wrap">
+            <td class="text-left text-no-wrap">
               <!-- Buy Component -->
               <v-btn
                 icon="mdi-cash-check"
@@ -336,29 +336,18 @@
     <ComponentDetailsDialog
       v-model="showDetailsDialog"
       :component="selectedItemForDetails"
+      @updated="loadShoppingList"
+      @deleted="loadShoppingList"
       @notify="notify"
     />
 
     <!-- Modal: Photo Lightbox -->
-    <v-dialog v-model="lightbox.show" max-width="800">
-      <v-card class="rounded-0 border bg-white overflow-hidden">
-        <v-card-title class="bg-slate-50 py-3 px-4 border-b d-flex align-center justify-space-between">
-          <div class="font-mono font-weight-bold text-subtitle-1 text-slate-900">
-            {{ lightbox.title }}
-          </div>
-          <v-btn icon="mdi-close" variant="text" size="small" @click="lightbox.show = false" />
-        </v-card-title>
-        <v-card-text class="pa-4 d-flex align-center justify-center bg-slate-50" style="min-height: 350px;">
-          <MediaImage
-            type="component"
-            :src="lightbox.src"
-            height="auto"
-            width="100%"
-            style="max-height: 600px; object-fit: contain;"
-          />
-        </v-card-text>
-      </v-card>
-    </v-dialog>
+    <MediaLightboxDialog
+      v-model="lightbox.show"
+      type="component"
+      :src="lightbox.src"
+      :title="lightbox.title"
+    />
 
     <!-- Notification Snackbar -->
     <v-snackbar v-model="snackbar.show" :color="snackbar.color" timeout="3500">
@@ -371,6 +360,7 @@
 import { ref, computed, onMounted } from 'vue';
 import api from '../services/api';
 import MediaImage from '../components/MediaImage.vue';
+import MediaLightboxDialog from '../components/MediaLightboxDialog.vue';
 import PackageLink from '../components/PackageLink.vue';
 import PurchaseConfirmDialog from '../components/PurchaseConfirmDialog.vue';
 import ComponentDetailsDialog from '../components/ComponentDetailsDialog.vue';
@@ -567,5 +557,16 @@ onMounted(() => {
 }
 .quantity-stepper {
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+}
+.quantity-input::-webkit-outer-spin-button,
+.quantity-input::-webkit-inner-spin-button,
+.quantity-stepper input[type=number]::-webkit-outer-spin-button,
+.quantity-stepper input[type=number]::-webkit-inner-spin-button {
+  -webkit-appearance: none !important;
+  margin: 0 !important;
+}
+.quantity-input,
+.quantity-stepper input[type=number] {
+  -moz-appearance: textfield !important;
 }
 </style>

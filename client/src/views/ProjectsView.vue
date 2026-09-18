@@ -77,7 +77,8 @@
         cols="12"
         sm="6"
         md="4"
-        lg="3"
+        lg="4"
+        xl="4"
       >
         <v-card
           elevation="1"
@@ -85,15 +86,24 @@
           hover
           @click="navigateToProject(p.id)"
         >
-          <!-- Project Photo Cover (Fit without cropping) -->
-          <div class="position-relative bg-slate-50 border-b d-flex align-center justify-center pa-2" style="height: 190px;">
+          <!-- Project Photo Cover (Fit without cropping, click to zoom) -->
+          <div
+            class="position-relative bg-slate-50 border-b d-flex align-center justify-center pa-2 project-photo-cover"
+            :class="{ 'cursor-pointer': !!p.photoUrl }"
+            :title="p.photoUrl ? 'Click to view photo in full size' : ''"
+            style="height: 200px;"
+            @click.stop="p.photoUrl ? openPhotoLightbox('project', p.photoUrl, p.projectName) : navigateToProject(p.id)"
+          >
             <MediaImage
               type="project"
               :src="p.photoUrl"
-              height="174px"
+              height="184px"
               width="100%"
               :cover="false"
             />
+            <div v-if="p.photoUrl" class="photo-overlay d-flex align-center justify-center">
+              <v-icon icon="mdi-magnify-plus-outline" size="32" color="slate-800" />
+            </div>
           </div>
 
           <!-- Project Details Body -->
@@ -112,75 +122,75 @@
 
             <!-- Chips / Stats with clear spacing -->
             <div>
-              <div class="d-flex flex-wrap align-center mb-3" style="gap: 8px;">
-                <v-chip size="x-small" color="primary" variant="tonal" class="font-weight-medium">
-                  <v-icon start size="12">mdi-chip</v-icon>
-                  {{ p.bomItemCount }} BOM parts
+              <div class="project-card-chips d-flex flex-wrap align-center mb-3" style="gap: 8px;">
+                <v-chip size="small" color="primary" variant="tonal" class="font-weight-medium">
+                  <v-icon start size="15">mdi-chip</v-icon>
+                  {{ p.bomItemCount }} parts
                 </v-chip>
 
-                <v-chip size="x-small" color="secondary" variant="tonal" class="font-weight-medium">
-                  <v-icon start size="12">mdi-numeric</v-icon>
-                  {{ p.totalQuantityNeeded }} pcs total
+                <v-chip size="small" color="secondary" variant="tonal" class="font-weight-medium">
+                  <v-icon start size="15">mdi-numeric</v-icon>
+                  {{ p.totalQuantityNeeded }} pcs
                 </v-chip>
 
                 <!-- Estimated Cost chip -->
                 <v-chip
                   v-if="p.bomItemCount > 0"
-                  size="x-small"
+                  size="small"
                   color="primary"
                   variant="tonal"
                   class="font-weight-bold font-mono"
                   :title="`${p.pricedItemsCount || 0} of ${p.bomItemCount} parts priced`"
                 >
-                  <v-icon start size="12">mdi-currency-usd</v-icon>
-                  Est. {{ formatCurrency(p.estimatedCost) }}
+                  <v-icon start size="15">mdi-currency-usd</v-icon>
+                  {{ formatCurrency(p.estimatedCost) }}
                 </v-chip>
 
                 <!-- Absent parts chip -->
                 <v-chip
                   v-if="p.absentPartsCount > 0"
-                  size="x-small"
+                  size="small"
                   color="error"
                   variant="flat"
                   class="font-weight-bold"
                 >
-                  <v-icon start size="12">mdi-alert-circle-outline</v-icon>
+                  <v-icon start size="15">mdi-alert-circle-outline</v-icon>
                   {{ p.absentPartsCount }} absent
                 </v-chip>
                 <v-chip
                   v-else-if="p.bomItemCount > 0"
-                  size="x-small"
+                  size="small"
                   color="success"
                   variant="tonal"
                   class="font-weight-medium"
                 >
-                  <v-icon start size="12">mdi-check-circle-outline</v-icon>
+                  <v-icon start size="15">mdi-check-circle-outline</v-icon>
                   0 absent
                 </v-chip>
 
                 <!-- Attached files chip -->
                 <v-chip
                   v-if="p.filesCount > 0"
-                  size="x-small"
+                  size="small"
                   color="slate-700"
                   variant="tonal"
                   class="font-weight-medium"
                   :title="`${p.filesCount} file(s) attached`"
                 >
-                  <v-icon start size="12">mdi-paperclip</v-icon>
+                  <v-icon start size="15">mdi-paperclip</v-icon>
                   {{ p.filesCount }} {{ p.filesCount === 1 ? 'file' : 'files' }}
                 </v-chip>
 
                 <!-- iBOM indicator chip -->
                 <v-chip
                   v-if="p.ibomFilesCount > 0"
-                  size="x-small"
+                  size="small"
                   color="success"
                   variant="flat"
                   class="font-weight-bold"
                   title="KiCAD Interactive HTML BOM attached"
                 >
-                  <v-icon start size="12">mdi-chip</v-icon>
+                  <v-icon start size="15">mdi-chip</v-icon>
                   iBOM
                 </v-chip>
               </div>
@@ -448,7 +458,7 @@
                 <th class="text-right font-weight-bold">Unit Price</th>
                 <th class="text-right font-weight-bold">Total Cost</th>
                 <th class="text-left font-weight-bold">Designators / Comment</th>
-                <th class="text-right font-weight-bold" style="width: 130px;">Actions</th>
+                <th class="text-left font-weight-bold" style="width: 130px;">Actions</th>
               </tr>
             </thead>
 
@@ -460,7 +470,14 @@
               >
                 <!-- Photo Thumbnail -->
                 <td>
-                  <v-avatar rounded="lg" size="36" class="border bg-slate-50">
+                  <v-avatar
+                    rounded="lg"
+                    size="36"
+                    class="border bg-slate-50"
+                    :class="{ 'cursor-pointer hover-zoom': !!item.componentPhotoURL }"
+                    :title="item.componentPhotoURL ? 'Click to view photo in full size' : ''"
+                    @click.stop="item.componentPhotoURL && openPhotoLightbox('component', item.componentPhotoURL, item.component)"
+                  >
                     <MediaImage
                       type="component"
                       :src="item.componentPhotoURL"
@@ -538,7 +555,7 @@
                 </td>
 
                 <!-- Actions -->
-                <td class="text-right">
+                <td class="text-left">
                   <!-- Add to Cart -->
                   <v-btn
                     v-if="!item.isStockSufficient"
@@ -686,6 +703,14 @@
       @notify="notify"
     />
 
+    <!-- FULL SIZE MEDIA LIGHTBOX DIALOG -->
+    <MediaLightboxDialog
+      v-model="lightbox.show"
+      :type="lightbox.type"
+      :src="lightbox.src"
+      :title="lightbox.title"
+    />
+
     <!-- Notification Snackbar -->
     <v-snackbar v-model="snackbar.show" :color="snackbar.color" timeout="3000" location="bottom right">
       {{ snackbar.text }}
@@ -698,6 +723,7 @@ import { ref, computed, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import api from '../services/api';
 import MediaImage from '../components/MediaImage.vue';
+import MediaLightboxDialog from '../components/MediaLightboxDialog.vue';
 import AddComponentDialog from '../components/AddComponentDialog.vue';
 import PackageLink from '../components/PackageLink.vue';
 import ProjectFormDialog from '../components/ProjectFormDialog.vue';
@@ -709,6 +735,23 @@ const router = useRouter();
 const projects = ref([]);
 const activeProject = ref(null);
 const bomItems = ref([]);
+
+const lightbox = ref({
+  show: false,
+  type: 'project',
+  src: null,
+  title: ''
+});
+
+const openPhotoLightbox = (type, src, title) => {
+  if (!src) return;
+  lightbox.value = {
+    show: true,
+    type,
+    src,
+    title
+  };
+};
 
 const searchQuery = ref('');
 const bomSearch = ref('');
@@ -968,5 +1011,39 @@ onMounted(() => {
 }
 .bom-table :deep(tr.row-shortage:hover) {
   background-color: #FEE2E2 !important; /* slightly deeper rose-100 on hover */
+}
+
+/* Project Card Chips */
+.project-card-chips :deep(.v-chip) {
+  font-size: 0.8125rem !important; /* 13px */
+  height: 26px;
+  padding: 0 10px;
+}
+
+.project-photo-cover {
+  position: relative;
+  overflow: hidden;
+}
+.photo-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(255, 255, 255, 0.75);
+  backdrop-filter: blur(2px);
+  opacity: 0;
+  transition: opacity 0.2s ease-in-out;
+  pointer-events: none;
+}
+.project-photo-cover:hover .photo-overlay {
+  opacity: 1;
+}
+.hover-zoom {
+  transition: transform 0.15s ease;
+}
+.hover-zoom:hover {
+  transform: scale(1.15);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
 }
 </style>

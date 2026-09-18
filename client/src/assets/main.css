@@ -98,3 +98,12 @@ body {
 .gap-5 { gap: 20px !important; }
 .gap-6 { gap: 24px !important; }
 
+/* Suppress native browser number input spin buttons in custom steppers */
+input[type=number]::-webkit-outer-spin-button,
+input[type=number]::-webkit-inner-spin-button {
+  -webkit-appearance: none !important;
+  margin: 0 !important;
+}
+input[type=number] {
+  -moz-appearance: textfield !important;
+}

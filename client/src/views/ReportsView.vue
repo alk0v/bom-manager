@@ -201,7 +201,7 @@
             <th class="text-center font-weight-bold">Produced</th>
             <th class="text-left font-weight-bold">Parts Consumed</th>
             <th class="text-center font-weight-bold" style="width: 130px;">Status</th>
-            <th class="text-right font-weight-bold" style="width: 220px;">Actions</th>
+            <th class="text-left font-weight-bold" style="width: 220px;">Actions</th>
           </tr>
         </thead>
 
@@ -301,8 +301,8 @@
               </td>
 
               <!-- Actions -->
-              <td class="text-right">
-                <div class="d-flex align-center justify-end gap-2">
+              <td class="text-left">
+                <div class="d-flex align-center justify-start gap-2">
                   <!-- View Breakdown Button -->
                   <v-btn
                     variant="outlined"
@@ -592,6 +592,8 @@
     <ComponentDetailsDialog
       v-model="showCompDetailsDialog"
       :component="selectedCompForDetails"
+      @updated="loadReport"
+      @deleted="loadReport"
     />
 
     <!-- Notification Snackbar -->

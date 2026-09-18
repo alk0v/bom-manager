@@ -206,12 +206,23 @@
             />
 
             <v-btn
+              variant="outlined"
+              color="primary"
+              size="small"
+              prepend-icon="mdi-shape-outline"
+              class="font-weight-bold"
+              @click="showManageCatalogDialog = true"
+            >
+              Categories & Packages
+            </v-btn>
+
+            <v-btn
               color="primary"
               variant="flat"
               size="small"
               prepend-icon="mdi-plus"
               class="font-weight-bold"
-              @click="showCreateDialog = true"
+              @click="openCreateComponent"
             >
               Add Component
             </v-btn>
@@ -232,7 +243,7 @@
             <th class="text-left font-weight-bold">Description</th>
             <th class="text-center font-weight-bold" style="width: 100px;">In Stock</th>
             <th class="text-center font-weight-bold" style="width: 100px;">Min Qty</th>
-            <th class="text-right font-weight-bold" style="width: 90px;">Actions</th>
+            <th class="text-left font-weight-bold" style="width: 175px;">Actions</th>
           </tr>
         </thead>
 
@@ -346,7 +357,7 @@
             </td>
 
             <!-- Actions -->
-            <td class="text-right text-no-wrap">
+            <td class="text-left text-no-wrap">
               <!-- Add to Shopping List -->
               <v-btn
                 icon="mdi-cart-plus"
@@ -365,6 +376,36 @@
                 variant="text"
                 title="Buy Component"
                 @click="openDirectPurchase(c)"
+              />
+
+              <!-- Edit Component -->
+              <v-btn
+                icon="mdi-pencil-outline"
+                size="small"
+                color="slate-700"
+                variant="text"
+                title="Edit Component"
+                @click="openEditComponent(c)"
+              />
+
+              <!-- Clone Component -->
+              <v-btn
+                icon="mdi-content-copy"
+                size="small"
+                color="slate-700"
+                variant="text"
+                title="Clone Component"
+                @click="openCloneComponent(c)"
+              />
+
+              <!-- Delete Component -->
+              <v-btn
+                icon="mdi-delete-outline"
+                size="small"
+                color="error"
+                variant="text"
+                title="Delete Component"
+                @click="openDeleteDialog(c)"
               />
             </td>
           </tr>
@@ -417,14 +458,21 @@
       v-model="showDetailsDialog"
       :component="selectedComponent"
       @purchased="fetchComponents"
+      @deleted="onComponentDeleted"
+      @updated="fetchComponents"
     />
 
-    <!-- CREATE COMPONENT DIALOG -->
+    <!-- CREATE / EDIT / CLONE COMPONENT DIALOG -->
     <CreateComponentDialog
       v-model="showCreateDialog"
+      :is-edit="isEditMode"
+      :is-clone="isCloneMode"
+      :component="selectedComponentForEdit"
       :categories="categories"
       :packages="packages"
       @created="handleComponentCreated"
+      @updated="handleComponentUpdated"
+      @catalog-updated="onCatalogUpdated"
     />
 
     <!-- DIRECT PURCHASE CONFIRMATION DIALOG -->
@@ -433,6 +481,19 @@
       :item="directPurchaseItem"
       @purchased="handleDirectPurchased"
       @notify="notify"
+    />
+
+    <!-- MANAGE CATALOG (CATEGORIES & PACKAGES) DIALOG -->
+    <ManageCatalogDialog
+      v-model="showManageCatalogDialog"
+      @updated="onCatalogUpdated"
+    />
+
+    <!-- DELETE COMPONENT DIALOG (WITH PROJECT USAGE WARNING) -->
+    <DeleteComponentDialog
+      v-model="showDeleteDialog"
+      :component="componentToDelete"
+      @deleted="onComponentDeleted"
     />
 
     <v-snackbar v-model="snackbar.show" :color="snackbar.color" timeout="3000">
@@ -449,6 +510,8 @@ import PackageLink from '../components/PackageLink.vue';
 import CreateComponentDialog from '../components/CreateComponentDialog.vue';
 import ComponentDetailsDialog from '../components/ComponentDetailsDialog.vue';
 import PurchaseConfirmDialog from '../components/PurchaseConfirmDialog.vue';
+import ManageCatalogDialog from '../components/ManageCatalogDialog.vue';
+import DeleteComponentDialog from '../components/DeleteComponentDialog.vue';
 import { useComponentsStore } from '../stores/components';
 
 const componentsStore = useComponentsStore();
@@ -458,6 +521,14 @@ const categories = ref([]);
 const packages = ref([]);
 const projects = ref([]);
 const totalComponents = ref(0);
+
+const showCreateDialog = ref(false);
+const isEditMode = ref(false);
+const isCloneMode = ref(false);
+const selectedComponentForEdit = ref(null);
+const showManageCatalogDialog = ref(false);
+const showDeleteDialog = ref(false);
+const componentToDelete = ref(null);
 const loading = ref(false);
 
 // Filter states
@@ -492,14 +563,8 @@ const offset = ref(0);
 
 const selectedComponent = ref(null);
 const showDetailsDialog = ref(false);
-const showCreateDialog = ref(false);
 const showDirectPurchaseDialog = ref(false);
 const directPurchaseItem = ref(null);
-
-const handleComponentCreated = (newComp) => {
-  notify(`Component "${newComp.component}" created successfully`, 'success');
-  fetchComponents();
-};
 
 const snackbar = ref({
   show: false,
@@ -666,7 +731,51 @@ const getDatasheetUrl = (url) => {
   return resolveMediaUrl('datasheet', url);
 };
 
-onMounted(async () => {
+const openDeleteDialog = (c) => {
+  componentToDelete.value = c;
+  showDeleteDialog.value = true;
+};
+
+const onComponentDeleted = ({ id, component }) => {
+  notify(`Component "${component}" deleted successfully`);
+  if (selectedComponent.value && (selectedComponent.value.ID === id || selectedComponent.value.id === id)) {
+    showDetailsDialog.value = false;
+  }
+  fetchComponents();
+};
+
+const openCreateComponent = () => {
+  isEditMode.value = false;
+  isCloneMode.value = false;
+  selectedComponentForEdit.value = null;
+  showCreateDialog.value = true;
+};
+
+const openEditComponent = (c) => {
+  isEditMode.value = true;
+  isCloneMode.value = false;
+  selectedComponentForEdit.value = c;
+  showCreateDialog.value = true;
+};
+
+const openCloneComponent = (c) => {
+  isEditMode.value = false;
+  isCloneMode.value = true;
+  selectedComponentForEdit.value = c;
+  showCreateDialog.value = true;
+};
+
+const handleComponentCreated = (newComp) => {
+  notify(`Component "${newComp.component}" added to catalog!`);
+  fetchComponents();
+};
+
+const handleComponentUpdated = (updatedComp) => {
+  notify(`Component "${updatedComp.component}" updated successfully!`);
+  fetchComponents();
+};
+
+const loadMeta = async () => {
   try {
     const [cats, pkgs, projs] = await Promise.all([
       api.getCategories(),
@@ -679,6 +788,15 @@ onMounted(async () => {
   } catch (err) {
     console.error('Failed to load metadata for filters:', err);
   }
+};
+
+const onCatalogUpdated = async () => {
+  await loadMeta();
+  fetchComponents();
+};
+
+onMounted(async () => {
+  await loadMeta();
   fetchComponents();
 });
 </script>

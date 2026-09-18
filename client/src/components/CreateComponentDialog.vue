@@ -11,30 +11,63 @@
       <div class="px-6 py-4 bg-slate-50 border-b border-slate-200 d-flex align-center justify-space-between flex-shrink-0">
         <div class="d-flex align-center gap-3">
           <div class="rounded-lg bg-blue-50 text-primary pa-2 d-flex align-center justify-center border border-blue-100">
-            <v-icon icon="mdi-chip" size="24" color="primary" />
+            <v-icon :icon="dialogIcon" size="24" color="primary" />
           </div>
           <div>
             <div class="text-h6 font-weight-bold text-slate-900 leading-tight">
-              {{ title }}
+              {{ dialogTitle }}
             </div>
             <div class="text-caption text-slate-500 mt-0-5">
-              {{ subtitle || 'Add a new electronic component, IC, passive part, or module to the catalog database' }}
+              {{ dialogSubtitle }}
             </div>
           </div>
         </div>
-        <v-btn
-          icon="mdi-close"
-          variant="text"
-          size="small"
-          color="slate-500"
-          :disabled="submitting"
-          @click="close"
-          title="Close dialog"
-        />
+        <div class="d-flex align-center gap-2">
+          <v-btn
+            v-if="isEditMode"
+            variant="tonal"
+            size="small"
+            color="primary"
+            prepend-icon="mdi-content-copy"
+            class="font-weight-medium text-caption"
+            :disabled="submitting"
+            @click="cloneComponent"
+            title="Clone into a new component"
+          >
+            Clone
+          </v-btn>
+          <v-btn
+            icon="mdi-close"
+            variant="text"
+            size="small"
+            color="slate-500"
+            :disabled="submitting"
+            @click="close"
+            title="Close dialog"
+          />
+        </div>
       </div>
 
       <!-- Form Content -->
       <v-card-text class="pa-6 overflow-y-auto">
+        <!-- Cloned Component Alert -->
+        <v-alert
+          v-if="isCloning"
+          type="info"
+          variant="tonal"
+          density="comfortable"
+          class="mb-4 rounded-lg text-body-2"
+          icon="mdi-content-copy"
+          closable
+          @click:close="isCloning = false"
+        >
+          <div class="d-flex align-center justify-space-between flex-wrap gap-2">
+            <div>
+              Cloned from <strong class="font-mono text-primary">{{ clonedSourceName }}</strong>. Specifications and parameters have been populated. Modify the component name or values and click <strong>Create Component</strong>.
+            </div>
+          </div>
+        </v-alert>
+
         <!-- Error Alert -->
         <v-alert
           v-if="errorMessage"
@@ -113,7 +146,7 @@
             <v-col cols="12" md="6">
               <v-autocomplete
                 v-model="form.category_id"
-                :items="categories"
+                :items="availableCategories"
                 item-title="category"
                 item-value="ID"
                 label="Category *"
@@ -124,7 +157,18 @@
                 prepend-inner-icon="mdi-shape-outline"
                 clearable
                 :rules="[rules.requiredSelection]"
-              />
+              >
+                <template #append>
+                  <v-btn
+                    icon="mdi-plus"
+                    size="x-small"
+                    variant="tonal"
+                    color="primary"
+                    title="Create new category"
+                    @click="openQuickCategory"
+                  />
+                </template>
+              </v-autocomplete>
             </v-col>
 
             <!-- Package / Footprint -->
@@ -143,6 +187,16 @@
                 clearable
                 :rules="[rules.requiredSelection]"
               >
+                <template #append>
+                  <v-btn
+                    icon="mdi-plus"
+                    size="x-small"
+                    variant="tonal"
+                    color="primary"
+                    title="Create new package footprint"
+                    @click="openQuickPackage"
+                  />
+                </template>
                 <template #prepend-item>
                   <div class="pa-2 px-3 bg-slate-50 border-b d-flex align-center justify-space-between">
                     <span class="text-caption font-weight-bold text-slate-600">Filter By Mount Type:</span>
@@ -453,10 +507,10 @@
 
       <!-- Footer Actions -->
       <div class="px-6 py-3 bg-slate-50 border-t border-slate-200 d-flex align-center justify-space-between flex-wrap gap-2 flex-shrink-0">
-        <!-- Add Another Checkbox (only in catalog view, hidden when used as row mapper) -->
+        <!-- Add Another Checkbox (only in catalog creation view, hidden when editing or used as row mapper) -->
         <div class="d-flex align-center">
           <v-checkbox
-            v-if="!hideAddAnother"
+            v-if="!hideAddAnother && !isEditMode"
             v-model="addAnother"
             label="Add another component after saving"
             density="compact"
@@ -467,6 +521,18 @@
         </div>
 
         <div class="d-flex align-center gap-2 ms-auto">
+          <v-btn
+            v-if="isEditMode"
+            variant="tonal"
+            color="slate-700"
+            prepend-icon="mdi-content-copy"
+            :disabled="submitting"
+            @click="cloneComponent"
+            title="Create a new component pre-filled with these values"
+          >
+            Clone Component
+          </v-btn>
+
           <v-btn
             variant="outlined"
             color="slate-700"
@@ -484,7 +550,7 @@
             :disabled="submitting"
             @click="submitForm"
           >
-            {{ draftMode ? 'Apply Component' : 'Create Component' }}
+            {{ submitButtonText }}
           </v-btn>
         </div>
       </div>
@@ -564,6 +630,170 @@
       </div>
     </v-card>
   </v-dialog>
+
+  <!-- QUICK CREATE CATEGORY MODAL -->
+  <v-dialog v-model="showQuickCategory" max-width="420px" persistent>
+    <v-card class="rounded-0 border bg-white">
+      <v-card-title class="bg-slate-50 py-3 px-4 border-b font-weight-bold text-subtitle-1">
+        Add New Category
+      </v-card-title>
+      <v-card-text class="pa-4">
+        <v-text-field
+          v-model="quickCategoryName"
+          label="Category Name *"
+          placeholder="e.g. Relays, Microcontrollers, Sensors"
+          variant="outlined"
+          density="comfortable"
+          autofocus
+          :error-messages="quickCategoryError"
+          @keydown.enter="submitQuickCategory"
+        />
+      </v-card-text>
+      <v-divider />
+      <v-card-actions class="pa-3 px-4 bg-slate-50 d-flex justify-end gap-2">
+        <v-btn variant="text" size="small" @click="showQuickCategory = false">Cancel</v-btn>
+        <v-btn
+          color="primary"
+          variant="flat"
+          size="small"
+          class="font-weight-bold"
+          :loading="quickCategorySaving"
+          @click="submitQuickCategory"
+        >
+          Create Category
+        </v-btn>
+      </v-card-actions>
+    </v-card>
+  </v-dialog>
+
+  <!-- QUICK CREATE PACKAGE FOOTPRINT MODAL -->
+  <v-dialog v-model="showQuickPackage" max-width="480px" persistent>
+    <v-card class="rounded-0 border bg-white">
+      <v-card-title class="bg-slate-50 py-3 px-4 border-b font-weight-bold text-subtitle-1">
+        Add New Package Footprint
+      </v-card-title>
+      <v-card-text class="pa-4">
+        <v-text-field
+          v-model="quickPackageForm.package"
+          label="Package Footprint Name *"
+          placeholder="e.g. TSSOP-20, SOT-23-5, 1206"
+          variant="outlined"
+          density="comfortable"
+          class="font-mono mb-3"
+          autofocus
+          :error-messages="quickPackageError"
+        />
+
+        <!-- Pin Count & Mount Technology Row (Aligned Heights and Baseline) -->
+        <v-row dense class="mb-3" align="center">
+          <v-col cols="12" sm="5">
+            <v-text-field
+              v-model.number="quickPackageForm.pinQuantity"
+              label="Pin / Pad Count"
+              type="number"
+              min="1"
+              placeholder="e.g. 20"
+              variant="outlined"
+              density="comfortable"
+              hide-details="auto"
+            />
+          </v-col>
+          <v-col cols="12" sm="7">
+            <div class="border rounded-lg d-flex align-center px-3 justify-space-between bg-slate-50" style="height: 48px;">
+              <span class="text-caption font-weight-medium text-slate-600 me-2 flex-shrink-0">
+                Mount:
+              </span>
+              <v-btn-toggle
+                v-model="quickPackageForm.isSmd"
+                mandatory
+                density="compact"
+                variant="flat"
+                rounded="md"
+                color="primary"
+                class="flex-grow-1 bg-white border"
+                style="height: 34px;"
+              >
+                <v-btn :value="1" size="small" class="flex-grow-1 text-caption font-weight-bold">
+                  SMD
+                </v-btn>
+                <v-btn :value="0" size="small" class="flex-grow-1 text-caption font-weight-bold">
+                  Through-Hole
+                </v-btn>
+              </v-btn-toggle>
+            </div>
+          </v-col>
+        </v-row>
+
+        <!-- Drawing / Pinout Image with Live Upload and Preview -->
+        <div class="d-flex align-center gap-3 mb-1">
+          <v-avatar
+            v-if="quickPackageForm.drawingURL"
+            rounded="lg"
+            size="48"
+            class="border bg-slate-50 flex-shrink-0"
+          >
+            <MediaImage
+              type="package"
+              :src="quickPackageForm.drawingURL"
+              height="48px"
+              width="48px"
+            />
+          </v-avatar>
+
+          <v-text-field
+            v-model="quickPackageForm.drawingURL"
+            label="Drawing / Pinout Image (Filename or URL)"
+            placeholder="e.g. tssop20.png or https://..."
+            variant="outlined"
+            density="comfortable"
+            prepend-inner-icon="mdi-image-outline"
+            clearable
+            hide-details="auto"
+            class="flex-grow-1"
+          >
+            <template #append-inner>
+              <v-btn
+                variant="tonal"
+                color="primary"
+                size="small"
+                class="text-caption font-weight-bold my-n1"
+                prepend-icon="mdi-upload"
+                :loading="uploadingQuickDrawing"
+                @click.stop="quickDrawingInputRef?.click()"
+                title="Upload drawing to media/packages/"
+              >
+                Upload
+              </v-btn>
+            </template>
+          </v-text-field>
+          <input
+            ref="quickDrawingInputRef"
+            type="file"
+            accept="image/*"
+            style="display: none;"
+            @change="handleQuickDrawingUpload"
+          />
+        </div>
+        <div class="text-caption text-slate-500 mt-1 ms-1">
+          Stored in <code>media/packages/</code> or specify an external image URL.
+        </div>
+      </v-card-text>
+      <v-divider />
+      <v-card-actions class="pa-3 px-4 bg-slate-50 d-flex justify-end gap-2">
+        <v-btn variant="text" size="small" @click="showQuickPackage = false">Cancel</v-btn>
+        <v-btn
+          color="primary"
+          variant="flat"
+          size="small"
+          class="font-weight-bold"
+          :loading="quickPackageSaving"
+          @click="submitQuickPackage"
+        >
+          Create Package
+        </v-btn>
+      </v-card-actions>
+    </v-card>
+  </v-dialog>
 </template>
 
 <script setup>
@@ -588,9 +818,13 @@ const props = defineProps({
     type: Object,
     default: null
   },
+  component: {
+    type: Object,
+    default: null
+  },
   title: {
     type: String,
-    default: 'Add New Component'
+    default: ''
   },
   subtitle: {
     type: String,
@@ -603,10 +837,61 @@ const props = defineProps({
   draftMode: {
     type: Boolean,
     default: false
+  },
+  isEdit: {
+    type: Boolean,
+    default: false
+  },
+  isClone: {
+    type: Boolean,
+    default: false
   }
 });
 
-const emit = defineEmits(['update:modelValue', 'created']);
+const emit = defineEmits(['update:modelValue', 'created', 'updated', 'saved', 'catalog-updated']);
+
+const isCloning = ref(false);
+const clonedSourceName = ref('');
+
+const cloneComponent = () => {
+  const currentName = form.component || props.component?.component || '';
+  clonedSourceName.value = currentName;
+  isCloning.value = true;
+  if (form.component && !form.component.endsWith('(Copy)')) {
+    form.component = `${form.component} (Copy)`;
+  }
+  errorMessage.value = '';
+};
+
+const isEditMode = computed(() => {
+  if (isCloning.value) return false;
+  return props.isEdit || !!(props.component?.id || props.component?.ID);
+});
+
+const dialogTitle = computed(() => {
+  if (props.title) return props.title;
+  if (isCloning.value) return 'Add New Component';
+  return isEditMode.value ? 'Edit Component' : 'Add New Component';
+});
+
+const dialogSubtitle = computed(() => {
+  if (props.subtitle) return props.subtitle;
+  if (isCloning.value) {
+    return `Create a new component pre-filled with specifications from "${clonedSourceName.value || 'cloned part'}"`;
+  }
+  return isEditMode.value
+    ? 'Update catalog specifications, inventory parameters, and documentation'
+    : 'Add a new electronic component, IC, passive part, or module to the catalog database';
+});
+
+const dialogIcon = computed(() => {
+  return isEditMode.value ? 'mdi-pencil-outline' : 'mdi-chip';
+});
+
+const submitButtonText = computed(() => {
+  if (props.draftMode) return 'Apply Component';
+  return isEditMode.value ? 'Save Changes' : 'Create Component';
+});
 
 const dialogModel = computed({
   get: () => props.modelValue,
@@ -686,22 +971,148 @@ const rules = {
   maxLength: (max) => (v) => (!v || String(v).length <= max) || `Maximum ${max} characters`
 };
 
+// Local catalog state with props sync
+const localCategories = ref([]);
+const localPackages = ref([]);
+
+watch(() => props.categories, (cats) => {
+  if (cats && cats.length > 0) {
+    localCategories.value = [...cats];
+  }
+}, { immediate: true });
+
+watch(() => props.packages, (pkgs) => {
+  if (pkgs && pkgs.length > 0) {
+    localPackages.value = [...pkgs];
+  }
+}, { immediate: true });
+
+const availableCategories = computed(() => {
+  return localCategories.value.length > 0 ? localCategories.value : props.categories;
+});
+
+const availablePackages = computed(() => {
+  return localPackages.value.length > 0 ? localPackages.value : props.packages;
+});
+
 // Packages filtered by SMD / THT toggle
 const filteredPackagesList = computed(() => {
+  const pkgs = availablePackages.value;
   if (packageMountType.value === 'smd') {
-    return props.packages.filter(p => p.isSmd === 1);
+    return pkgs.filter(p => p.isSmd === 1);
   }
   if (packageMountType.value === 'tht') {
-    return props.packages.filter(p => p.isSmd === 0);
+    return pkgs.filter(p => p.isSmd === 0);
   }
-  return props.packages;
+  return pkgs;
 });
 
 // Selected package object details
 const selectedPackageObj = computed(() => {
   if (!form.package_id) return null;
-  return props.packages.find(p => p.ID === form.package_id) || null;
+  return availablePackages.value.find(p => p.ID === form.package_id) || null;
 });
+
+// Quick Category State & Functions
+const showQuickCategory = ref(false);
+const quickCategoryName = ref('');
+const quickCategoryError = ref('');
+const quickCategorySaving = ref(false);
+
+const openQuickCategory = () => {
+  quickCategoryName.value = '';
+  quickCategoryError.value = '';
+  showQuickCategory.value = true;
+};
+
+const submitQuickCategory = async () => {
+  const name = quickCategoryName.value.trim();
+  if (!name) {
+    quickCategoryError.value = 'Category name is required';
+    return;
+  }
+  quickCategorySaving.value = true;
+  quickCategoryError.value = '';
+  try {
+    const res = await api.createCategory({ category: name });
+    const refreshed = await api.getCategories();
+    localCategories.value = refreshed;
+    form.category_id = res.ID;
+    showQuickCategory.value = false;
+    emit('catalog-updated');
+  } catch (err) {
+    quickCategoryError.value = err.response?.data?.error || err.message;
+  } finally {
+    quickCategorySaving.value = false;
+  }
+};
+
+// Quick Package State & Functions
+const showQuickPackage = ref(false);
+const quickPackageForm = reactive({
+  package: '',
+  pinQuantity: null,
+  isSmd: 1,
+  drawingURL: ''
+});
+const quickPackageError = ref('');
+const quickPackageSaving = ref(false);
+const uploadingQuickDrawing = ref(false);
+const quickDrawingInputRef = ref(null);
+
+const handleQuickDrawingUpload = async (event) => {
+  const file = event.target?.files?.[0];
+  if (!file) return;
+
+  uploadingQuickDrawing.value = true;
+  try {
+    const res = await api.uploadMedia('packages', file);
+    quickPackageForm.drawingURL = res.filename;
+  } catch (err) {
+    console.error('Failed to upload package drawing:', err);
+    alert('Failed to upload drawing: ' + (err.response?.data?.error || err.message));
+  } finally {
+    uploadingQuickDrawing.value = false;
+    if (event.target) event.target.value = '';
+  }
+};
+
+const openQuickPackage = () => {
+  quickPackageForm.package = '';
+  quickPackageForm.pinQuantity = null;
+  quickPackageForm.isSmd = packageMountType.value === 'tht' ? 0 : 1;
+  quickPackageForm.drawingURL = '';
+  quickPackageError.value = '';
+  showQuickPackage.value = true;
+};
+
+const submitQuickPackage = async () => {
+  const name = quickPackageForm.package.trim();
+  if (!name) {
+    quickPackageError.value = 'Package footprint name is required';
+    return;
+  }
+  quickPackageSaving.value = true;
+  quickPackageError.value = '';
+  try {
+    const payload = {
+      package: name,
+      pinQuantity: quickPackageForm.pinQuantity,
+      isSmd: quickPackageForm.isSmd,
+      drawingURL: quickPackageForm.drawingURL.trim()
+    };
+    const res = await api.createPackage(payload);
+    const refreshed = await api.getPackages();
+    localPackages.value = refreshed;
+    form.package_id = res.ID;
+    showQuickPackage.value = false;
+    emit('catalog-updated');
+  } catch (err) {
+    quickPackageError.value = err.response?.data?.error || err.message;
+  } finally {
+    quickPackageSaving.value = false;
+  }
+};
 
 // Load storages when dialog opens
 const loadStorages = async () => {
@@ -719,17 +1130,21 @@ const loadStorages = async () => {
 };
 
 const applyInitialDataOrDefaults = () => {
-  if (props.initialData) {
-    form.component = props.initialData.component || '';
-    form.marking = props.initialData.marking || '';
-    form.category_id = props.initialData.category_id || null;
-    form.package_id = props.initialData.package_id || null;
-    form.shortDescription = props.initialData.shortDescription || '';
-    form.description = props.initialData.description || '';
-    form.qty = props.initialData.qty !== undefined ? props.initialData.qty : 0;
-    form.storageId = props.initialData.storageId || null;
-    form.datasheetURL = props.initialData.datasheetURL || '';
-    form.photoURL = props.initialData.photoURL || '';
+  const source = props.component || props.initialData;
+  if (source) {
+    form.component = source.component || '';
+    form.marking = source.marking || '';
+    form.category_id = source.category_id ? Number(source.category_id) : null;
+    form.package_id = source.package_id ? Number(source.package_id) : null;
+    form.shortDescription = source.shortDescription || '';
+    form.description = source.description || '';
+    form.qty = source.qty !== undefined && source.qty !== null ? source.qty : 0;
+    form.minQty = source.minQty !== undefined && source.minQty !== null ? source.minQty : 0;
+    // Look up storage from warehouse allocations if available
+    const warehouseStorageId = source.warehouse?.[0]?.storageId;
+    form.storageId = source.storageId || source.storage_id || warehouseStorageId || null;
+    form.datasheetURL = source.datasheetURL || '';
+    form.photoURL = source.photoURL || '';
   } else {
     resetFormFields();
   }
@@ -746,8 +1161,16 @@ const applyInitialDataOrDefaults = () => {
 watch(() => props.modelValue, (isOpen) => {
   if (isOpen) {
     errorMessage.value = '';
+    isCloning.value = props.isClone;
+    clonedSourceName.value = props.isClone ? (props.component?.component || '') : '';
     loadStorages();
     applyInitialDataOrDefaults();
+    if (props.isClone && form.component && !form.component.endsWith('(Copy)')) {
+      form.component = `${form.component} (Copy)`;
+    }
+  } else {
+    isCloning.value = false;
+    clonedSourceName.value = '';
   }
 });
 
@@ -767,6 +1190,8 @@ const resetFormFields = () => {
 
 const close = () => {
   dialogModel.value = false;
+  isCloning.value = false;
+  clonedSourceName.value = '';
   resetFormFields();
 };
 
@@ -778,6 +1203,12 @@ const submitForm = async () => {
   if (props.draftMode) {
     emit('created', { ...form });
     close();
+    return;
+  }
+
+  // When editing an existing component, proceed directly without duplicate check
+  if (isEditMode.value) {
+    await proceedSave(false);
     return;
   }
 
@@ -799,7 +1230,7 @@ const submitForm = async () => {
       return;
     }
 
-    await proceedCreate(false);
+    await proceedSave(false);
   } catch (err) {
     console.error('Error checking duplicate component:', err);
     errorMessage.value = err.response?.data?.error || err.message || 'Validation failed';
@@ -807,7 +1238,7 @@ const submitForm = async () => {
   }
 };
 
-const proceedCreate = async (fromConfirmation = false) => {
+const proceedSave = async (fromConfirmation = false) => {
   try {
     submitting.value = true;
     errorMessage.value = '';
@@ -820,53 +1251,72 @@ const proceedCreate = async (fromConfirmation = false) => {
       shortDescription: form.shortDescription ? form.shortDescription.trim() : '',
       description: form.description ? form.description.trim() : '',
       qty: parseInt(form.qty, 10) || 0,
+      minQty: form.minQty !== undefined && form.minQty !== null ? parseInt(form.minQty, 10) : 0,
       storageId: form.qty > 0 && form.storageId ? form.storageId : null,
       datasheetURL: form.datasheetURL ? form.datasheetURL.trim() : null,
       photoURL: form.photoURL ? form.photoURL.trim() : null
     };
 
-    const newComponent = await api.createComponent(payload);
-    const categoryName = props.categories.find(c => Number(c.ID || c.id) === Number(payload.category_id))?.category || '';
-    const packageObj = props.packages.find(p => Number(p.ID || p.id) === Number(payload.package_id));
-    const compId = Number(newComponent.ID || newComponent.id || newComponent.insertId);
-    const normalizedComp = {
-      ...newComponent,
-      ID: compId,
-      id: compId,
-      component: newComponent.component || payload.component,
-      marking: newComponent.marking || payload.marking,
-      category_id: payload.category_id,
-      package_id: payload.package_id,
-      category: categoryName,
-      package: packageObj?.package || '',
-      isSmd: packageObj?.isSmd ?? null,
-      qty: newComponent.qty !== undefined ? newComponent.qty : payload.qty,
-      shortDescription: newComponent.shortDescription || payload.shortDescription,
-      description: newComponent.description || payload.description
-    };
+    const source = props.component || props.initialData;
+    const categoryName = availableCategories.value.find(c => Number(c.ID || c.id) === Number(payload.category_id))?.category || '';
+    const packageObj = availablePackages.value.find(p => Number(p.ID || p.id) === Number(payload.package_id));
 
-    emit('created', normalizedComp);
+    if (isEditMode.value && source) {
+      const compId = Number(source.ID || source.id);
+      await api.updateComponent(compId, payload);
 
-    if (fromConfirmation) {
-      showDuplicateWarning.value = false;
-    }
+      const normalizedComp = {
+        ...source,
+        ...payload,
+        ID: compId,
+        id: compId,
+        category: categoryName,
+        package: packageObj?.package || '',
+        isSmd: packageObj?.isSmd ?? null
+      };
 
-    if (addAnother.value && !props.hideAddAnother) {
-      const prevCategory = form.category_id;
-      const prevPackage = form.package_id;
-      const prevQty = form.qty;
-      const prevStorage = form.storageId;
-      resetFormFields();
-      form.category_id = prevCategory;
-      form.package_id = prevPackage;
-      form.qty = prevQty;
-      form.storageId = prevStorage;
-    } else {
+      emit('updated', normalizedComp);
+      emit('saved', normalizedComp);
       close();
+    } else {
+      const newComponent = await api.createComponent(payload);
+      const compId = Number(newComponent.ID || newComponent.id || newComponent.insertId);
+      const normalizedComp = {
+        ...newComponent,
+        ...payload,
+        ID: compId,
+        id: compId,
+        category: categoryName,
+        package: packageObj?.package || '',
+        isSmd: packageObj?.isSmd ?? null
+      };
+
+      emit('created', normalizedComp);
+      emit('saved', normalizedComp);
+
+      if (fromConfirmation) {
+        showDuplicateWarning.value = false;
+      }
+
+      if (addAnother.value && !props.hideAddAnother) {
+        const prevCategory = form.category_id;
+        const prevPackage = form.package_id;
+        const prevQty = form.qty;
+        const prevMinQty = form.minQty;
+        const prevStorage = form.storageId;
+        resetFormFields();
+        form.category_id = prevCategory;
+        form.package_id = prevPackage;
+        form.qty = prevQty;
+        form.minQty = prevMinQty;
+        form.storageId = prevStorage;
+      } else {
+        close();
+      }
     }
   } catch (err) {
-    console.error('Error creating component:', err);
-    errorMessage.value = err.response?.data?.error || err.message || 'Failed to create component';
+    console.error('Error saving component:', err);
+    errorMessage.value = err.response?.data?.error || err.message || 'Failed to save component';
   } finally {
     submitting.value = false;
   }

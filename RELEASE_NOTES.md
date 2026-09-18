@@ -1,5 +1,27 @@
 # Release Notes - BOM Manager
 
+## Version 0.2.2 (September 2026)
+
+### Summary
+Version 0.2.2 delivers catalog management for packages and categories, rapid in-place creation during component cataloging, safe component deletion with project Bill of Materials dependencies warnings, and responsive layout improvements to the Projects gallery.
+
+### What's New
+- **Package & Footprint Management (CRUD)**: Dedicated management dialog to create, edit, inspect component usage counts, and delete footprints with mount technology filters (ALL / SMD / THT) and drawing links.
+- **Package Footprint Alignment & Direct Drawing Upload**: Aligned Pin/Pad Count input and Mount Technology toggle to matching 48px baseline heights, and added direct image file upload (`media/packages/`) with live thumbnail previews.
+- **Category Taxonomy Management (CRUD)**: Full interface to create, rename, and safely delete categories with automated in-use component safeguards.
+- **In-Place Creation from "Add Component" Modal**: Added 1-click `+` quick-creation buttons inside the Category and Package fields of the component form, automatically refreshing and selecting the new item immediately.
+- **Safe Component Deletion & Project Usage Warnings**: Added component deletion from both the catalog table and component details popup. If a component is used in any project's Bill of Materials, a detailed warning lists all affected projects, required quantities, and reference designators before confirmation.
+- **3-Column Project Grid**: Reorganized the hardware projects gallery from 4 columns to 3 columns on desktop displays, providing wider card footprints and better breathing room.
+- **Clickable Component Photos & Reusable Full-Size Lightbox**: Component photos in the details dialog are now clickable to view in high resolution with aspect-ratio fitting and "Open Original" action. Reused this unified lightbox across project covers, BOM component thumbnails, shopping list items, and package drawings.
+- **Component Editing across Catalog and Details Views**: Full support for editing existing components. Easily update component name, marking, category, package footprint, stock quantity, minimum threshold, storage location, datasheet, and photo. Pre-fills all existing specifications and syncs warehouse storage allocations atomically. Accessible via the table row action icon (`mdi-pencil-outline`) in the components catalog and via the "Edit" action button in the Component Details modal.
+- **Component Cloning**: Quickly spawn the "Add New Component" modal pre-filled with all values and specifications from an existing component. Available via the "Clone Component" button inside the Edit Component modal (in header and footer actions), as a dedicated action icon (`mdi-content-copy`) in the catalog table rows, and in the Component Details modal footer. Pre-populates all parameters with an automatic copy name suggestion and dedicated helper banner.
+- **Standardized Left-Aligned "Actions" Headers**: Aligned the "Actions" column header and buttons to the left across all data tables (Components Catalog, Project BOM, Projects View BOM modal, Procurement Shopping List, Production Reports, Project File Attachments, and Component Details BOM usage) for unified layout consistency.
+- **Streamlined Top App Bar**: Removed the redundant "Upload Media" button from the top application bar, decluttering the header navigation while relying on context-specific inline file uploaders.
+- **Clean Quantity Steppers**: Suppressed native browser up/down number spin buttons in the Procurement Shopping List's "Quantity to Buy" stepper (and modal steppers), leaving only the clean `+`, `-`, and numeric value inputs.
+- **Enhanced Project Card Chips**: Increased chip font size, padding, and icon scales across all project cards (BOM parts, total pcs, estimated cost, absent shortages, attached files, and iBOM indicators) for improved legibility and clarity.
+
+---
+
 ## Version 0.2.1 (September 2026)
 
 ### Summary

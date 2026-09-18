@@ -32,6 +32,12 @@ export const resolveMediaUrl = (type, filename) => {
   if (filename.startsWith('http://') || filename.startsWith('https://')) {
     return filename;
   }
+  if (filename.startsWith('/media/')) {
+    return filename;
+  }
+  if (filename.startsWith('media/')) {
+    return `/${filename}`;
+  }
 
   const base = (mediaConfig.mediaBaseUrl || '').replace(/\/+$/, '');
   let folder = '';
@@ -101,10 +107,20 @@ export const api = {
   updateComponentMinQty: (id, minQty) => client.patch(`/components/${id}/min-qty`, { minQty }).then(res => res.data),
   updateComponentQty: (id, qty) => client.patch(`/components/${id}/qty`, { qty }).then(res => res.data),
   purchaseComponent: (id, data) => client.post(`/components/${id}/purchase`, data).then(res => res.data),
+  getComponentUsage: (id) => client.get(`/components/${id}/usage`).then(res => res.data),
+  deleteComponent: (id, force = false) => client.delete(`/components/${id}`, { params: { force } }).then(res => res.data),
 
   // Categories, Packages & Storages
   getCategories: () => client.get('/categories').then(res => res.data),
+  createCategory: (data) => client.post('/categories', data).then(res => res.data),
+  updateCategory: (id, data) => client.put(`/categories/${id}`, data).then(res => res.data),
+  deleteCategory: (id, force = false) => client.delete(`/categories/${id}`, { params: { force } }).then(res => res.data),
+
   getPackages: () => client.get('/packages').then(res => res.data),
+  createPackage: (data) => client.post('/packages', data).then(res => res.data),
+  updatePackage: (id, data) => client.put(`/packages/${id}`, data).then(res => res.data),
+  deletePackage: (id, force = false) => client.delete(`/packages/${id}`, { params: { force } }).then(res => res.data),
+
   getStorages: () => client.get('/storages').then(res => res.data),
 
   // Shopping List

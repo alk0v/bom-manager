@@ -87,8 +87,9 @@
         <v-col cols="12" md="9" class="pa-5 d-flex flex-column justify-space-between">
           <div>
             <div class="d-flex align-center flex-wrap mb-2" style="gap: 12px;">
-              <v-chip size="small" color="secondary" variant="tonal" class="font-weight-medium">
-                {{ bomItems.length }} BOM Entries
+              <v-chip size="small" color="primary" variant="tonal" class="font-weight-medium">
+                <v-icon start size="15">mdi-chip</v-icon>
+                {{ bomItems.length }} parts
               </v-chip>
               <v-chip
                 size="small"
@@ -220,7 +221,7 @@
             <th class="text-right font-weight-bold">Unit Price</th>
             <th class="text-right font-weight-bold">Total Cost</th>
             <th class="text-left font-weight-bold">Designators / Comment</th>
-            <th class="text-right font-weight-bold" style="width: 140px;">Actions</th>
+            <th class="text-left font-weight-bold" style="width: 140px;">Actions</th>
           </tr>
         </thead>
 
@@ -322,7 +323,7 @@
             </td>
 
             <!-- Actions -->
-            <td class="text-right">
+            <td class="text-left">
               <v-btn
                 icon="mdi-information-outline"
                 size="x-small"
@@ -474,84 +475,13 @@
       @bom-imported="onBomImported"
     />
 
-    <!-- FULL SIZE MEDIA LIGHTBOX DIALOG (NO SCROLLBARS, FIT RATIO) -->
-    <v-dialog
+    <!-- FULL SIZE MEDIA LIGHTBOX DIALOG -->
+    <MediaLightboxDialog
       v-model="lightbox.show"
-      width="90vw"
-      max-width="1400px"
-      transition="dialog-transition"
-    >
-      <v-card
-        class="rounded-0 border bg-white overflow-hidden lightbox-card"
-        v-if="lightbox.show"
-      >
-        <!-- Top Control Bar -->
-        <v-card-title class="px-5 py-3 bg-slate-50 border-b d-flex align-center justify-space-between gap-3 flex-shrink-0">
-          <div class="d-flex align-center gap-2 overflow-hidden">
-            <v-icon size="22" color="primary">mdi-image-outline</v-icon>
-            <span class="text-subtitle-1 font-weight-bold text-slate-900 text-truncate font-mono">
-              {{ lightbox.title || lightbox.src }}
-            </span>
-            <v-chip size="x-small" color="primary" variant="tonal" class="font-mono text-uppercase ms-1">
-              {{ lightbox.type }}
-            </v-chip>
-          </div>
-
-          <div class="d-flex align-center gap-2 flex-shrink-0">
-            <v-btn
-              v-if="lightboxResolvedUrl"
-              :href="lightboxResolvedUrl"
-              target="_blank"
-              prepend-icon="mdi-open-in-new"
-              size="small"
-              variant="outlined"
-              color="primary"
-              class="font-weight-medium"
-            >
-              Open Original
-            </v-btn>
-
-            <v-btn
-              icon="mdi-close"
-              variant="text"
-              color="slate-600"
-              size="small"
-              @click="lightbox.show = false"
-              title="Close"
-            />
-          </div>
-        </v-card-title>
-
-        <!-- Full image display area: strictly contained, no scrollbars -->
-        <div class="lightbox-image-container pa-4 bg-slate-50 d-flex align-center justify-center flex-grow-1">
-          <img
-            v-if="lightboxResolvedUrl"
-            :src="lightboxResolvedUrl"
-            :alt="lightbox.title"
-            class="lightbox-img"
-          />
-        </div>
-
-        <!-- Bottom Action Bar -->
-        <v-card-actions class="px-5 py-3 bg-slate-50 border-t d-flex align-center justify-space-between flex-shrink-0">
-          <div class="text-caption text-slate-500 font-mono text-truncate me-3" style="max-width: 600px;">
-            <v-icon size="14" class="me-1">mdi-link-variant</v-icon>
-            {{ lightboxResolvedUrl }}
-          </div>
-
-          <v-btn
-            variant="flat"
-            color="primary"
-            size="small"
-            class="font-weight-bold px-4"
-            prepend-icon="mdi-close"
-            @click="lightbox.show = false"
-          >
-            Close
-          </v-btn>
-        </v-card-actions>
-      </v-card>
-    </v-dialog>
+      :type="lightbox.type"
+      :src="lightbox.src"
+      :title="lightbox.title"
+    />
 
     <!-- DIALOG: Produce Project -->
     <ProduceProjectDialog
@@ -565,6 +495,8 @@
     <ComponentDetailsDialog
       v-model="showDetailsDialog"
       :component="selectedDetailComponent"
+      @deleted="loadData"
+      @updated="loadData"
     />
 
     <!-- Notification Snackbar -->
@@ -579,6 +511,7 @@ import { ref, computed, onMounted } from 'vue';
 import { useRoute } from 'vue-router';
 import api, { resolveMediaUrl } from '../services/api';
 import MediaImage from '../components/MediaImage.vue';
+import MediaLightboxDialog from '../components/MediaLightboxDialog.vue';
 import AddComponentDialog from '../components/AddComponentDialog.vue';
 import PackageLink from '../components/PackageLink.vue';
 import ProjectFormDialog from '../components/ProjectFormDialog.vue';
@@ -862,30 +795,6 @@ onMounted(() => {
 .hover-zoom:hover {
   transform: scale(1.15);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
-}
-.lightbox-card {
-  height: 85vh;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden !important;
-}
-.lightbox-image-container {
-  min-height: 0;
-  overflow: hidden !important;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-.lightbox-img {
-  max-width: 100%;
-  max-height: 100%;
-  width: auto;
-  height: auto;
-  object-fit: contain;
-  background-color: #FFFFFF;
-  border: 1px solid #E2E8F0;
-  box-shadow: 0 4px 20px rgba(15, 23, 42, 0.08);
-  border-radius: 4px;
 }
 
 .comp-name-link {

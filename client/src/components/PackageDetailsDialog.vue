@@ -62,21 +62,22 @@
               </span>
               <v-btn
                 v-if="packageStore.packageData.drawingURL"
-                :href="drawingFullUrl"
-                target="_blank"
                 variant="text"
                 size="x-small"
                 color="primary"
-                prepend-icon="mdi-open-in-new"
+                prepend-icon="mdi-magnify-plus-outline"
+                @click="showDrawingLightbox = true"
               >
-                Open Full Size
+                View Full Size
               </v-btn>
             </div>
 
-            <!-- With Drawing Image -->
+            <!-- With Drawing Image (Click to zoom) -->
             <div
               v-if="packageStore.packageData.drawingURL"
-              class="border rounded bg-slate-50 overflow-hidden d-flex flex-column align-center justify-center p-3"
+              class="border rounded bg-slate-50 overflow-hidden d-flex flex-column align-center justify-center p-3 position-relative cursor-pointer drawing-zoom-wrapper"
+              title="Click to view drawing in full size"
+              @click="showDrawingLightbox = true"
             >
               <div class="w-100 d-flex align-center justify-center py-2" style="min-height: 240px; max-height: 380px;">
                 <MediaImage
@@ -86,6 +87,9 @@
                   width="100%"
                   :cover="false"
                 />
+              </div>
+              <div class="photo-overlay d-flex align-center justify-center">
+                <v-icon icon="mdi-magnify-plus-outline" size="32" color="slate-800" />
               </div>
 
               <!-- Drawing File Info Bar -->
@@ -177,16 +181,26 @@
         </v-btn>
       </v-card-actions>
     </v-card>
+
+    <!-- FULL SIZE MEDIA LIGHTBOX DIALOG -->
+    <MediaLightboxDialog
+      v-model="showDrawingLightbox"
+      type="package"
+      :src="packageStore.packageData?.drawingURL"
+      :title="packageStore.packageData?.package"
+    />
   </v-dialog>
 </template>
 
 <script setup>
-import { computed } from 'vue';
+import { ref, computed } from 'vue';
 import { usePackageDetailsStore } from '../stores/packageDetails';
 import MediaImage from './MediaImage.vue';
+import MediaLightboxDialog from './MediaLightboxDialog.vue';
 import { resolveMediaUrl } from '../services/api';
 
 const packageStore = usePackageDetailsStore();
+const showDrawingLightbox = ref(false);
 
 const drawingFullUrl = computed(() => {
   if (!packageStore.packageData?.drawingURL) return null;
@@ -197,5 +211,24 @@ const drawingFullUrl = computed(() => {
 <style scoped>
 .tracking-wider {
   letter-spacing: 0.05em;
+}
+.drawing-zoom-wrapper {
+  position: relative;
+  overflow: hidden;
+}
+.photo-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(255, 255, 255, 0.75);
+  backdrop-filter: blur(2px);
+  opacity: 0;
+  transition: opacity 0.2s ease-in-out;
+  pointer-events: none;
+}
+.drawing-zoom-wrapper:hover .photo-overlay {
+  opacity: 1;
 }
 </style>

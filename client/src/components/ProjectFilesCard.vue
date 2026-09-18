@@ -77,7 +77,7 @@
           <th class="text-left font-weight-bold">Description</th>
           <th class="text-center font-weight-bold" style="width: 110px;">Size</th>
           <th class="text-center font-weight-bold" style="width: 140px;">Uploaded</th>
-          <th class="text-right font-weight-bold" style="width: 240px;">Actions</th>
+          <th class="text-left font-weight-bold" style="width: 240px;">Actions</th>
         </tr>
       </thead>
       <tbody>
@@ -132,8 +132,8 @@
           </td>
 
           <!-- Actions -->
-          <td class="text-right">
-            <div class="d-flex align-center justify-end gap-1">
+          <td class="text-left">
+            <div class="d-flex align-center justify-start gap-1">
               <!-- Special iBOM Actions -->
               <template v-if="file.fileType === 'ibom'">
                 <v-btn

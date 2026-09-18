@@ -90,9 +90,40 @@ import { computed } from 'vue';
 
 const releases = [
   {
-    version: '0.2.1',
+    version: '0.2.2',
     date: '2026-09-18',
     isCurrent: true,
+    summary: 'Version 0.2.2 delivers catalog management for packages and categories, rapid in-place creation during component cataloging, safe component deletion with project Bill of Materials dependencies warnings, and responsive layout improvements to the Projects gallery.',
+    features: [
+      {
+        title: 'Packages & Footprints Management (CRUD)',
+        description: 'Dedicated management modal to create, edit, inspect component usage counts, and delete footprints with mount technology filters (ALL / SMD / THT).'
+      },
+      {
+        title: 'Categories Management (CRUD)',
+        description: 'Full interface to create, rename, and safely delete categories with automated in-use component safeguards.'
+      },
+      {
+        title: 'In-Place Creation in "Add Component" Modal',
+        description: 'Added quick-create buttons inside the Category and Package fields of the component creation form, automatically refreshing and selecting the new item.'
+      },
+      {
+        title: 'Safe Component Deletion & Project Warnings',
+        description: 'Delete components from the catalog table or details modal with automatic dependency checks. If a part is used in any project, all affected projects, required quantities, and reference designators are clearly listed before confirmation.'
+      },
+      {
+        title: '3-Column Responsive Grid',
+        description: 'Arranged hardware project cards in 3 columns instead of 4 on desktop screens for wider cards, better spacing, and improved overall balance.'
+      },
+      {
+        title: 'Enlarged Project Card Chips',
+        description: 'Increased chip dimensions, text font size (13px), and icon sizing across all project card metrics (BOM parts, total quantities, estimated cost, absent parts, attached files, and iBOM).'
+      }
+    ]
+  },
+  {
+    version: '0.2.1',
+    date: '2026-09-18',
     summary: 'Version 0.2.1 introduces the "Produce" workflow for hardware projects, automatically calculating required quantities, previewing component inventory deductions, highlighting shortages, and decrementing stock levels in real time.',
     features: [
       {

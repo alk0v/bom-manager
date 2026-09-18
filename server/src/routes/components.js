@@ -443,7 +443,8 @@ router.put('/:id', async (req, res) => {
     datasheetURL,
     photoURL,
     qty,
-    minQty
+    minQty,
+    storageId
   } = req.body;
 
   try {
@@ -463,6 +464,29 @@ router.put('/:id', async (req, res) => {
        WHERE ID = ?`,
       [component, category_id, package_id, description, shortDescription, marking, datasheetURL, photoURL, qty, parsedMinQty, req.params.id]
     );
+
+    // If storageId is provided, update or create t_warehouse entry
+    if (storageId !== undefined && storageId !== null) {
+      const parsedStorageId = parseInt(storageId, 10);
+      if (!isNaN(parsedStorageId)) {
+        const [existingWarehouse] = await pool.query(
+          'SELECT id FROM t_warehouse WHERE componentId = ? LIMIT 1',
+          [req.params.id]
+        );
+        if (existingWarehouse.length > 0) {
+          await pool.query(
+            'UPDATE t_warehouse SET storageId = ? WHERE id = ?',
+            [parsedStorageId, existingWarehouse[0].id]
+          );
+        } else {
+          await pool.query(
+            'INSERT INTO t_warehouse (componentId, storageId, quantity) VALUES (?, ?, ?)',
+            [req.params.id, parsedStorageId, qty !== undefined ? parseInt(qty, 10) || 0 : 0]
+          );
+        }
+      }
+    }
+
     res.json({ success: true, id: req.params.id, minQty: parsedMinQty });
   } catch (error) {
     console.error('Error updating component:', error);
@@ -615,9 +639,121 @@ router.post('/:id/purchase', async (req, res) => {
   } catch (err) {
     await conn.rollback();
     console.error('Error confirming purchase for component:', err);
-    res.status(500).json({ error: 'Failed to record purchase order', details: err.message });
   } finally {
     conn.release();
+  }
+});
+
+// GET /api/components/:id/usage - check projects using this component in their BOM
+router.get('/:id/usage', async (req, res) => {
+  const componentId = req.params.id;
+  try {
+    const [projects] = await pool.query(`
+      SELECT 
+        p.id,
+        p.projectName,
+        p.description,
+        p.photoUrl,
+        p.url,
+        SUM(b.quantity) AS requiredQuantity,
+        GROUP_CONCAT(NULLIF(TRIM(b.comment), '') SEPARATOR ', ') AS designators
+      FROM t_bom b
+      INNER JOIN i_projects p ON b.projectId = p.id
+      WHERE b.componentId = ?
+      GROUP BY p.id, p.projectName, p.description, p.photoUrl, p.url
+      ORDER BY p.projectName ASC
+    `, [componentId]);
+
+    const formattedProjects = projects.map(p => ({
+      ...p,
+      requiredQuantity: Number(p.requiredQuantity) || 1
+    }));
+
+    res.json({
+      componentId: parseInt(componentId, 10),
+      usageCount: formattedProjects.length,
+      projects: formattedProjects
+    });
+  } catch (error) {
+    console.error('Error checking component usage:', error);
+    res.status(500).json({ error: 'Failed to check component usage', details: error.message });
+  }
+});
+
+// DELETE /api/components/:id - delete component with usage checks and cascade
+router.delete('/:id', async (req, res) => {
+  const componentId = parseInt(req.params.id, 10);
+  const force = req.query.force === 'true';
+
+  if (isNaN(componentId)) {
+    return res.status(400).json({ error: 'Invalid component ID' });
+  }
+
+  try {
+    // 1. Check if component exists
+    const [compRows] = await pool.query('SELECT ID, component FROM i_components WHERE ID = ?', [componentId]);
+    if (compRows.length === 0) {
+      return res.status(404).json({ error: 'Component not found' });
+    }
+    const compName = compRows[0].component;
+
+    // 2. Check if used in any project BOM
+    const [projects] = await pool.query(`
+      SELECT 
+        p.id,
+        p.projectName,
+        p.description,
+        p.photoUrl,
+        p.url,
+        SUM(b.quantity) AS requiredQuantity,
+        GROUP_CONCAT(NULLIF(TRIM(b.comment), '') SEPARATOR ', ') AS designators
+      FROM t_bom b
+      INNER JOIN i_projects p ON b.projectId = p.id
+      WHERE b.componentId = ?
+      GROUP BY p.id, p.projectName, p.description, p.photoUrl, p.url
+      ORDER BY p.projectName ASC
+    `, [componentId]);
+
+    if (projects.length > 0 && !force) {
+      return res.status(409).json({
+        warning: true,
+        message: `Component "${compName}" is used in ${projects.length} project(s)`,
+        projects: projects.map(p => ({
+          ...p,
+          requiredQuantity: Number(p.requiredQuantity) || 1
+        }))
+      });
+    }
+
+    // 3. Perform atomic deletion across related tables
+    const conn = await pool.getConnection();
+    try {
+      await conn.beginTransaction();
+
+      await conn.query('DELETE FROM t_bom WHERE componentId = ?', [componentId]);
+      await conn.query('DELETE FROM t_busket WHERE componentId = ?', [componentId]);
+      await conn.query('DELETE FROM t_warehouse WHERE componentId = ?', [componentId]);
+      await conn.query('DELETE FROM t_orders WHERE componentId = ?', [componentId]);
+      await conn.query('DELETE FROM t_production_items WHERE componentId = ?', [componentId]);
+      await conn.query('DELETE FROM i_components WHERE ID = ?', [componentId]);
+
+      await conn.commit();
+
+      res.json({
+        success: true,
+        id: componentId,
+        component: compName,
+        message: `Component "${compName}" successfully deleted`
+      });
+    } catch (dbErr) {
+      await conn.rollback();
+      throw dbErr;
+    } finally {
+      conn.release();
+    }
+  } catch (error) {
+    console.error('Error deleting component:', error);
+    res.status(500).json({ error: 'Failed to delete component', details: error.message });
   }
 });
 
