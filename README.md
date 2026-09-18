@@ -60,46 +60,62 @@ Built with **Vue 3**, **Vuetify 3**, **Node.js/Express**, with out-of-the-box du
 
 ---
 
-## Quick Start (Autonomous Self-Hosted with Docker)
+---
 
-The easiest way to run BOM Manager in a self-contained autonomous container:
+## ⚡ Quick Run (Autonomous Self-Hosted)
+
+BOM Manager is pre-configured to run out of the box with zero external database dependencies using embedded SQLite and pre-packaged demo hardware projects. Choose either option below:
+
+### Option 1: Via Docker (As-Is)
+Run a single self-contained container with persistent data and media:
 
 ```bash
 docker compose up -d
 ```
 
-That's it!
-- The app will be available at **`http://localhost:3001`**.
-- SQLite database is automatically created and stored in `./data/bommanager.sqlite`.
-- Media files are stored in `./media/`.
+- Application ready at: **`http://localhost:3001`**
+- Embedded SQLite database is created in `./data/`
+- Demo projects (C64 WiFi Modem, OpenFlops, Apple IIc to RGB) and media assets load automatically!
 
 ---
 
-## Local Development
+### Option 2: Via 3 Commands (Node.js)
+Clone the repository and run these 3 commands:
 
-### Prerequisites
-- Node.js v22+
-- npm v10+
-
-### 1. Install Dependencies
 ```bash
 npm install
+npm run build
+npm run start
 ```
 
-### 2. Configure Environment
-Copy `.env.example` to `.env`:
-```bash
-cp .env.example .env
-```
+- Application ready at: **`http://localhost:3001`**
+- Automatically boots with embedded SQLite (`data/bommanager.sqlite`)
+- All 3 demo projects, 50+ components, pricing history, and media photos/datasheets are seeded automatically.
 
-To run with **autonomous SQLite** (default, no database setup required):
-```ini
-DB_TYPE=sqlite
-PORT=3001
-MEDIA_BASE_URL=/media
-```
+> [!NOTE]
+> If port `3001` is already in use by another process on your machine, specify a different port:
+> - **PowerShell**: `$env:PORT="3002"; npm run start`
+> - **Bash / Linux / Mac**: `PORT=3002 npm run start`
+> - Or define `PORT=3002` in your `.env` file.
 
-To run with an external **MySQL / MariaDB** server:
+---
+
+## ⚙️ Configuration & Customization
+
+### Clean Setup vs. Demo Database
+By default, autonomous SQLite initializes with 3 demo projects. To start with an empty/clean catalog instead:
+1. Copy `.env.example` to `.env`:
+   ```bash
+   cp .env.example .env
+   ```
+2. Set `DEMO_DATA=false` in `.env`:
+   ```ini
+   DB_TYPE=sqlite
+   DEMO_DATA=false
+   ```
+
+### Connecting to External MySQL / MariaDB
+To connect to an existing centralized database server instead of SQLite:
 ```ini
 DB_TYPE=mysql
 DB_HOST=192.168.1.100
@@ -111,36 +127,14 @@ PORT=3001
 MEDIA_BASE_URL=/media
 ```
 
-### 3. Media Directory Setup
-Place your media files inside the `media/` directory:
-```
-media/
-├── packages/      # Package drawings and pinout diagrams
-├── components/    # Component photos
-├── datasheets/    # Datasheet PDF documents
-└── projects/      # Project photos & attachments
-```
-
-### 4. Start Development Server
-```bash
-npm run dev
-```
-This concurrently starts:
-- Frontend: `http://localhost:5173`
-- Backend API: `http://localhost:3001`
-
 ---
 
-## Production Build & Run (Standalone Node)
+## 💻 Local Development (Live Reload)
 
 ```bash
-# Build frontend
-npm run build
-
-# Start production server
-npm run start
+# Concurrently start frontend (Vite :5173) and backend API (Express :3001)
+npm run dev
 ```
-The production server automatically serves the compiled frontend and the API on port 3001.
 
 ---
 

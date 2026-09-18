@@ -320,20 +320,36 @@
                     </div>
                   </v-alert>
 
-                  <!-- Configuration Snippets -->
-                  <div class="text-subtitle-2 font-weight-bold text-slate-900 mb-2">
-                    Option A: Autonomous SQLite Setup (.env)
+                  <!-- Quick Run Options -->
+                  <div class="text-subtitle-2 font-weight-bold text-slate-900 mb-1 d-flex align-center">
+                    <v-icon size="16" color="primary" class="me-1">mdi-docker</v-icon>
+                    Quick Run 1: Via Docker (As-Is)
                   </div>
-                  <pre class="pa-3 bg-slate-100 text-slate-900 font-mono text-caption rounded mb-4 overflow-x-auto border"># Autonomous Single-Container or Local Mode
+                  <pre class="pa-3 bg-slate-100 text-slate-900 font-mono text-caption rounded mb-3 overflow-x-auto border"># Single self-contained container with persistent data & media
+docker compose up -d</pre>
+
+                  <div class="text-subtitle-2 font-weight-bold text-slate-900 mb-1 d-flex align-center">
+                    <v-icon size="16" color="primary" class="me-1">mdi-console-line</v-icon>
+                    Quick Run 2: Via 3 Commands (Node.js)
+                  </div>
+                  <pre class="pa-3 bg-slate-100 text-slate-900 font-mono text-caption rounded mb-4 overflow-x-auto border">npm install
+npm run build
+npm run start</pre>
+
+                  <!-- Configuration Snippets -->
+                  <div class="text-subtitle-2 font-weight-bold text-slate-900 mb-1">
+                    Autonomous SQLite Configuration (.env)
+                  </div>
+                  <pre class="pa-3 bg-slate-100 text-slate-900 font-mono text-caption rounded mb-3 overflow-x-auto border"># Autonomous SQLite with pre-seeded demo hardware projects
 DB_TYPE=sqlite
-SQLITE_FILE=data/bommanager.sqlite
+DEMO_DATA=true
 PORT=3001
 MEDIA_BASE_URL=/media</pre>
 
-                  <div class="text-subtitle-2 font-weight-bold text-slate-900 mb-2">
-                    Option B: External MySQL Setup (.env)
+                  <div class="text-subtitle-2 font-weight-bold text-slate-900 mb-1">
+                    External MySQL Server (.env)
                   </div>
-                  <pre class="pa-3 bg-slate-100 text-slate-900 font-mono text-caption rounded mb-4 overflow-x-auto border"># Central / Remote Database Server
+                  <pre class="pa-3 bg-slate-100 text-slate-900 font-mono text-caption rounded overflow-x-auto border"># Centralized MySQL / MariaDB Server
 DB_TYPE=mysql
 DB_HOST=192.168.1.100
 DB_PORT=3306
@@ -341,12 +357,6 @@ DB_USER=bommanager_user
 DB_PASSWORD=your_secure_password
 DB_NAME=retool_bommanager
 PORT=3001</pre>
-
-                  <div class="text-subtitle-2 font-weight-bold text-slate-900 mb-2">
-                    Autonomous Docker Compose Run
-                  </div>
-                  <pre class="pa-3 bg-slate-100 text-slate-900 font-mono text-caption rounded overflow-x-auto border"># Run single autonomous container with persistent data & media:
-docker compose up -d</pre>
                 </v-card-text>
               </v-card>
             </v-col>
