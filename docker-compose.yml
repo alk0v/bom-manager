@@ -22,11 +22,11 @@ services:
       # Option 2: External MySQL / MariaDB (Uncomment to use external database)
       # -------------------------------------------------------------------------
       # - DB_TYPE=mysql
-      # - DB_HOST=192.168.31.122
+      # - DB_HOST=192.168.1.100
       # - DB_PORT=3306
-      # - DB_USER=bommanager_admin
+      # - DB_USER=bommanager_user
       # - DB_PASSWORD=your_mysql_password
-      # - DB_NAME=retool_bommanager
+      # - DB_NAME=bommanager
     volumes:
       - ./data:/app/data
       - ./media:/app/media

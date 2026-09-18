@@ -5,11 +5,11 @@ require('dotenv').config({ path: path.resolve(__dirname, '../../../.env') });
 require('dotenv').config({ path: path.resolve(__dirname, '../../.env') });
 
 const config = {
-  host: process.env.DB_HOST || '192.168.31.122',
+  host: process.env.DB_HOST || 'localhost',
   port: parseInt(process.env.DB_PORT || '3306', 10),
-  user: process.env.DB_USER || 'admin_ro',
-  password: process.env.DB_PASSWORD || 'cv96vWvmAGtQ',
-  database: process.env.DB_NAME || 'retool_bommanager',
+  user: process.env.DB_USER || 'root',
+  password: process.env.DB_PASSWORD || '',
+  database: process.env.DB_NAME || 'bommanager',
   waitForConnections: true,
   connectionLimit: 10,
   queueLimit: 0,

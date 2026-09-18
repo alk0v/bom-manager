@@ -66,7 +66,7 @@ Built with **Vue 3**, **Vuetify 3**, **Node.js/Express**, with out-of-the-box du
 
 BOM Manager is pre-configured to run out of the box with zero external database dependencies using embedded SQLite and pre-packaged demo hardware projects. Choose either option below:
 
-### Option 1: Via Docker (As-Is)
+### Option 1: Via Docker
 Run a single self-contained container with persistent data and media:
 
 ```bash
