@@ -66,6 +66,22 @@ export const api = {
   deleteBomItem: (projectId, bomId) => client.delete(`/projects/${projectId}/bom/${bomId}`).then(res => res.data),
   createProject: (data) => client.post('/projects', data).then(res => res.data),
   updateProject: (id, data) => client.put(`/projects/${id}`, data).then(res => res.data),
+  produceProject: (id, data) => client.post(`/projects/${id}/produce`, data).then(res => res.data),
+
+  // Project Files & Attachments
+  getProjectFiles: (projectId) => client.get(`/projects/${projectId}/files`).then(res => res.data),
+  uploadProjectFile: (projectId, formData) => client.post(`/projects/${projectId}/files`, formData, {
+    headers: { 'Content-Type': 'multipart/form-data' }
+  }).then(res => res.data),
+  deleteProjectFile: (projectId, fileId) => client.delete(`/projects/${projectId}/files/${fileId}`).then(res => res.data),
+
+  // KiCAD iBOM Parsing and Import
+  parseIbom: (projectId, data, isFormData = false) => client.post(
+    `/projects/${projectId}/bom/parse-ibom`,
+    data,
+    isFormData ? { headers: { 'Content-Type': 'multipart/form-data' } } : {}
+  ).then(res => res.data),
+  importIbom: (projectId, payload) => client.post(`/projects/${projectId}/bom/import-ibom`, payload).then(res => res.data),
 
   // Components
   getComponents: (params = {}) => {
@@ -82,6 +98,9 @@ export const api = {
   checkExistingComponent: (params) => client.get('/components/check-existing', { params }).then(res => res.data),
   createComponent: (data) => client.post('/components', data).then(res => res.data),
   updateComponent: (id, data) => client.put(`/components/${id}`, data).then(res => res.data),
+  updateComponentMinQty: (id, minQty) => client.patch(`/components/${id}/min-qty`, { minQty }).then(res => res.data),
+  updateComponentQty: (id, qty) => client.patch(`/components/${id}/qty`, { qty }).then(res => res.data),
+  purchaseComponent: (id, data) => client.post(`/components/${id}/purchase`, data).then(res => res.data),
 
   // Categories, Packages & Storages
   getCategories: () => client.get('/categories').then(res => res.data),
@@ -93,6 +112,12 @@ export const api = {
   addToShoppingList: (data) => client.post('/shopping-list', data).then(res => res.data),
   updateShoppingListItem: (id, data) => client.put(`/shopping-list/${id}`, data).then(res => res.data),
   deleteShoppingListItem: (id) => client.delete(`/shopping-list/${id}`).then(res => res.data),
+  purchaseShoppingListItem: (id, data) => client.post(`/shopping-list/${id}/purchase`, data).then(res => res.data),
+
+  // Reports
+  getProductionReport: (params = {}) => client.get('/reports/production', { params }).then(res => res.data),
+  getProductionReportDetails: (id) => client.get(`/reports/production/${id}`).then(res => res.data),
+  cancelProductionRun: (id) => client.post(`/reports/production/${id}/cancel`).then(res => res.data),
 
   // Media upload
   uploadMedia: (folder, file, filename) => {

@@ -7,6 +7,7 @@ require('dotenv').config({ path: path.resolve(__dirname, '../.env'), override: t
 const projectsRouter = require('./routes/projects');
 const componentsRouter = require('./routes/components');
 const shoppingListRouter = require('./routes/shoppingList');
+const reportsRouter = require('./routes/reports');
 const metaRouter = require('./routes/meta');
 const mediaRouter = require('./routes/media');
 
@@ -31,6 +32,11 @@ standardSubdirs.forEach(sub => {
     fs.mkdirSync(subPath, { recursive: true });
   }
 });
+
+const attachmentsDir = path.join(mediaDir, 'projects', 'attachments');
+if (!fs.existsSync(attachmentsDir)) {
+  fs.mkdirSync(attachmentsDir, { recursive: true });
+}
 
 // Serve media static assets
 app.use('/media', express.static(mediaDir, {
@@ -61,6 +67,7 @@ app.use('/media/projecs', (req, res, next) => {
 app.use('/api/projects', projectsRouter);
 app.use('/api/components', componentsRouter);
 app.use('/api/shopping-list', shoppingListRouter);
+app.use('/api/reports', reportsRouter);
 app.use('/api/media', mediaRouter);
 app.use('/api', metaRouter);
 

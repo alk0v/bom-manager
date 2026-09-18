@@ -10,11 +10,14 @@
       <!-- Dialog Header -->
       <v-card-title class="bg-slate-50 py-3 px-4 d-flex align-center justify-space-between border-b flex-shrink-0">
         <div class="d-flex align-center">
-          <v-icon color="primary" class="me-2" size="22">mdi-memory</v-icon>
+          <v-icon color="primary" class="me-2" size="22">{{ pickerMode ? 'mdi-database-search-outline' : 'mdi-memory' }}</v-icon>
           <span class="text-subtitle-1 font-weight-bold text-slate-900">
-            Add Component to BOM
+            {{ title || (pickerMode ? 'Select Catalog Component' : 'Add Component to BOM') }}
             <span v-if="projectName" class="text-caption font-weight-regular text-slate-500 ms-1">
               ({{ projectName }})
+            </span>
+            <span v-else-if="subtitle" class="text-caption font-weight-regular text-slate-500 ms-1">
+              ({{ subtitle }})
             </span>
           </span>
         </div>
@@ -205,6 +208,7 @@
               }"
               class="cursor-pointer"
               @click="selectComponent(c)"
+              @dblclick="onRowDblClick(c)"
             >
               <!-- Radio Selection Indicator -->
               <td class="text-center pa-1">
@@ -230,8 +234,13 @@
 
               <!-- Name & Marking -->
               <td>
-                <div class="font-mono font-weight-bold text-body-2 text-primary">
-                  {{ c.component }}
+                <div
+                  class="font-mono font-weight-bold text-body-2 text-primary comp-name-link d-inline-flex align-center gap-1"
+                  @click.stop="openDetails(c)"
+                  title="Click to view component details"
+                >
+                  <span class="hover-underline">{{ c.component }}</span>
+                  <v-icon size="13" class="opacity-60 info-icon">mdi-information-outline</v-icon>
                 </div>
                 <div class="text-caption text-disabled font-mono" v-if="c.marking">
                   Mark: {{ c.marking }}
@@ -329,8 +338,32 @@
               </v-chip>
             </div>
 
-            <!-- Form Inputs -->
-            <div class="d-flex align-center flex-wrap flex-grow-1 justify-end" style="gap: 16px;">
+            <!-- In Picker Mode: Just Select and Cancel -->
+            <div v-if="pickerMode" class="d-flex align-center gap-2">
+              <v-btn
+                variant="text"
+                rounded="lg"
+                height="40"
+                color="slate-600"
+                @click="selectedComponent = null"
+              >
+                Cancel
+              </v-btn>
+              <v-btn
+                color="primary"
+                variant="flat"
+                rounded="lg"
+                height="40"
+                prepend-icon="mdi-check"
+                class="px-5 font-weight-bold"
+                @click="confirmPick"
+              >
+                Select This Component
+              </v-btn>
+            </div>
+
+            <!-- In Add to BOM Mode: Form Inputs -->
+            <div v-else class="d-flex align-center flex-wrap flex-grow-1 justify-end" style="gap: 16px;">
               <v-text-field
                 v-model.number="bomForm.quantity"
                 label="Required Qty"
@@ -386,7 +419,7 @@
           <div v-else class="d-flex align-center justify-space-between py-1">
             <span class="text-caption text-slate-500 d-flex align-center">
               <v-icon start size="16" color="primary">mdi-cursor-default-click</v-icon>
-              Click any row in the table above to select a component to add to this BOM.
+              {{ pickerMode ? 'Click any row in the table above to pick a component, or double-click to select immediately.' : 'Click any row in the table above to select a component to add to this BOM.' }}
             </span>
             <v-btn variant="text" size="small" @click="close">
               Close
@@ -395,6 +428,15 @@
         </v-slide-y-transition>
       </div>
     </v-card>
+
+    <!-- Component Details Pop-up Re-used from Components Table -->
+    <ComponentDetailsDialog
+      v-model="showDetailsDialog"
+      :component="detailComponent"
+      :show-select-button="true"
+      :select-button-text="pickerMode ? 'Pick This Component' : 'Select for BOM'"
+      @select="onDetailComponentSelected"
+    />
   </v-dialog>
 </template>
 
@@ -403,6 +445,7 @@ import { ref, computed, watch, onMounted } from 'vue';
 import api from '../services/api';
 import MediaImage from './MediaImage.vue';
 import PackageLink from './PackageLink.vue';
+import ComponentDetailsDialog from './ComponentDetailsDialog.vue';
 
 const props = defineProps({
   modelValue: {
@@ -411,15 +454,39 @@ const props = defineProps({
   },
   projectId: {
     type: [Number, String],
-    required: true
+    default: null
   },
   projectName: {
     type: String,
     default: ''
+  },
+  subtitle: {
+    type: String,
+    default: ''
+  },
+  pickerMode: {
+    type: Boolean,
+    default: false
+  },
+  title: {
+    type: String,
+    default: ''
+  },
+  initialSearch: {
+    type: String,
+    default: ''
+  },
+  initialCategories: {
+    type: Array,
+    default: () => []
+  },
+  initialPackages: {
+    type: Array,
+    default: () => []
   }
 });
 
-const emit = defineEmits(['update:modelValue', 'added']);
+const emit = defineEmits(['update:modelValue', 'added', 'select']);
 
 const components = ref([]);
 const categories = ref([]);
@@ -539,6 +606,22 @@ const nextPage = () => {
   }
 };
 
+const showDetailsDialog = ref(false);
+const detailComponent = ref(null);
+
+const openDetails = (c) => {
+  detailComponent.value = c;
+  selectComponent(c);
+  showDetailsDialog.value = true;
+};
+
+const onDetailComponentSelected = (c) => {
+  selectComponent(c);
+  if (props.pickerMode) {
+    confirmPick();
+  }
+};
+
 const selectComponent = (c) => {
   selectedComponent.value = c;
 };
@@ -573,6 +656,19 @@ const submitAdd = async () => {
   }
 };
 
+const confirmPick = () => {
+  if (!selectedComponent.value) return;
+  emit('select', selectedComponent.value);
+  close();
+};
+
+const onRowDblClick = (c) => {
+  if (props.pickerMode) {
+    selectedComponent.value = c;
+    confirmPick();
+  }
+};
+
 const close = () => {
   emit('update:modelValue', false);
 };
@@ -583,6 +679,11 @@ watch(() => props.modelValue, (isOpen) => {
     selectedComponent.value = null;
     bomForm.value = { quantity: 1, comment: '' };
     offset.value = 0;
+    if (props.pickerMode) {
+      search.value = props.initialSearch || '';
+      selectedCategories.value = Array.isArray(props.initialCategories) ? [...props.initialCategories] : [];
+      selectedPackages.value = Array.isArray(props.initialPackages) ? [...props.initialPackages] : [];
+    }
     fetchComponents();
   }
 });
@@ -626,5 +727,22 @@ onMounted(async () => {
 
 .row-selected:hover {
   background-color: #DBEAFE !important;
+}
+
+.comp-name-link {
+  cursor: pointer;
+  transition: color 0.15s ease;
+}
+
+.comp-name-link:hover {
+  color: #1d4ed8 !important;
+}
+
+.comp-name-link:hover .hover-underline {
+  text-decoration: underline;
+}
+
+.comp-name-link:hover .info-icon {
+  opacity: 1 !important;
 }
 </style>

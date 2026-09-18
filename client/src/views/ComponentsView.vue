@@ -94,9 +94,9 @@
           </v-col>
         </v-row>
 
-        <!-- Row 2: Project, Pin Range, and Filter Summary/Reset -->
+        <!-- Row 2: Project, Stock Status, Pin Range, and Filter Summary/Reset -->
         <v-row dense align="center" class="mt-1">
-          <v-col cols="12" sm="6" md="4">
+          <v-col cols="12" sm="6" md="3">
             <v-autocomplete
               v-model="selectedProject"
               :items="projects"
@@ -113,8 +113,39 @@
             />
           </v-col>
 
-          <v-col cols="12" sm="6" md="4">
-            <div class="d-flex align-center gap-2">
+          <v-col cols="12" sm="6" md="3">
+            <v-select
+              v-model="stockStatus"
+              :items="stockStatusOptions"
+              item-title="title"
+              item-value="value"
+              label="Stock Status"
+              placeholder="All stock levels"
+              density="compact"
+              variant="outlined"
+              hide-details
+              clearable
+              rounded="lg"
+              @update:model-value="onFilterChange"
+            >
+              <template #selection="{ item }">
+                <div class="d-flex align-center gap-1">
+                  <v-icon size="14" :color="item.raw.color" class="me-1">{{ item.raw.icon }}</v-icon>
+                  <span class="text-body-2">{{ item.raw.title }}</span>
+                </div>
+              </template>
+              <template #item="{ props, item }">
+                <v-list-item v-bind="props" :title="item.raw.title">
+                  <template #prepend>
+                    <v-icon size="16" :color="item.raw.color" class="me-2">{{ item.raw.icon }}</v-icon>
+                  </template>
+                </v-list-item>
+              </template>
+            </v-select>
+          </v-col>
+
+          <v-col cols="12" sm="6" md="2">
+            <div class="d-flex align-center gap-1">
               <v-text-field
                 v-model.number="minPins"
                 label="Min Pins"
@@ -143,7 +174,7 @@
             </div>
           </v-col>
 
-          <v-col cols="12" md="4" class="d-flex align-center justify-end gap-2 flex-wrap">
+          <v-col cols="12" sm="6" md="4" class="d-flex align-center justify-end gap-2 flex-wrap">
             <v-chip
               v-if="activeFilterCount > 0"
               color="primary"
@@ -199,13 +230,21 @@
             <th class="text-left font-weight-bold">Category</th>
             <th class="text-left font-weight-bold">Package</th>
             <th class="text-left font-weight-bold">Description</th>
-            <th class="text-center font-weight-bold">In Stock</th>
-            <th class="text-right font-weight-bold" style="width: 140px;">Actions</th>
+            <th class="text-center font-weight-bold" style="width: 100px;">In Stock</th>
+            <th class="text-center font-weight-bold" style="width: 100px;">Min Qty</th>
+            <th class="text-right font-weight-bold" style="width: 90px;">Actions</th>
           </tr>
         </thead>
 
         <tbody>
-          <tr v-for="c in components" :key="c.ID" :class="{ 'row-shortage': !c.qty || c.qty <= 0 }">
+          <tr
+            v-for="c in components"
+            :key="c.ID"
+            :class="{
+              'row-shortage': !c.qty || c.qty <= 0,
+              'row-low-stock': c.qty > 0 && c.minQty > 0 && c.qty <= c.minQty
+            }"
+          >
             <!-- Photo Thumbnail -->
             <td>
               <v-avatar rounded="lg" size="38" class="border">
@@ -220,11 +259,28 @@
 
             <!-- Name & Marking -->
             <td>
-              <div class="font-mono font-weight-bold text-body-2 text-primary cursor-pointer" @click="viewDetails(c)">
+              <div class="font-mono font-weight-bold text-body-2 text-primary cursor-pointer hover-underline" @click="viewDetails(c)">
                 {{ c.component }}
               </div>
-              <div class="text-caption text-disabled font-mono" v-if="c.marking">
-                Marking: {{ c.marking }}
+              <div class="d-flex align-center gap-1 text-caption font-mono" v-if="c.marking || c.datasheetURL">
+                <span v-if="c.marking" class="text-disabled">
+                  Marking: {{ c.marking }}
+                </span>
+                <!-- PDF Datasheet Icon after marking -->
+                <v-btn
+                  v-if="c.datasheetURL"
+                  icon="mdi-file-pdf-box"
+                  size="x-small"
+                  density="compact"
+                  color="red-darken-1"
+                  variant="text"
+                  title="View Datasheet"
+                  :href="getDatasheetUrl(c.datasheetURL)"
+                  target="_blank"
+                  class="ms-0"
+                  style="width: 22px; height: 22px;"
+                  @click.stop
+                />
               </div>
             </td>
 
@@ -248,27 +304,49 @@
               </div>
             </td>
 
-            <!-- Stock Quantity -->
-            <td class="text-center font-mono font-weight-bold text-body-2">
-              <span :class="c.qty > 0 ? 'text-slate-800' : 'text-error font-weight-bold'">
-                {{ c.qty ?? 0 }}
-              </span>
+            <!-- Stock Quantity (Editable) -->
+            <td class="text-center">
+              <div class="d-inline-flex align-center justify-center">
+                <v-text-field
+                  :model-value="c.qty ?? 0"
+                  type="number"
+                  min="0"
+                  density="compact"
+                  variant="outlined"
+                  hide-details
+                  :class="[
+                    'stock-qty-input font-mono font-weight-bold',
+                    (!c.qty || c.qty <= 0) ? 'stock-absent' : (c.minQty > 0 && c.qty <= c.minQty ? 'stock-low' : 'stock-ok')
+                  ]"
+                  style="width: 72px;"
+                  title="Current on-hand stock (click to edit)"
+                  @change="onStockQtyChange(c, $event.target.value)"
+                  @keydown.enter="$event.target.blur()"
+                />
+              </div>
+            </td>
+
+            <!-- Min Acceptable Quantity (Editable) -->
+            <td class="text-center">
+              <div class="d-inline-flex align-center justify-center">
+                <v-text-field
+                  :model-value="c.minQty ?? 0"
+                  type="number"
+                  min="0"
+                  density="compact"
+                  variant="outlined"
+                  hide-details
+                  class="min-qty-input font-mono"
+                  style="width: 72px;"
+                  title="Minimal acceptable quantity (0 = unconstrained)"
+                  @change="onMinQtyChange(c, $event.target.value)"
+                  @keydown.enter="$event.target.blur()"
+                />
+              </div>
             </td>
 
             <!-- Actions -->
-            <td class="text-right">
-              <!-- Datasheet Button -->
-              <v-btn
-                v-if="c.datasheetURL"
-                icon="mdi-file-pdf-box"
-                size="small"
-                color="red-darken-1"
-                variant="text"
-                title="View Datasheet"
-                :href="getDatasheetUrl(c.datasheetURL)"
-                target="_blank"
-              />
-
+            <td class="text-right text-no-wrap">
               <!-- Add to Shopping List -->
               <v-btn
                 icon="mdi-cart-plus"
@@ -279,26 +357,27 @@
                 @click="addToShoppingList(c)"
               />
 
-              <!-- View Details -->
+              <!-- Buy Component -->
               <v-btn
-                icon="mdi-information-outline"
+                icon="mdi-cash-check"
                 size="small"
+                color="primary"
                 variant="text"
-                title="Component details"
-                @click="viewDetails(c)"
+                title="Buy Component"
+                @click="openDirectPurchase(c)"
               />
             </td>
           </tr>
 
           <tr v-if="components.length === 0 && !loading">
-            <td colspan="7" class="text-center py-8 text-disabled">
+            <td colspan="8" class="text-center py-8 text-disabled">
               <v-icon size="40" class="mb-2">mdi-memory-off</v-icon>
               <div>No components found matching your search.</div>
             </td>
           </tr>
 
           <tr v-if="loading">
-            <td colspan="7" class="text-center py-8">
+            <td colspan="8" class="text-center py-8">
               <v-progress-circular indeterminate color="primary" />
             </td>
           </tr>
@@ -333,103 +412,12 @@
       </div>
     </v-card>
 
-    <!-- COMPONENT DETAILS DIALOG -->
-    <v-dialog v-model="showDetailsDialog" max-width="850">
-      <v-card class="rounded-0 border" v-if="selectedComponent">
-        <v-card-title class="bg-surface-variant py-3 px-4 d-flex align-center justify-space-between">
-          <div class="font-mono font-weight-bold text-subtitle-1 text-primary">
-            {{ selectedComponent.component }}
-          </div>
-          <v-btn icon="mdi-close" variant="text" size="small" @click="showDetailsDialog = false" />
-        </v-card-title>
-
-        <v-divider />
-
-        <v-card-text class="pa-4">
-          <v-row>
-            <v-col cols="12" sm="5" class="d-flex justify-center">
-              <MediaImage
-                type="component"
-                :src="selectedComponent.photoURL"
-                height="180px"
-                width="100%"
-                :cover="false"
-              />
-            </v-col>
-            <v-col cols="12" sm="7">
-              <div class="text-caption text-disabled text-uppercase">Category</div>
-              <div class="text-body-2 font-weight-medium mb-2">{{ selectedComponent.category || '—' }}</div>
-
-              <div class="text-caption text-disabled text-uppercase">Package / Footprint</div>
-              <div class="text-body-2 font-mono mb-2 d-flex align-center gap-1 flex-wrap">
-                <PackageLink :item="selectedComponent" />
-                <v-chip size="x-small" class="ms-1" v-if="selectedComponent.package">
-                  {{ selectedComponent.isSmd ? 'SMD' : 'Through-Hole' }}
-                </v-chip>
-                <v-chip size="x-small" variant="tonal" color="blue-grey" class="ms-1 font-mono" v-if="selectedComponent.pinQuantity">
-                  {{ selectedComponent.pinQuantity }} pins
-                </v-chip>
-              </div>
-
-              <div class="text-caption text-disabled text-uppercase">Marking</div>
-              <div class="text-body-2 font-mono mb-2">{{ selectedComponent.marking || '—' }}</div>
-
-              <div class="text-caption text-disabled text-uppercase">Total Stock Quantity</div>
-              <v-chip size="small" color="success" class="font-mono font-weight-bold">
-                {{ selectedComponent.qty }} in stock
-              </v-chip>
-            </v-col>
-          </v-row>
-
-          <v-divider class="my-3" />
-
-          <div class="text-caption text-disabled text-uppercase mb-1">Description</div>
-          <p class="text-body-2 mb-3">
-            {{ selectedComponent.description || selectedComponent.shortDescription || 'No description provided.' }}
-          </p>
-
-          <!-- Warehouse allocations -->
-          <div v-if="selectedComponent.warehouse && selectedComponent.warehouse.length > 0">
-            <div class="text-caption text-disabled text-uppercase mb-1">Warehouse Storage Locations</div>
-            <v-chip-group>
-              <v-chip
-                v-for="w in selectedComponent.warehouse"
-                :key="w.id"
-                size="small"
-                variant="outlined"
-              >
-                <v-icon start size="14">mdi-archive-outline</v-icon>
-                {{ w.storage || 'Box #' + w.storageId }}: {{ w.quantity }} pcs
-              </v-chip>
-            </v-chip-group>
-          </div>
-        </v-card-text>
-
-        <v-divider />
-
-        <v-card-actions class="pa-3">
-          <v-btn
-            v-if="selectedComponent.datasheetURL"
-            color="red-darken-1"
-            variant="text"
-            prepend-icon="mdi-file-pdf-box"
-            :href="getDatasheetUrl(selectedComponent.datasheetURL)"
-            target="_blank"
-          >
-            Open Datasheet
-          </v-btn>
-          <v-spacer />
-          <v-btn
-            color="amber-darken-3"
-            variant="tonal"
-            prepend-icon="mdi-cart-plus"
-            @click="addToShoppingList(selectedComponent)"
-          >
-            Add to Shopping List
-          </v-btn>
-        </v-card-actions>
-      </v-card>
-    </v-dialog>
+    <!-- COMPONENT DETAILS DIALOG (Re-used ComponentDetailsDialog) -->
+    <ComponentDetailsDialog
+      v-model="showDetailsDialog"
+      :component="selectedComponent"
+      @purchased="fetchComponents"
+    />
 
     <!-- CREATE COMPONENT DIALOG -->
     <CreateComponentDialog
@@ -437,6 +425,14 @@
       :categories="categories"
       :packages="packages"
       @created="handleComponentCreated"
+    />
+
+    <!-- DIRECT PURCHASE CONFIRMATION DIALOG -->
+    <PurchaseConfirmDialog
+      v-model="showDirectPurchaseDialog"
+      :item="directPurchaseItem"
+      @purchased="handleDirectPurchased"
+      @notify="notify"
     />
 
     <v-snackbar v-model="snackbar.show" :color="snackbar.color" timeout="3000">
@@ -451,6 +447,8 @@ import api, { resolveMediaUrl } from '../services/api';
 import MediaImage from '../components/MediaImage.vue';
 import PackageLink from '../components/PackageLink.vue';
 import CreateComponentDialog from '../components/CreateComponentDialog.vue';
+import ComponentDetailsDialog from '../components/ComponentDetailsDialog.vue';
+import PurchaseConfirmDialog from '../components/PurchaseConfirmDialog.vue';
 import { useComponentsStore } from '../stores/components';
 
 const componentsStore = useComponentsStore();
@@ -468,8 +466,16 @@ const selectedCategories = ref([]);
 const selectedPackages = ref([]);
 const packageMountType = ref('all'); // 'all' | 'smd' | 'tht'
 const selectedProject = ref(null);
+const stockStatus = ref('');
 const minPins = ref(null);
 const maxPins = ref(null);
+
+const stockStatusOptions = [
+  { title: 'Absent (0)', value: 'absent', icon: 'mdi-alert-circle', color: 'error' },
+  { title: 'Absent or ≤ Min Qty', value: 'absent_or_low', icon: 'mdi-alert', color: 'deep-orange' },
+  { title: 'Near to End / Low', value: 'low', icon: 'mdi-alert-outline', color: 'orange-darken-2' },
+  { title: 'In Stock (> 0)', value: 'in_stock', icon: 'mdi-check-circle-outline', color: 'success' },
+];
 
 const filteredPackagesList = computed(() => {
   if (packageMountType.value === 'smd') {
@@ -487,6 +493,8 @@ const offset = ref(0);
 const selectedComponent = ref(null);
 const showDetailsDialog = ref(false);
 const showCreateDialog = ref(false);
+const showDirectPurchaseDialog = ref(false);
+const directPurchaseItem = ref(null);
 
 const handleComponentCreated = (newComp) => {
   notify(`Component "${newComp.component}" created successfully`, 'success');
@@ -512,6 +520,7 @@ const activeFilterCount = computed(() => {
   if (selectedPackages.value && selectedPackages.value.length > 0) count++;
   if (packageMountType.value !== 'all') count++;
   if (selectedProject.value !== null && selectedProject.value !== undefined) count++;
+  if (stockStatus.value) count++;
   if (minPins.value !== null && minPins.value !== undefined && minPins.value !== '') count++;
   if (maxPins.value !== null && maxPins.value !== undefined && maxPins.value !== '') count++;
   return count;
@@ -546,6 +555,7 @@ const resetFilters = () => {
   selectedPackages.value = [];
   packageMountType.value = 'all';
   selectedProject.value = null;
+  stockStatus.value = '';
   minPins.value = null;
   maxPins.value = null;
   offset.value = 0;
@@ -560,6 +570,7 @@ const fetchComponents = async () => {
       categoryIds: selectedCategories.value,
       packageIds: selectedPackages.value,
       projectId: selectedProject.value,
+      stockStatus: stockStatus.value || undefined,
       isSmd: packageMountType.value === 'smd' ? 1 : (packageMountType.value === 'tht' ? 0 : undefined),
       minPins: minPins.value,
       maxPins: maxPins.value,
@@ -573,6 +584,36 @@ const fetchComponents = async () => {
     notify('Failed to load components: ' + err.message, 'error');
   } finally {
     loading.value = false;
+  }
+};
+
+const onStockQtyChange = async (c, newVal) => {
+  const parsed = parseInt(newVal, 10);
+  const targetVal = isNaN(parsed) || parsed < 0 ? 0 : parsed;
+  if (targetVal === (c.qty ?? 0)) return;
+  const oldVal = c.qty ?? 0;
+  c.qty = targetVal;
+  try {
+    await api.updateComponentQty(c.ID, targetVal);
+    notify(`Updated stock for ${c.component} to ${targetVal} pcs`);
+  } catch (err) {
+    c.qty = oldVal;
+    notify('Failed to update stock: ' + err.message, 'error');
+  }
+};
+
+const onMinQtyChange = async (c, newVal) => {
+  const parsed = parseInt(newVal, 10);
+  const targetVal = isNaN(parsed) || parsed < 0 ? 0 : parsed;
+  if (targetVal === (c.minQty ?? 0)) return;
+  const oldVal = c.minQty ?? 0;
+  c.minQty = targetVal;
+  try {
+    await api.updateComponentMinQty(c.ID, targetVal);
+    notify(`Updated min qty for ${c.component} to ${targetVal}`);
+  } catch (err) {
+    c.minQty = oldVal;
+    notify('Failed to update min qty: ' + err.message, 'error');
   }
 };
 
@@ -590,13 +631,9 @@ const nextPage = () => {
   }
 };
 
-const viewDetails = async (c) => {
-  try {
-    selectedComponent.value = await api.getComponent(c.ID);
-    showDetailsDialog.value = true;
-  } catch (err) {
-    notify('Failed to load component details', 'error');
-  }
+const viewDetails = (c) => {
+  selectedComponent.value = c;
+  showDetailsDialog.value = true;
 };
 
 const addToShoppingList = async (c) => {
@@ -606,6 +643,23 @@ const addToShoppingList = async (c) => {
   } catch (err) {
     notify('Failed to add to shopping list: ' + err.message, 'error');
   }
+};
+
+const openDirectPurchase = (c) => {
+  directPurchaseItem.value = {
+    isComponentDirect: true,
+    componentId: c.ID,
+    componentName: c.component,
+    packageName: c.package,
+    quantity: c.minQty && c.minQty > (c.qty || 0) ? (c.minQty - (c.qty || 0)) : 10,
+    latestPrice: null
+  };
+  showDirectPurchaseDialog.value = true;
+};
+
+const handleDirectPurchased = (result) => {
+  notify(`Purchase recorded: ${result.qty} pcs added to orders`);
+  fetchComponents();
 };
 
 const getDatasheetUrl = (url) => {
@@ -643,5 +697,45 @@ onMounted(async () => {
 
 .row-shortage:hover {
   background-color: #FEE2E2 !important;
+}
+
+.row-low-stock {
+  background-color: #FFF7ED !important;
+  border-left: 3px solid #F97316 !important;
+}
+
+.row-low-stock:hover {
+  background-color: #FFEDD5 !important;
+}
+
+.text-low-stock {
+  color: #EA580C !important;
+}
+
+.stock-qty-input :deep(input),
+.min-qty-input :deep(input) {
+  text-align: center;
+  padding-top: 4px;
+  padding-bottom: 4px;
+  font-size: 0.85rem;
+}
+
+.stock-absent :deep(input) {
+  color: #DC2626 !important;
+  font-weight: 700;
+}
+
+.stock-low :deep(input) {
+  color: #EA580C !important;
+  font-weight: 700;
+}
+
+.stock-ok :deep(input) {
+  color: #1E293B !important;
+  font-weight: 700;
+}
+
+.hover-underline:hover {
+  text-decoration: underline;
 }
 </style>
