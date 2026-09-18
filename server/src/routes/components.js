@@ -191,7 +191,7 @@ router.get('/check-existing', async (req, res) => {
         pkg.isSmd,
         pkg.pinQuantity,
         CASE
-          WHEN LOWER(TRIM(c.component)) = LOWER(?) AND c.package_id <=> ? AND c.category_id <=> ? THEN 'exact'
+          WHEN LOWER(TRIM(c.component)) = LOWER(?) AND COALESCE(c.package_id, -1) = COALESCE(?, -1) AND COALESCE(c.category_id, -1) = COALESCE(?, -1) THEN 'exact'
           WHEN LOWER(TRIM(c.component)) = LOWER(?) THEN 'same_name'
           ELSE 'similar'
         END AS matchReason
@@ -203,7 +203,7 @@ router.get('/check-existing', async (req, res) => {
         OR (c.category_id = ? AND c.package_id = ? AND LOWER(TRIM(c.component)) LIKE CONCAT('%', LOWER(?), '%'))
       ORDER BY 
         CASE 
-          WHEN LOWER(TRIM(c.component)) = LOWER(?) AND c.package_id <=> ? AND c.category_id <=> ? THEN 1
+          WHEN LOWER(TRIM(c.component)) = LOWER(?) AND COALESCE(c.package_id, -1) = COALESCE(?, -1) AND COALESCE(c.category_id, -1) = COALESCE(?, -1) THEN 1
           WHEN LOWER(TRIM(c.component)) = LOWER(?) THEN 2
           ELSE 3
         END ASC

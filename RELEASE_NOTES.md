@@ -1,5 +1,25 @@
 # Release Notes - BOM Manager
 
+## Version 0.2.4 (September 2026) - Pre-Production
+
+### Summary
+Version 0.2.4 introduces dual-database engine support (MySQL & SQLite) for fully autonomous self-hosted deployments, a dedicated Settings view with live database and media diagnostics, and prepared containerization artifacts for publication.
+
+### What's New
+- **Autonomous Self-Hosted Deployment with SQLite 3**: Run BOM Manager with zero external database dependencies. When deployed with SQLite (default for self-hosting), the application automatically initializes its complete database schema, enables high-concurrency Write-Ahead Logging (WAL), and seeds default electronic taxonomies.
+- **Dual Database Architecture (MySQL & SQLite)**: Switch seamlessly between embedded SQLite and external MySQL / MariaDB via the `DB_TYPE` environment variable (`sqlite` or `mysql`). Existing installations with `DB_HOST` configured retain their MySQL database connection with zero breaking changes.
+- **Dedicated Settings View (`/settings`)**: Accessible directly from the main sidebar navigation menu. Features:
+  - Active Database Engine status and details (file path/size for SQLite, host/port/database for MySQL).
+  - Real-time catalog entity counters (components, projects, BOM records, orders, storage locations).
+  - Interactive "Switch Database Engine" guide with copyable `.env` and `docker-compose.yml` configurations.
+  - Media & Asset storage path configuration (`t_config`) with physical disk folder existence checks.
+  - Live database ping latency diagnostics.
+  - System specifications and runtime metrics.
+- **1-Command Autonomous Docker Compose**: Single-container setup running out of the box with `docker compose up -d`, persisting SQLite database in `./data/` and media assets in `./media/`.
+- **Cross-Database SQL Standard Compliancy**: Refactored queries to pure ANSI SQL standards across all route endpoints, polyfilled scalar compatibility functions (`NOW()`, `GREATEST()`, `LEAST()`, `CONCAT()`), and eliminated engine-specific dialect locks.
+
+---
+
 ## Version 0.2.3 (September 2026)
 
 ### Summary

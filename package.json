@@ -1,6 +1,6 @@
 {
   "name": "bommanager",
-  "version": "0.2.3",
+  "version": "0.2.4",
   "private": true,
   "description": "BOM Manager - Electronic Components and Project Bill of Materials Manager",
   "workspaces": [

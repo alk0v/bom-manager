@@ -10,12 +10,21 @@ const shoppingListRouter = require('./routes/shoppingList');
 const reportsRouter = require('./routes/reports');
 const metaRouter = require('./routes/meta');
 const mediaRouter = require('./routes/media');
+const settingsRouter = require('./routes/settings');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
 
 app.use(cors());
 app.use(express.json());
+
+// Autonomous data directory setup (for SQLite)
+const dataDir = process.env.DATA_DIR
+  ? path.resolve(process.env.DATA_DIR)
+  : path.resolve(__dirname, '../../data');
+if (!fs.existsSync(dataDir)) {
+  fs.mkdirSync(dataDir, { recursive: true });
+}
 
 // Media assets directory setup
 const mediaDir = process.env.MEDIA_DIR
@@ -69,6 +78,7 @@ app.use('/api/components', componentsRouter);
 app.use('/api/shopping-list', shoppingListRouter);
 app.use('/api/reports', reportsRouter);
 app.use('/api/media', mediaRouter);
+app.use('/api/settings', settingsRouter);
 app.use('/api', metaRouter);
 
 // Health check endpoint

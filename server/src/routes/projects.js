@@ -295,9 +295,8 @@ router.delete('/:id', async (req, res) => {
 
       // Delete production items for any production runs of this project
       await conn.query(`
-        DELETE pi FROM t_production_items pi
-        INNER JOIN t_production_runs pr ON pi.runId = pr.id
-        WHERE pr.projectId = ?
+        DELETE FROM t_production_items
+        WHERE runId IN (SELECT id FROM t_production_runs WHERE projectId = ?)
       `, [projectId]);
 
       // Delete production runs

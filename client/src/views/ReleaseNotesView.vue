@@ -90,9 +90,37 @@ import { computed } from 'vue';
 
 const releases = [
   {
-    version: '0.2.3',
+    version: '0.2.4',
     date: '2026-09-18',
     isCurrent: true,
+    summary: 'Version 0.2.4 introduces dual-database engine support (MySQL & SQLite) for fully autonomous self-hosted deployments, a dedicated Settings view with live database and media diagnostics, and prepared containerization artifacts for publication.',
+    features: [
+      {
+        title: 'Autonomous Self-Hosted Deployment with SQLite 3',
+        description: 'Deploy BOM Manager with zero external database dependencies. When run with SQLite, all tables are automatically initialized, WAL mode is configured for fast concurrent performance, and initial electronics taxonomies are seeded.'
+      },
+      {
+        title: 'Dual Database Architecture (MySQL & SQLite)',
+        description: 'Switch easily between embedded SQLite and external MySQL / MariaDB via the DB_TYPE environment variable. Existing installations retain full backward compatibility.'
+      },
+      {
+        title: 'Dedicated Settings View (/settings)',
+        description: 'New comprehensive settings screen with active database connection info, real-time catalog entity counters, deployment guides, media asset path configuration (t_config), and live database ping diagnostics.'
+      },
+      {
+        title: '1-Command Autonomous Docker Compose',
+        description: 'Streamlined Docker Compose deployment with persistent /app/data and /app/media volumes, running instantly with "docker compose up -d".'
+      },
+      {
+        title: 'Cross-Database ANSI SQL Compatibility',
+        description: 'Unified database queries across all route endpoints to standard ANSI SQL with custom scalar functions (NOW, GREATEST, LEAST, CONCAT) for seamless operation on both engines.'
+      }
+    ]
+  },
+  {
+    version: '0.2.3',
+    date: '2026-09-18',
+    isCurrent: false,
     summary: 'Version 0.2.3 delivers complete project deletion with dependency safeguards, streamlines new project onboarding with direct routing to the main window, and adds rapid BOM population shortcuts.',
     features: [
       {
@@ -265,7 +293,7 @@ const releases = [
   }
 ];
 
-const currentVersion = computed(() => releases.find(r => r.isCurrent)?.version || '0.2.3');
+const currentVersion = computed(() => releases.find(r => r.isCurrent)?.version || '0.2.4');
 </script>
 
 <style scoped>

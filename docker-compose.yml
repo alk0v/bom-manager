@@ -9,13 +9,23 @@ services:
       - "3001:3001"
     environment:
       - PORT=3001
-      - DB_HOST=192.168.31.122
-      - DB_PORT=3306
-      - DB_USER=bommanager_admin
-      - DB_PASSWORD=Hm7dgJ5ggHKebPM8
-      - DB_NAME=bommanager_dev
       - MEDIA_BASE_URL=/media
       - MEDIA_DIR=/app/media
+      - DATA_DIR=/app/data
+      # -------------------------------------------------------------------------
+      # Option 1: Autonomous SQLite (Default - Zero configuration required)
+      # -------------------------------------------------------------------------
+      - DB_TYPE=sqlite
+      - SQLITE_FILE=/app/data/bommanager.sqlite
+      # -------------------------------------------------------------------------
+      # Option 2: External MySQL / MariaDB (Uncomment to use external database)
+      # -------------------------------------------------------------------------
+      # - DB_TYPE=mysql
+      # - DB_HOST=192.168.31.122
+      # - DB_PORT=3306
+      # - DB_USER=bommanager_admin
+      # - DB_PASSWORD=your_mysql_password
+      # - DB_NAME=retool_bommanager
     volumes:
+      - ./data:/app/data
       - ./media:/app/media
-
