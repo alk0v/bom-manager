@@ -22,6 +22,7 @@ COPY server/package*.json ./server/
 RUN cd server && npm install --omit=dev
 
 COPY server/ ./server/
+COPY demo/ ./demo/
 COPY --from=build-client /app/client/dist ./client/dist
 
 RUN mkdir -p /app/media /app/data

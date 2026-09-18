@@ -244,6 +244,23 @@ function initSchema() {
     }
     console.log(`[Database:SQLite] Seeded ${defaultPackages.length} default packages.`);
   }
+
+  // Load demo database if requested via DEMO_DATA=true or INIT_MODE=demo
+  const demoRequested = process.env.DEMO_DATA === 'true' ||
+                        process.env.INIT_MODE === 'demo' ||
+                        process.env.LOAD_DEMO === 'true';
+
+  if (demoRequested) {
+    const projCount = db.prepare('SELECT COUNT(*) as count FROM i_projects').get()?.count || 0;
+    if (projCount === 0) {
+      const { loadDemoData } = require('./demoLoader');
+      const demoDir = path.resolve(__dirname, '../../../demo');
+      const mediaDir = process.env.MEDIA_DIR
+        ? path.resolve(process.env.MEDIA_DIR)
+        : path.resolve(__dirname, '../../../media');
+      loadDemoData(db, demoDir, mediaDir);
+    }
+  }
 }
 
 initSchema();

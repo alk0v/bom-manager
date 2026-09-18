@@ -17,6 +17,7 @@ services:
       # -------------------------------------------------------------------------
       - DB_TYPE=sqlite
       - SQLITE_FILE=/app/data/bommanager.sqlite
+      - DEMO_DATA=true
       # -------------------------------------------------------------------------
       # Option 2: External MySQL / MariaDB (Uncomment to use external database)
       # -------------------------------------------------------------------------

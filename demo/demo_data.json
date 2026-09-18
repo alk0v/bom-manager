@@ -1,0 +1,1834 @@
+{
+  "projects": [
+    {
+      "id": 4,
+      "projectName": "C64 WiFi Modem",
+      "description": "A NodeMCU (ESP8266) based WiFi modem for the C64's user port This is a Wifi-Modem for the Commodore C64 Uperport, which is based on the ESP8266 (NodeMCU v3). It contains level shifters to translate between the NodeMCU 3.3V level and the User Port 5V level. This prevents stressing the User Port due to a level mismatch.",
+      "url": "https://github.com/svenpetersen1965/C64-WiFi-Modem-User-Port",
+      "photoUrl": "c64_modem.jpg"
+    },
+    {
+      "id": 20,
+      "projectName": "OpenFlops",
+      "description": "OpenFlops is an Open Hardware implementation of such an emulator, inspired from the ubiquitous Gotek hardware. It is designed to run the FlashFloppy firmware, which gives it several improvements over the original Gotek",
+      "url": "https://github.com/SukkoPera/OpenFlops",
+      "photoUrl": ""
+    },
+    {
+      "id": 26,
+      "projectName": "Apple IIc to RGB",
+      "description": "",
+      "url": "https://oshwlab.com/yannick.erb/apple-iic-to-rgb_copy",
+      "photoUrl": "https://image.easyeda.com/pullimage/2RT9TcMR5n84xp8dAhAIfusanrp0VtlbEzfEbpnn.jpeg"
+    }
+  ],
+  "components": [
+    {
+      "ID": 12,
+      "component": "78L05",
+      "category_id": 5,
+      "package_id": 16,
+      "description": null,
+      "shortDescription": "Volt regulator",
+      "marking": null,
+      "datasheetURL": null,
+      "photoURL": null,
+      "qty": 98,
+      "minQty": 0
+    },
+    {
+      "ID": 17,
+      "component": "LD1117-33",
+      "category_id": 5,
+      "package_id": 9,
+      "description": "",
+      "shortDescription": "Volt regulator",
+      "marking": "",
+      "datasheetURL": null,
+      "photoURL": null,
+      "qty": 9,
+      "minQty": 0
+    },
+    {
+      "ID": 42,
+      "component": "Tacticle switch 6x6 1mm",
+      "category_id": 38,
+      "package_id": 82,
+      "description": "",
+      "shortDescription": "",
+      "marking": "",
+      "datasheetURL": null,
+      "photoURL": "tact_switch_6x6.jpg",
+      "qty": 88,
+      "minQty": 0
+    },
+    {
+      "ID": 45,
+      "component": "10 uF x 25v",
+      "category_id": 15,
+      "package_id": 58,
+      "description": "1 uF x 25v, ESR 1.6 Ohm, Vloss - 1.4%",
+      "shortDescription": "h=11, ESR 1.6 Ohm, Vloss - 1.4%",
+      "marking": "",
+      "datasheetURL": null,
+      "photoURL": null,
+      "qty": 24,
+      "minQty": 0
+    },
+    {
+      "ID": 80,
+      "component": "22 pF x 50v",
+      "category_id": 15,
+      "package_id": 25,
+      "description": "",
+      "shortDescription": "",
+      "marking": "",
+      "datasheetURL": null,
+      "photoURL": null,
+      "qty": 18,
+      "minQty": 0
+    },
+    {
+      "ID": 88,
+      "component": "1 kOhm",
+      "category_id": 2,
+      "package_id": 25,
+      "description": "",
+      "shortDescription": "1 kOhm, 5%",
+      "marking": "102",
+      "datasheetURL": null,
+      "photoURL": null,
+      "qty": 50,
+      "minQty": 0
+    },
+    {
+      "ID": 97,
+      "component": "4.7 kOhm",
+      "category_id": 2,
+      "package_id": 25,
+      "description": "",
+      "shortDescription": "4.7 kOhm, 5%",
+      "marking": "472",
+      "datasheetURL": null,
+      "photoURL": null,
+      "qty": 15,
+      "minQty": 0
+    },
+    {
+      "ID": 99,
+      "component": "10 kOhm",
+      "category_id": 2,
+      "package_id": 25,
+      "description": "",
+      "shortDescription": "10 kOhm, 5%",
+      "marking": "103",
+      "datasheetURL": null,
+      "photoURL": null,
+      "qty": 94,
+      "minQty": 0
+    },
+    {
+      "ID": 112,
+      "component": "1 kOhm",
+      "category_id": 2,
+      "package_id": 24,
+      "description": "",
+      "shortDescription": "1 kOhm, 1%",
+      "marking": "01B",
+      "datasheetURL": null,
+      "photoURL": null,
+      "qty": 81,
+      "minQty": 0
+    },
+    {
+      "ID": 114,
+      "component": "75 Ohm",
+      "category_id": 2,
+      "package_id": 24,
+      "description": "",
+      "shortDescription": "75 Ohm, 1%",
+      "marking": "85X",
+      "datasheetURL": null,
+      "photoURL": null,
+      "qty": 94,
+      "minQty": 0
+    },
+    {
+      "ID": 120,
+      "component": "10 kOhm",
+      "category_id": 2,
+      "package_id": 24,
+      "description": "",
+      "shortDescription": "10 kOhm, 5%",
+      "marking": "103",
+      "datasheetURL": null,
+      "photoURL": null,
+      "qty": 87,
+      "minQty": 0
+    },
+    {
+      "ID": 130,
+      "component": "100 nF x 50v",
+      "category_id": 15,
+      "package_id": 24,
+      "description": "",
+      "shortDescription": "100 nF x 50v, 10%",
+      "marking": "",
+      "datasheetURL": null,
+      "photoURL": null,
+      "qty": 286,
+      "minQty": 0
+    },
+    {
+      "ID": 144,
+      "component": "330 Ohm",
+      "category_id": 2,
+      "package_id": 25,
+      "description": "",
+      "shortDescription": "330 Ohm, 5%",
+      "marking": "331",
+      "datasheetURL": null,
+      "photoURL": null,
+      "qty": 82,
+      "minQty": 0
+    },
+    {
+      "ID": 197,
+      "component": "NodeMCU ESP8266",
+      "category_id": 3,
+      "package_id": 28,
+      "description": "",
+      "shortDescription": "ESP8266",
+      "marking": "NodeMCU",
+      "datasheetURL": null,
+      "photoURL": "nodemcu esp8266.jpg",
+      "qty": 2,
+      "minQty": 0
+    },
+    {
+      "ID": 198,
+      "component": "Green LED 3mm",
+      "category_id": 14,
+      "package_id": 74,
+      "description": "",
+      "shortDescription": "green",
+      "marking": "",
+      "datasheetURL": null,
+      "photoURL": null,
+      "qty": 13,
+      "minQty": 0
+    },
+    {
+      "ID": 200,
+      "component": "bat54c",
+      "category_id": 9,
+      "package_id": 10,
+      "description": "Small Signal Schottky Diode",
+      "shortDescription": "Schottky Diode",
+      "marking": "WW1, KL3",
+      "datasheetURL": "bat54.pdf",
+      "photoURL": "bat54c.jpg",
+      "qty": 13,
+      "minQty": 0
+    },
+    {
+      "ID": 204,
+      "component": "100 nF x 50v",
+      "category_id": 15,
+      "package_id": 25,
+      "description": "",
+      "shortDescription": "100 nF x 50v, 10%",
+      "marking": "",
+      "datasheetURL": null,
+      "photoURL": null,
+      "qty": 7,
+      "minQty": 0
+    },
+    {
+      "ID": 224,
+      "component": "2n7002",
+      "category_id": 10,
+      "package_id": 10,
+      "description": "\n",
+      "shortDescription": "N-channel MOSFET",
+      "marking": "702",
+      "datasheetURL": "2N7002.PDF",
+      "photoURL": "2n7002.jpg",
+      "qty": 30,
+      "minQty": 0
+    },
+    {
+      "ID": 228,
+      "component": "BC847B",
+      "category_id": 10,
+      "package_id": 10,
+      "description": "45 V, 100 mA NPN general-purpose transistors",
+      "shortDescription": "NPN 45v 100 mA",
+      "marking": "1F",
+      "datasheetURL": "BC847X_SER.pdf",
+      "photoURL": null,
+      "qty": 51,
+      "minQty": 0
+    },
+    {
+      "ID": 235,
+      "component": "MMBT3904",
+      "category_id": 10,
+      "package_id": 10,
+      "description": "",
+      "shortDescription": "NPN 40v 200 mA",
+      "marking": "1AM",
+      "datasheetURL": "MMBT3904.pdf",
+      "photoURL": null,
+      "qty": 10,
+      "minQty": 0
+    },
+    {
+      "ID": 265,
+      "component": "USB-A PCB 90 deg",
+      "category_id": 11,
+      "package_id": 82,
+      "description": "",
+      "shortDescription": "USB female PCB",
+      "marking": "",
+      "datasheetURL": null,
+      "photoURL": "usb_a_pcb.jpg",
+      "qty": 5,
+      "minQty": 0
+    },
+    {
+      "ID": 347,
+      "component": "Crystal quartz 8 MHz",
+      "category_id": 26,
+      "package_id": 12,
+      "description": "",
+      "shortDescription": "",
+      "marking": "8.000",
+      "datasheetURL": null,
+      "photoURL": null,
+      "qty": 49,
+      "minQty": 0
+    },
+    {
+      "ID": 365,
+      "component": "Yellow LED 3mm",
+      "category_id": 14,
+      "package_id": 74,
+      "description": "",
+      "shortDescription": "yellow",
+      "marking": "",
+      "datasheetURL": null,
+      "photoURL": null,
+      "qty": 100,
+      "minQty": 0
+    },
+    {
+      "ID": 366,
+      "component": "STM32F105RBT6",
+      "category_id": 4,
+      "package_id": 113,
+      "description": "",
+      "shortDescription": "",
+      "marking": "STM32F105RBT6",
+      "datasheetURL": null,
+      "photoURL": "stm32f105.jpg",
+      "qty": 2,
+      "minQty": 0
+    },
+    {
+      "ID": 441,
+      "component": "100 pF x 50v",
+      "category_id": 15,
+      "package_id": 25,
+      "description": "",
+      "shortDescription": "",
+      "marking": "",
+      "datasheetURL": null,
+      "photoURL": null,
+      "qty": 18,
+      "minQty": 0
+    },
+    {
+      "ID": 443,
+      "component": "10 nF x 50v",
+      "category_id": 15,
+      "package_id": 25,
+      "description": "",
+      "shortDescription": "",
+      "marking": "",
+      "datasheetURL": null,
+      "photoURL": null,
+      "qty": 15,
+      "minQty": 0
+    },
+    {
+      "ID": 506,
+      "component": "Red LED 3mm",
+      "category_id": 14,
+      "package_id": 74,
+      "description": "",
+      "shortDescription": "red",
+      "marking": "",
+      "datasheetURL": null,
+      "photoURL": null,
+      "qty": 48,
+      "minQty": 0
+    },
+    {
+      "ID": 567,
+      "component": "74HC14",
+      "category_id": 8,
+      "package_id": 147,
+      "description": "",
+      "shortDescription": "7414",
+      "marking": "74HC14",
+      "datasheetURL": null,
+      "photoURL": null,
+      "qty": 8,
+      "minQty": 0
+    },
+    {
+      "ID": 600,
+      "component": "100 uF x 16v",
+      "category_id": 15,
+      "package_id": 59,
+      "description": "",
+      "shortDescription": "h=8 ESR=0.3 Ohm. VLoss=2%",
+      "marking": "",
+      "datasheetURL": null,
+      "photoURL": null,
+      "qty": 19,
+      "minQty": 0
+    },
+    {
+      "ID": 659,
+      "component": "22 Ohm",
+      "category_id": 2,
+      "package_id": 25,
+      "description": "",
+      "shortDescription": "22 Ohm, 5%",
+      "marking": "220",
+      "datasheetURL": null,
+      "photoURL": null,
+      "qty": 50,
+      "minQty": 0
+    },
+    {
+      "ID": 842,
+      "component": "74HC164PW",
+      "category_id": 8,
+      "package_id": 148,
+      "description": "",
+      "shortDescription": "74164",
+      "marking": "74HC164",
+      "datasheetURL": null,
+      "photoURL": null,
+      "qty": 1,
+      "minQty": 0
+    },
+    {
+      "ID": 844,
+      "component": "74HC04",
+      "category_id": 8,
+      "package_id": 130,
+      "description": "",
+      "shortDescription": "7404",
+      "marking": "74HC04D",
+      "datasheetURL": null,
+      "photoURL": null,
+      "qty": 2,
+      "minQty": 0
+    },
+    {
+      "ID": 879,
+      "component": "SS-12D00G 4mm",
+      "category_id": 12,
+      "package_id": 89,
+      "description": "",
+      "shortDescription": "",
+      "marking": "",
+      "datasheetURL": null,
+      "photoURL": "ss-12d00g.jpg",
+      "qty": 6,
+      "minQty": 0
+    },
+    {
+      "ID": 886,
+      "component": "100 pF x 50v",
+      "category_id": 15,
+      "package_id": 24,
+      "description": "",
+      "shortDescription": "100 pF x 50v, 5%",
+      "marking": "",
+      "datasheetURL": null,
+      "photoURL": "ceramic_0603.jpg",
+      "qty": 98,
+      "minQty": 0
+    },
+    {
+      "ID": 968,
+      "component": "1n5819WS",
+      "category_id": 36,
+      "package_id": 122,
+      "description": "",
+      "shortDescription": "diode schottky 40V 1A",
+      "marking": "S4",
+      "datasheetURL": null,
+      "photoURL": null,
+      "qty": 94,
+      "minQty": 0
+    },
+    {
+      "ID": 986,
+      "component": "C64 Wifi Modem PCB",
+      "category_id": 13,
+      "package_id": 164,
+      "description": "C64-Wifi_UserP_gerber_v2.zip",
+      "shortDescription": "",
+      "marking": "C64 WiFi-Modem Rev.2",
+      "datasheetURL": null,
+      "photoURL": "c64modem.png",
+      "qty": 7,
+      "minQty": 0
+    },
+    {
+      "ID": 987,
+      "component": "805 series 24 pin edge connector",
+      "category_id": 11,
+      "package_id": 96,
+      "description": "Popeye bootleg PCB",
+      "shortDescription": "3.96 mm",
+      "marking": "805-24P",
+      "datasheetURL": null,
+      "photoURL": "805_type_edge.jpg",
+      "qty": 6,
+      "minQty": 0
+    },
+    {
+      "ID": 1006,
+      "component": "47 uF 50v",
+      "category_id": 15,
+      "package_id": 129,
+      "description": "",
+      "shortDescription": "",
+      "marking": "",
+      "datasheetURL": null,
+      "photoURL": null,
+      "qty": 18,
+      "minQty": 0
+    },
+    {
+      "ID": 1026,
+      "component": "1n4148",
+      "category_id": 9,
+      "package_id": 122,
+      "description": "Small Signal Fast Switching Diode",
+      "shortDescription": "Fast Diode",
+      "marking": "T4",
+      "datasheetURL": null,
+      "photoURL": null,
+      "qty": 65,
+      "minQty": 0
+    },
+    {
+      "ID": 1089,
+      "component": "74HC157PW",
+      "category_id": 8,
+      "package_id": 176,
+      "description": "",
+      "shortDescription": "74157",
+      "marking": "74HC157PW",
+      "datasheetURL": null,
+      "photoURL": null,
+      "qty": 3,
+      "minQty": 0
+    },
+    {
+      "ID": 1090,
+      "component": "74HC173D",
+      "category_id": 8,
+      "package_id": 32,
+      "description": "",
+      "shortDescription": "74173",
+      "marking": "74HC173D",
+      "datasheetURL": null,
+      "photoURL": null,
+      "qty": 6,
+      "minQty": 0
+    },
+    {
+      "ID": 1092,
+      "component": "74HC04PW",
+      "category_id": 8,
+      "package_id": 148,
+      "description": "",
+      "shortDescription": "7404",
+      "marking": "74HC04PW",
+      "datasheetURL": null,
+      "photoURL": null,
+      "qty": 8,
+      "minQty": 0
+    },
+    {
+      "ID": 1093,
+      "component": "74HC00PW",
+      "category_id": 8,
+      "package_id": 148,
+      "description": "",
+      "shortDescription": "7400",
+      "marking": "74HC00PW",
+      "datasheetURL": null,
+      "photoURL": null,
+      "qty": 6,
+      "minQty": 0
+    },
+    {
+      "ID": 1094,
+      "component": "FMS6143",
+      "category_id": 39,
+      "package_id": 15,
+      "description": "",
+      "shortDescription": "Video Filter (LCVF)",
+      "marking": "FMS6143",
+      "datasheetURL": null,
+      "photoURL": null,
+      "qty": 3,
+      "minQty": 0
+    },
+    {
+      "ID": 1096,
+      "component": "74HC32PW",
+      "category_id": 8,
+      "package_id": 148,
+      "description": "",
+      "shortDescription": "7432",
+      "marking": "74HC32PW",
+      "datasheetURL": null,
+      "photoURL": null,
+      "qty": 8,
+      "minQty": 0
+    },
+    {
+      "ID": 1097,
+      "component": "SN74HC20PWR",
+      "category_id": 8,
+      "package_id": 148,
+      "description": "",
+      "shortDescription": "7420",
+      "marking": "HC20",
+      "datasheetURL": null,
+      "photoURL": null,
+      "qty": 8,
+      "minQty": 0
+    },
+    {
+      "ID": 1099,
+      "component": "270 Ohm",
+      "category_id": 2,
+      "package_id": 24,
+      "description": "",
+      "shortDescription": "270 Ohm 1%",
+      "marking": "271_",
+      "datasheetURL": null,
+      "photoURL": null,
+      "qty": 98,
+      "minQty": 0
+    },
+    {
+      "ID": 1101,
+      "component": "15 kOhm",
+      "category_id": 2,
+      "package_id": 24,
+      "description": "",
+      "shortDescription": "15 kOhm, 1%",
+      "marking": "18C",
+      "datasheetURL": null,
+      "photoURL": null,
+      "qty": 96,
+      "minQty": 0
+    },
+    {
+      "ID": 1102,
+      "component": "20 kOhm",
+      "category_id": 2,
+      "package_id": 24,
+      "description": "",
+      "shortDescription": "20 kOhm, 1%",
+      "marking": "30C",
+      "datasheetURL": null,
+      "photoURL": null,
+      "qty": 96,
+      "minQty": 0
+    },
+    {
+      "ID": 1103,
+      "component": "30 kOhm",
+      "category_id": 2,
+      "package_id": 24,
+      "description": "",
+      "shortDescription": "30 kOhm, 1%",
+      "marking": "303_",
+      "datasheetURL": null,
+      "photoURL": null,
+      "qty": 96,
+      "minQty": 0
+    },
+    {
+      "ID": 1127,
+      "component": "DSUB DB15 Connector",
+      "category_id": 11,
+      "package_id": 78,
+      "description": "",
+      "shortDescription": "DB15 2 Row",
+      "marking": "",
+      "datasheetURL": null,
+      "photoURL": "DB-15-DSUB.jpg",
+      "qty": 3,
+      "minQty": 0
+    },
+    {
+      "ID": 1128,
+      "component": "VG039NCHXTB502",
+      "category_id": 32,
+      "package_id": 103,
+      "description": "",
+      "shortDescription": "potentiometer SMD 3x3 mm 5 kOhm",
+      "marking": "",
+      "datasheetURL": null,
+      "photoURL": "SMD potenciometer 3x3.jpg",
+      "qty": 8,
+      "minQty": 0
+    },
+    {
+      "ID": 1138,
+      "component": "OpenFlops Gotek",
+      "category_id": 13,
+      "package_id": 164,
+      "description": "",
+      "shortDescription": "",
+      "marking": "",
+      "datasheetURL": null,
+      "photoURL": "openflops_pcb.jpg",
+      "qty": 9,
+      "minQty": 0
+    }
+  ],
+  "bom": [
+    {
+      "id": 18,
+      "projectId": 4,
+      "componentId": 197,
+      "quantity": 1,
+      "comment": null
+    },
+    {
+      "id": 19,
+      "projectId": 4,
+      "componentId": 198,
+      "quantity": 4,
+      "comment": null
+    },
+    {
+      "id": 20,
+      "projectId": 4,
+      "componentId": 204,
+      "quantity": 3,
+      "comment": null
+    },
+    {
+      "id": 21,
+      "projectId": 4,
+      "componentId": 99,
+      "quantity": 13,
+      "comment": null
+    },
+    {
+      "id": 223,
+      "projectId": 4,
+      "componentId": 986,
+      "quantity": 1,
+      "comment": null
+    },
+    {
+      "id": 225,
+      "projectId": 4,
+      "componentId": 144,
+      "quantity": 6,
+      "comment": null
+    },
+    {
+      "id": 226,
+      "projectId": 4,
+      "componentId": 567,
+      "quantity": 1,
+      "comment": null
+    },
+    {
+      "id": 227,
+      "projectId": 4,
+      "componentId": 228,
+      "quantity": 3,
+      "comment": null
+    },
+    {
+      "id": 228,
+      "projectId": 4,
+      "componentId": 224,
+      "quantity": 5,
+      "comment": null
+    },
+    {
+      "id": 229,
+      "projectId": 4,
+      "componentId": 968,
+      "quantity": 2,
+      "comment": null
+    },
+    {
+      "id": 230,
+      "projectId": 4,
+      "componentId": 200,
+      "quantity": 1,
+      "comment": null
+    },
+    {
+      "id": 231,
+      "projectId": 4,
+      "componentId": 42,
+      "quantity": 1,
+      "comment": null
+    },
+    {
+      "id": 232,
+      "projectId": 4,
+      "componentId": 987,
+      "quantity": 1,
+      "comment": null
+    },
+    {
+      "id": 233,
+      "projectId": 20,
+      "componentId": 45,
+      "quantity": 2,
+      "comment": null
+    },
+    {
+      "id": 234,
+      "projectId": 20,
+      "componentId": 600,
+      "quantity": 1,
+      "comment": null
+    },
+    {
+      "id": 235,
+      "projectId": 20,
+      "componentId": 204,
+      "quantity": 9,
+      "comment": null
+    },
+    {
+      "id": 236,
+      "projectId": 20,
+      "componentId": 80,
+      "quantity": 2,
+      "comment": null
+    },
+    {
+      "id": 237,
+      "projectId": 20,
+      "componentId": 659,
+      "quantity": 3,
+      "comment": null
+    },
+    {
+      "id": 238,
+      "projectId": 20,
+      "componentId": 97,
+      "quantity": 3,
+      "comment": null
+    },
+    {
+      "id": 239,
+      "projectId": 20,
+      "componentId": 968,
+      "quantity": 2,
+      "comment": null
+    },
+    {
+      "id": 240,
+      "projectId": 20,
+      "componentId": 366,
+      "quantity": 1,
+      "comment": null
+    },
+    {
+      "id": 241,
+      "projectId": 20,
+      "componentId": 844,
+      "quantity": 1,
+      "comment": null
+    },
+    {
+      "id": 242,
+      "projectId": 20,
+      "componentId": 17,
+      "quantity": 1,
+      "comment": null
+    },
+    {
+      "id": 243,
+      "projectId": 20,
+      "componentId": 347,
+      "quantity": 1,
+      "comment": null
+    },
+    {
+      "id": 244,
+      "projectId": 20,
+      "componentId": 198,
+      "quantity": 1,
+      "comment": null
+    },
+    {
+      "id": 245,
+      "projectId": 20,
+      "componentId": 506,
+      "quantity": 1,
+      "comment": null
+    },
+    {
+      "id": 246,
+      "projectId": 20,
+      "componentId": 88,
+      "quantity": 24,
+      "comment": null
+    },
+    {
+      "id": 247,
+      "projectId": 20,
+      "componentId": 224,
+      "quantity": 6,
+      "comment": null
+    },
+    {
+      "id": 248,
+      "projectId": 20,
+      "componentId": 235,
+      "quantity": 1,
+      "comment": null
+    },
+    {
+      "id": 249,
+      "projectId": 20,
+      "componentId": 265,
+      "quantity": 1,
+      "comment": null
+    },
+    {
+      "id": 286,
+      "projectId": 4,
+      "componentId": 506,
+      "quantity": 1,
+      "comment": null
+    },
+    {
+      "id": 287,
+      "projectId": 4,
+      "componentId": 365,
+      "quantity": 1,
+      "comment": null
+    },
+    {
+      "id": 308,
+      "projectId": 26,
+      "componentId": 130,
+      "quantity": 7,
+      "comment": "C1,C2,C3,C4,C6,C8,C9"
+    },
+    {
+      "id": 309,
+      "projectId": 26,
+      "componentId": 1006,
+      "quantity": 1,
+      "comment": "C5"
+    },
+    {
+      "id": 310,
+      "projectId": 26,
+      "componentId": 886,
+      "quantity": 1,
+      "comment": "C7"
+    },
+    {
+      "id": 311,
+      "projectId": 26,
+      "componentId": 1026,
+      "quantity": 1,
+      "comment": "D1"
+    },
+    {
+      "id": 312,
+      "projectId": 26,
+      "componentId": 120,
+      "quantity": 3,
+      "comment": "R1,R2,R4"
+    },
+    {
+      "id": 314,
+      "projectId": 26,
+      "componentId": 112,
+      "quantity": 9,
+      "comment": "R10,R11,R12,R16,R17,R18,R19,R21,R38"
+    },
+    {
+      "id": 315,
+      "projectId": 26,
+      "componentId": 114,
+      "quantity": 3,
+      "comment": "R13,R14,R15"
+    },
+    {
+      "id": 316,
+      "projectId": 26,
+      "componentId": 12,
+      "quantity": 1,
+      "comment": "U1"
+    },
+    {
+      "id": 317,
+      "projectId": 26,
+      "componentId": 842,
+      "quantity": 1,
+      "comment": "U3"
+    },
+    {
+      "id": 325,
+      "projectId": 26,
+      "componentId": 1093,
+      "quantity": 2,
+      "comment": "U2,U11"
+    },
+    {
+      "id": 326,
+      "projectId": 26,
+      "componentId": 1090,
+      "quantity": 2,
+      "comment": "U4,U6"
+    },
+    {
+      "id": 327,
+      "projectId": 26,
+      "componentId": 1094,
+      "quantity": 1,
+      "comment": "U5"
+    },
+    {
+      "id": 328,
+      "projectId": 26,
+      "componentId": 1092,
+      "quantity": 1,
+      "comment": "U7"
+    },
+    {
+      "id": 329,
+      "projectId": 26,
+      "componentId": 1089,
+      "quantity": 1,
+      "comment": "U9"
+    },
+    {
+      "id": 330,
+      "projectId": 26,
+      "componentId": 1096,
+      "quantity": 1,
+      "comment": "U10"
+    },
+    {
+      "id": 333,
+      "projectId": 26,
+      "componentId": 1102,
+      "quantity": 2,
+      "comment": "R3,R5"
+    },
+    {
+      "id": 334,
+      "projectId": 26,
+      "componentId": 1101,
+      "quantity": 2,
+      "comment": "R6,R7"
+    },
+    {
+      "id": 335,
+      "projectId": 26,
+      "componentId": 1103,
+      "quantity": 2,
+      "comment": "R8,R9"
+    },
+    {
+      "id": 336,
+      "projectId": 26,
+      "componentId": 1099,
+      "quantity": 1,
+      "comment": "R20"
+    },
+    {
+      "id": 337,
+      "projectId": 26,
+      "componentId": 1097,
+      "quantity": 1,
+      "comment": "U8"
+    },
+    {
+      "id": 347,
+      "projectId": 26,
+      "componentId": 1127,
+      "quantity": 1,
+      "comment": null
+    },
+    {
+      "id": 348,
+      "projectId": 26,
+      "componentId": 879,
+      "quantity": 2,
+      "comment": null
+    },
+    {
+      "id": 349,
+      "projectId": 26,
+      "componentId": 1128,
+      "quantity": 1,
+      "comment": null
+    },
+    {
+      "id": 350,
+      "projectId": 20,
+      "componentId": 1138,
+      "quantity": 1,
+      "comment": null
+    },
+    {
+      "id": 537,
+      "projectId": 26,
+      "componentId": 443,
+      "quantity": 1,
+      "comment": ""
+    },
+    {
+      "id": 538,
+      "projectId": 26,
+      "componentId": 441,
+      "quantity": 1,
+      "comment": ""
+    }
+  ],
+  "categories": [
+    {
+      "ID": 2,
+      "category": "resistor"
+    },
+    {
+      "ID": 3,
+      "category": "module"
+    },
+    {
+      "ID": 4,
+      "category": "microcontroller"
+    },
+    {
+      "ID": 5,
+      "category": "power"
+    },
+    {
+      "ID": 8,
+      "category": "logic"
+    },
+    {
+      "ID": 9,
+      "category": "diode"
+    },
+    {
+      "ID": 10,
+      "category": "transistor"
+    },
+    {
+      "ID": 11,
+      "category": "connector"
+    },
+    {
+      "ID": 12,
+      "category": "switch"
+    },
+    {
+      "ID": 13,
+      "category": "pcb"
+    },
+    {
+      "ID": 14,
+      "category": "led"
+    },
+    {
+      "ID": 15,
+      "category": "capacitor"
+    },
+    {
+      "ID": 26,
+      "category": "quartz"
+    },
+    {
+      "ID": 32,
+      "category": "resistor potentiometer"
+    },
+    {
+      "ID": 36,
+      "category": "diode schottky"
+    },
+    {
+      "ID": 38,
+      "category": "switch - tact key"
+    },
+    {
+      "ID": 39,
+      "category": "analog chps"
+    }
+  ],
+  "packages": [
+    {
+      "ID": 9,
+      "package": "SOT-223",
+      "pinQuantity": 3,
+      "isSmd": 1,
+      "drawingURL": null
+    },
+    {
+      "ID": 10,
+      "package": "SOT-23",
+      "pinQuantity": 3,
+      "isSmd": 1,
+      "drawingURL": null
+    },
+    {
+      "ID": 12,
+      "package": "HC-49S",
+      "pinQuantity": 2,
+      "isSmd": 0,
+      "drawingURL": null
+    },
+    {
+      "ID": 15,
+      "package": "SOP-8",
+      "pinQuantity": 8,
+      "isSmd": 1,
+      "drawingURL": null
+    },
+    {
+      "ID": 16,
+      "package": "SOT-89",
+      "pinQuantity": 3,
+      "isSmd": 1,
+      "drawingURL": null
+    },
+    {
+      "ID": 24,
+      "package": "0603",
+      "pinQuantity": 2,
+      "isSmd": 1,
+      "drawingURL": "to-220.png"
+    },
+    {
+      "ID": 25,
+      "package": "0805",
+      "pinQuantity": 2,
+      "isSmd": 1,
+      "drawingURL": null
+    },
+    {
+      "ID": 28,
+      "package": "unknown",
+      "pinQuantity": 1,
+      "isSmd": 0,
+      "drawingURL": null
+    },
+    {
+      "ID": 32,
+      "package": "SOP-16",
+      "pinQuantity": 16,
+      "isSmd": 1,
+      "drawingURL": null
+    },
+    {
+      "ID": 58,
+      "package": "ECAP_5.0",
+      "pinQuantity": 2,
+      "isSmd": 0,
+      "drawingURL": "cap_01_1.png"
+    },
+    {
+      "ID": 59,
+      "package": "ECAP_6.3",
+      "pinQuantity": 2,
+      "isSmd": 0,
+      "drawingURL": "cap_01_1.png"
+    },
+    {
+      "ID": 74,
+      "package": "LED_3mm",
+      "pinQuantity": 2,
+      "isSmd": 0,
+      "drawingURL": null
+    },
+    {
+      "ID": 78,
+      "package": "CONN_15",
+      "pinQuantity": 15,
+      "isSmd": 0,
+      "drawingURL": null
+    },
+    {
+      "ID": 82,
+      "package": "CONN_04",
+      "pinQuantity": 4,
+      "isSmd": 0,
+      "drawingURL": null
+    },
+    {
+      "ID": 89,
+      "package": "CONN_03",
+      "pinQuantity": 3,
+      "isSmd": 0,
+      "drawingURL": null
+    },
+    {
+      "ID": 96,
+      "package": "CONN_24",
+      "pinQuantity": 24,
+      "isSmd": 0,
+      "drawingURL": null
+    },
+    {
+      "ID": 103,
+      "package": "SIP-03",
+      "pinQuantity": 3,
+      "isSmd": 0,
+      "drawingURL": null
+    },
+    {
+      "ID": 113,
+      "package": "LQFP-64",
+      "pinQuantity": 64,
+      "isSmd": 1,
+      "drawingURL": null
+    },
+    {
+      "ID": 122,
+      "package": "SOD-323",
+      "pinQuantity": 2,
+      "isSmd": 1,
+      "drawingURL": "sod-323.png"
+    },
+    {
+      "ID": 129,
+      "package": "1210",
+      "pinQuantity": 2,
+      "isSmd": 1,
+      "drawingURL": null
+    },
+    {
+      "ID": 130,
+      "package": "SO-14",
+      "pinQuantity": 14,
+      "isSmd": 1,
+      "drawingURL": null
+    },
+    {
+      "ID": 147,
+      "package": "SOP-14",
+      "pinQuantity": 14,
+      "isSmd": 1,
+      "drawingURL": null
+    },
+    {
+      "ID": 148,
+      "package": "TSSOP-14",
+      "pinQuantity": 14,
+      "isSmd": 1,
+      "drawingURL": null
+    },
+    {
+      "ID": 164,
+      "package": "PCB",
+      "pinQuantity": 50,
+      "isSmd": 0,
+      "drawingURL": null
+    },
+    {
+      "ID": 176,
+      "package": "TSSOP-16",
+      "pinQuantity": 16,
+      "isSmd": 1,
+      "drawingURL": null
+    }
+  ],
+  "storages": [
+    {
+      "ID": 1,
+      "storage": "Default Storage"
+    }
+  ],
+  "warehouse": [
+    {
+      "id": 12,
+      "componentId": 12,
+      "storageId": 0,
+      "quantity": 100
+    },
+    {
+      "id": 17,
+      "componentId": 17,
+      "storageId": 0,
+      "quantity": 2
+    },
+    {
+      "id": 42,
+      "componentId": 42,
+      "storageId": 0,
+      "quantity": 3
+    },
+    {
+      "id": 43,
+      "componentId": 42,
+      "storageId": 1,
+      "quantity": 2
+    }
+  ],
+  "orders": [
+    {
+      "id": 49,
+      "componentId": 42,
+      "price": 0.01,
+      "qty": 100,
+      "date": "2023-03-06T23:00:00.000Z",
+      "url": "https://www.aliexpress.com/item/1005004045168083.html",
+      "details": "100PCS Button Touch switch 6x6x4.3 6x6x5 6x6x6 6x6x7 6x6x8 button DIP 4pin\nAliexpress"
+    },
+    {
+      "id": 60,
+      "componentId": 366,
+      "price": 6.4,
+      "qty": 1,
+      "date": "2023-03-06T23:00:00.000Z",
+      "url": "https://www.aliexpress.com/item/1005004033854343.html",
+      "details": "aliexpress"
+    },
+    {
+      "id": 80,
+      "componentId": 130,
+      "price": 0,
+      "qty": 100,
+      "date": "2023-09-12T22:00:00.000Z",
+      "url": "https://www.aliexpress.com/item/1005002528327444.html",
+      "details": "aliexpress"
+    },
+    {
+      "id": 88,
+      "componentId": 886,
+      "price": 0.0085,
+      "qty": 100,
+      "date": "2023-09-30T22:00:00.000Z",
+      "url": "https://www.aliexpress.com/item/1005002528327444.html",
+      "details": "aliexpress"
+    },
+    {
+      "id": 98,
+      "componentId": 366,
+      "price": 6.4,
+      "qty": 2,
+      "date": "2023-06-11T22:00:00.000Z",
+      "url": "https://www.aliexpress.com/item/1005004033854343.html",
+      "details": "aliexpress"
+    },
+    {
+      "id": 106,
+      "componentId": 968,
+      "price": 0.01,
+      "qty": 100,
+      "date": "2023-12-31T23:00:00.000Z",
+      "url": "https://www.aliexpress.com/item/32849879904.html",
+      "details": "aliexpress"
+    },
+    {
+      "id": 108,
+      "componentId": 197,
+      "price": 3.74,
+      "qty": 1,
+      "date": "2023-03-06T23:00:00.000Z",
+      "url": "https://www.aliexpress.com/item/1005005009152901.html",
+      "details": "aliexpress"
+    },
+    {
+      "id": 109,
+      "componentId": 986,
+      "price": 1,
+      "qty": 10,
+      "date": "2024-01-01T23:00:00.000Z",
+      "url": "https://jlcpcb.com/",
+      "details": "jlcpcb"
+    },
+    {
+      "id": 110,
+      "componentId": 987,
+      "price": 1.16,
+      "qty": 3,
+      "date": "2023-08-05T22:00:00.000Z",
+      "url": "https://www.aliexpress.com/item/33015746310.html",
+      "details": "aliexpress"
+    },
+    {
+      "id": 122,
+      "componentId": 197,
+      "price": 5.08,
+      "qty": 1,
+      "date": "2024-01-27T23:00:00.000Z",
+      "url": "https://www.aliexpress.com/item/1005006246641996.html",
+      "details": "aliexpress"
+    },
+    {
+      "id": 129,
+      "componentId": 1026,
+      "price": 0.01,
+      "qty": 100,
+      "date": "2024-02-16T23:00:00.000Z",
+      "url": "https://www.aliexpress.com/item/4000331408283.html",
+      "details": "aliexpress"
+    },
+    {
+      "id": 146,
+      "componentId": 567,
+      "price": 0.139,
+      "qty": 10,
+      "date": "2024-05-14T22:00:00.000Z",
+      "url": "https://www.aliexpress.com/item/32864895835.html",
+      "details": "aliexpress"
+    },
+    {
+      "id": 154,
+      "componentId": 197,
+      "price": 4.3,
+      "qty": 2,
+      "date": "2024-05-25T22:00:00.000Z",
+      "url": "https://www.aliexpress.com/item/1005005928071122.html",
+      "details": "aliexpress"
+    },
+    {
+      "id": 155,
+      "componentId": 987,
+      "price": 1.01,
+      "qty": 6,
+      "date": "2024-05-25T22:00:00.000Z",
+      "url": "https://www.aliexpress.com/item/33015746310.html",
+      "details": "aliexpress"
+    },
+    {
+      "id": 156,
+      "componentId": 365,
+      "price": 0.0014,
+      "qty": 100,
+      "date": "2024-05-25T22:00:00.000Z",
+      "url": "https://www.aliexpress.com/item/1005005708110840.html",
+      "details": "aliexpress"
+    },
+    {
+      "id": 174,
+      "componentId": 1089,
+      "price": 0.422,
+      "qty": 5,
+      "date": "2024-07-19T22:00:00.000Z",
+      "url": "https://www.aliexpress.com/item/1005005884138805.html",
+      "details": "aliexpress"
+    },
+    {
+      "id": 175,
+      "componentId": 1090,
+      "price": 0.259,
+      "qty": 10,
+      "date": "2024-07-19T22:00:00.000Z",
+      "url": "https://www.aliexpress.com/item/1005006948010887.html",
+      "details": "aliexpress"
+    },
+    {
+      "id": 177,
+      "componentId": 1092,
+      "price": 0.18,
+      "qty": 10,
+      "date": "2024-07-19T22:00:00.000Z",
+      "url": "https://www.aliexpress.com/item/1005006079443270.html",
+      "details": "aliexpress"
+    },
+    {
+      "id": 178,
+      "componentId": 1093,
+      "price": 0.17,
+      "qty": 10,
+      "date": "2024-07-19T22:00:00.000Z",
+      "url": "https://www.aliexpress.com/item/1005006079443270.html",
+      "details": "aliexpress"
+    },
+    {
+      "id": 181,
+      "componentId": 1096,
+      "price": 0.286,
+      "qty": 10,
+      "date": "2024-07-19T22:00:00.000Z",
+      "url": "https://www.aliexpress.com/item/1005005929275900.html",
+      "details": ""
+    },
+    {
+      "id": 183,
+      "componentId": 1097,
+      "price": 0.54,
+      "qty": 10,
+      "date": "2024-07-19T22:00:00.000Z",
+      "url": "https://www.aliexpress.com/item/1005005265667212.html",
+      "details": ""
+    },
+    {
+      "id": 191,
+      "componentId": 1094,
+      "price": 0.368,
+      "qty": 5,
+      "date": "2024-07-19T22:00:00.000Z",
+      "url": "https://www.aliexpress.com/item/1005005552521225.html",
+      "details": "aliexpress"
+    },
+    {
+      "id": 192,
+      "componentId": 1127,
+      "price": 0.538,
+      "qty": 5,
+      "date": "2024-07-19T22:00:00.000Z",
+      "url": "https://www.aliexpress.com/item/1005005487167700.html",
+      "details": "aliexpress"
+    },
+    {
+      "id": 193,
+      "componentId": 1128,
+      "price": 0.2,
+      "qty": 10,
+      "date": "2024-07-19T22:00:00.000Z",
+      "url": "https://www.aliexpress.com/item/1005006104728091.html?spm=a2g0o.order_list.order_list_main.424.5aa71802FupzCK",
+      "details": "aliexpress"
+    }
+  ],
+  "productionRuns": [
+    {
+      "id": 2,
+      "projectId": 26,
+      "count": 2,
+      "status": "completed",
+      "producedAt": "2026-09-18T04:47:16.000Z",
+      "cancelledAt": null,
+      "notes": ""
+    }
+  ],
+  "productionItems": [
+    {
+      "id": 4,
+      "runId": 2,
+      "componentId": 1094,
+      "quantityPerUnit": 1,
+      "totalDeducted": 2,
+      "returnedStock": 0
+    },
+    {
+      "id": 5,
+      "runId": 2,
+      "componentId": 443,
+      "quantityPerUnit": 1,
+      "totalDeducted": 2,
+      "returnedStock": 0
+    },
+    {
+      "id": 6,
+      "runId": 2,
+      "componentId": 130,
+      "quantityPerUnit": 7,
+      "totalDeducted": 14,
+      "returnedStock": 0
+    },
+    {
+      "id": 7,
+      "runId": 2,
+      "componentId": 886,
+      "quantityPerUnit": 1,
+      "totalDeducted": 2,
+      "returnedStock": 0
+    },
+    {
+      "id": 8,
+      "runId": 2,
+      "componentId": 441,
+      "quantityPerUnit": 1,
+      "totalDeducted": 2,
+      "returnedStock": 0
+    },
+    {
+      "id": 9,
+      "runId": 2,
+      "componentId": 1006,
+      "quantityPerUnit": 1,
+      "totalDeducted": 2,
+      "returnedStock": 0
+    },
+    {
+      "id": 10,
+      "runId": 2,
+      "componentId": 1127,
+      "quantityPerUnit": 1,
+      "totalDeducted": 2,
+      "returnedStock": 0
+    },
+    {
+      "id": 11,
+      "runId": 2,
+      "componentId": 1026,
+      "quantityPerUnit": 1,
+      "totalDeducted": 2,
+      "returnedStock": 0
+    },
+    {
+      "id": 12,
+      "runId": 2,
+      "componentId": 1093,
+      "quantityPerUnit": 2,
+      "totalDeducted": 4,
+      "returnedStock": 0
+    },
+    {
+      "id": 13,
+      "runId": 2,
+      "componentId": 1092,
+      "quantityPerUnit": 1,
+      "totalDeducted": 2,
+      "returnedStock": 0
+    },
+    {
+      "id": 14,
+      "runId": 2,
+      "componentId": 1089,
+      "quantityPerUnit": 1,
+      "totalDeducted": 2,
+      "returnedStock": 0
+    },
+    {
+      "id": 15,
+      "runId": 2,
+      "componentId": 842,
+      "quantityPerUnit": 1,
+      "totalDeducted": 2,
+      "returnedStock": 0
+    },
+    {
+      "id": 16,
+      "runId": 2,
+      "componentId": 1090,
+      "quantityPerUnit": 2,
+      "totalDeducted": 4,
+      "returnedStock": 0
+    },
+    {
+      "id": 17,
+      "runId": 2,
+      "componentId": 1096,
+      "quantityPerUnit": 1,
+      "totalDeducted": 2,
+      "returnedStock": 0
+    },
+    {
+      "id": 18,
+      "runId": 2,
+      "componentId": 1097,
+      "quantityPerUnit": 1,
+      "totalDeducted": 2,
+      "returnedStock": 0
+    },
+    {
+      "id": 19,
+      "runId": 2,
+      "componentId": 12,
+      "quantityPerUnit": 1,
+      "totalDeducted": 2,
+      "returnedStock": 0
+    },
+    {
+      "id": 20,
+      "runId": 2,
+      "componentId": 112,
+      "quantityPerUnit": 9,
+      "totalDeducted": 18,
+      "returnedStock": 0
+    },
+    {
+      "id": 21,
+      "runId": 2,
+      "componentId": 120,
+      "quantityPerUnit": 3,
+      "totalDeducted": 6,
+      "returnedStock": 0
+    },
+    {
+      "id": 22,
+      "runId": 2,
+      "componentId": 1101,
+      "quantityPerUnit": 2,
+      "totalDeducted": 4,
+      "returnedStock": 0
+    },
+    {
+      "id": 23,
+      "runId": 2,
+      "componentId": 1102,
+      "quantityPerUnit": 2,
+      "totalDeducted": 4,
+      "returnedStock": 0
+    },
+    {
+      "id": 24,
+      "runId": 2,
+      "componentId": 1099,
+      "quantityPerUnit": 1,
+      "totalDeducted": 2,
+      "returnedStock": 0
+    },
+    {
+      "id": 25,
+      "runId": 2,
+      "componentId": 1103,
+      "quantityPerUnit": 2,
+      "totalDeducted": 4,
+      "returnedStock": 0
+    },
+    {
+      "id": 26,
+      "runId": 2,
+      "componentId": 114,
+      "quantityPerUnit": 3,
+      "totalDeducted": 6,
+      "returnedStock": 0
+    },
+    {
+      "id": 27,
+      "runId": 2,
+      "componentId": 1128,
+      "quantityPerUnit": 1,
+      "totalDeducted": 2,
+      "returnedStock": 0
+    },
+    {
+      "id": 28,
+      "runId": 2,
+      "componentId": 879,
+      "quantityPerUnit": 2,
+      "totalDeducted": 4,
+      "returnedStock": 0
+    }
+  ]
+}
