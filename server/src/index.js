@@ -102,7 +102,19 @@ app.get('*', (req, res) => {
   });
 });
 
-app.listen(PORT, () => {
+const server = app.listen(PORT, () => {
   console.log(`[BOM Manager API] Server listening on http://localhost:${PORT}`);
   console.log(`[BOM Manager Media] Serving media assets from ${mediaDir}`);
+});
+
+server.on('error', (err) => {
+  if (err.code === 'EADDRINUSE') {
+    console.error(`\n[BOM Manager] Port ${PORT} is already in use by another process.`);
+    console.error(`To use a different port, set PORT in your .env file or run:`);
+    console.error(`  $env:PORT="${Number(PORT) + 1}"; npm run start  (PowerShell)`);
+    console.error(`  PORT=${Number(PORT) + 1} npm run start        (Linux / Mac / Bash)\n`);
+    process.exit(1);
+  } else {
+    throw err;
+  }
 });
