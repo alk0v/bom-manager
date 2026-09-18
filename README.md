@@ -87,9 +87,9 @@ npm install
 ```
 
 ### 2. Configure Environment
-Copy `.env.example` to `server/.env`:
+Copy `.env.example` to `.env`:
 ```bash
-cp .env.example server/.env
+cp .env.example .env
 ```
 
 To run with **autonomous SQLite** (default, no database setup required):

@@ -1,4 +1,6 @@
 const path = require('path');
+// Load environment variables: root .env first, fallback to server/.env
+require('dotenv').config({ path: path.resolve(__dirname, '../../.env') });
 require('dotenv').config({ path: path.resolve(__dirname, '../.env') });
 
 const explicitType = (process.env.DB_TYPE || process.env.DB_ENGINE || process.env.DB_CLIENT || '').toLowerCase().trim();

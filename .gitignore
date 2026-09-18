@@ -10,7 +10,6 @@ node_modules/
 !.env.example
 server/.env
 server/.env*.local
-!server/.env.example
 
 # Production build outputs
 dist/
