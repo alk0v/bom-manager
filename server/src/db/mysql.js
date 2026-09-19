@@ -66,6 +66,19 @@ async function ensureTables() {
     `);
     console.log('[Database:MySQL] Verified table "t_production_items" exists.');
 
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS t_bom_substitutes (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        bomId INT NOT NULL,
+        componentId INT NOT NULL,
+        notes TEXT,
+        createdAt DATETIME DEFAULT CURRENT_TIMESTAMP,
+        INDEX idx_sub_bom (bomId),
+        INDEX idx_sub_comp (componentId)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+    `);
+    console.log('[Database:MySQL] Verified table "t_bom_substitutes" exists.');
+
     // Ensure minQty column in i_components
     const [cols] = await pool.query("SHOW COLUMNS FROM i_components LIKE 'minQty'");
     if (cols.length === 0) {

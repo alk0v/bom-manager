@@ -195,7 +195,7 @@
                 </v-card-title>
                 <v-card-text class="pa-4 text-body-2 text-slate-600">
                   <p class="mb-3">
-                    <strong>Version:</strong> v0.2.6
+                    <strong>Version:</strong> v0.2.7
                   </p>
                   <p class="mb-3">
                     Translations are stored as modular JSON files in <code>client/src/locales/</code> and synchronized with Vuetify 3 components.
@@ -595,7 +595,7 @@ PORT=3001</pre>
                 </v-card-title>
                 <v-card-text class="pa-4">
                   <p class="text-body-2 text-slate-600 mb-4">
-                    Version 0.2.6 introduces bug fixes and component catalog improvements.
+                    Version 0.2.7 introduces BOM component analogs and substitutions.
                   </p>
                   <div class="d-flex flex-wrap gap-2">
                     <v-btn
@@ -671,7 +671,7 @@ watch(() => locale.value, (newVal) => {
 
 const appInfo = reactive({
   name: 'BOM Manager',
-  version: '0.2.6',
+  version: '0.2.7',
   environment: 'development',
   nodeVersion: '',
   platform: '',

@@ -248,6 +248,30 @@
                   <span v-if="item.marking" class="font-mono me-2">{{ t('projectDetail.colMarking') }}: {{ item.marking }}</span>
                   <span v-if="item.shortDescription">{{ item.shortDescription }}</span>
                 </div>
+                <!-- Analog Picker if Substitutes Exist -->
+                <div v-if="item.substitutes && item.substitutes.length > 0" class="mt-1">
+                  <v-select
+                    :model-value="selectedSubstitutions[item.bomId] || item.componentId"
+                    :items="getComponentOptionsForProduce(item)"
+                    item-title="title"
+                    item-value="id"
+                    density="compact"
+                    variant="outlined"
+                    hide-details
+                    style="max-width: 270px;"
+                    class="analog-select text-caption font-mono"
+                    @update:model-value="val => onSelectSubstitution(item.bomId, val)"
+                  >
+                    <template #selection="{ item: selItem }">
+                      <span class="text-caption font-mono font-weight-medium d-flex align-center gap-1 text-truncate">
+                        <v-icon size="12" :color="selItem.raw.isSubstitute ? 'primary' : 'slate-600'">
+                          {{ selItem.raw.isSubstitute ? 'mdi-swap-horizontal' : 'mdi-star-outline' }}
+                        </v-icon>
+                        <span class="text-truncate">{{ selItem.raw.title }}</span>
+                      </span>
+                    </template>
+                  </v-select>
+                </div>
               </td>
 
               <!-- Category -->
@@ -449,24 +473,90 @@ const normalizeCount = () => {
   }
 };
 
+// Substitutions selection state
+const selectedSubstitutions = ref({});
+
+const onSelectSubstitution = (bomId, compId) => {
+  if (compId) {
+    selectedSubstitutions.value[bomId] = compId;
+  } else {
+    delete selectedSubstitutions.value[bomId];
+  }
+};
+
+const getComponentOptionsForProduce = (item) => {
+  const options = [
+    {
+      id: item.componentId,
+      title: `${item.component} (Primary - ${item.stockQuantity ?? 0} in stock)`,
+      isSubstitute: false,
+      stock: item.stockQuantity ?? 0
+    }
+  ];
+  if (Array.isArray(item.substitutes)) {
+    for (const sub of item.substitutes) {
+      options.push({
+        id: sub.componentId,
+        title: `${sub.component} (Analog - ${sub.stockQuantity ?? 0} in stock)${sub.notes ? ` - ${sub.notes}` : ''}`,
+        isSubstitute: true,
+        stock: sub.stockQuantity ?? 0
+      });
+    }
+  }
+  return options;
+};
+
 // Calculations
 const deductions = computed(() => {
   const count = produceCount.value || 1;
   return bomItems.value.map(item => {
     const requiredPerUnit = item.requiredQuantity || 1;
     const totalRequired = requiredPerUnit * count;
-    const currentStock = item.stockQuantity ?? 0;
+
+    let activeComponentId = item.componentId;
+    let activeComponent = item.component;
+    let activeMarking = item.marking;
+    let activeCategory = item.category;
+    let activePackage = item.package;
+    let activePhotoURL = item.componentPhotoURL;
+    let currentStock = item.stockQuantity ?? 0;
+    let isSubstituted = false;
+
+    const chosenSubId = selectedSubstitutions.value[item.bomId];
+    if (chosenSubId && chosenSubId !== item.componentId && Array.isArray(item.substitutes)) {
+      const sub = item.substitutes.find(s => s.componentId === chosenSubId);
+      if (sub) {
+        activeComponentId = sub.componentId;
+        activeComponent = sub.component;
+        activeMarking = sub.marking;
+        activeCategory = sub.category;
+        activePackage = sub.package;
+        activePhotoURL = sub.componentPhotoURL;
+        currentStock = sub.stockQuantity ?? 0;
+        isSubstituted = true;
+      }
+    }
+
     const remainingStock = currentStock - totalRequired;
     const shortage = Math.max(0, totalRequired - currentStock);
 
     return {
       ...item,
+      componentId: activeComponentId,
+      originalComponentId: item.componentId,
+      component: activeComponent,
+      originalComponent: item.component,
+      componentPhotoURL: activePhotoURL,
+      marking: activeMarking,
+      category: activeCategory,
+      package: activePackage,
       requiredPerUnit,
       totalRequired,
       currentStock,
       remainingStock,
       shortage,
-      isSufficient: shortage === 0
+      isSufficient: shortage === 0,
+      isSubstituted
     };
   });
 });
@@ -547,7 +637,9 @@ const confirmProduce = async () => {
   try {
     const res = await api.produceProject(props.project.id, {
       count: produceCount.value,
-      allowNegativeStock: allowNegativeStock.value
+      allowNegativeStock: allowNegativeStock.value,
+      notes: productionNotes.value,
+      substitutions: selectedSubstitutions.value
     });
 
     emit('notify', t('produceModal.produceSuccess', { count: res.producedCount, name: props.project.projectName }), 'success');

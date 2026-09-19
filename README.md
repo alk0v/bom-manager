@@ -1,4 +1,4 @@
-# BOM Manager (Bill of Materials) - v0.2.6
+# BOM Manager (Bill of Materials) - v0.2.7
 
 A modern web application designed to manage electronic components, hardware project builds, Bill of Materials (BOM), warehouse inventory stocks, and procurement shopping lists.
 
@@ -8,6 +8,11 @@ Built with **Vue 3**, **Vuetify 3**, **Node.js/Express**, with out-of-the-box du
 
 ## Key Features
 
+- **BOM Component Analogs & Substitutions**:
+  - Assign drop-in or functional equivalent parts to project BOM items with custom engineering notes.
+  - Visual shortage indicators highlighting when in-stock analogs can cover missing primary components.
+  - One-click primary component swapping preserving designators and quantities.
+  - Full production integration allowing in-stock analogs to be selected to resolve shortages during assembly runs.
 - **Multi-Language Interface (English & Ukrainian)**:
   - Full localization powered by `vue-i18n` using structured JSON translation files (`locales/en.json` and `locales/uk.json`).
   - Seamless Vuetify 3 locale synchronization (data tables, pagination, dialogs, form validation).

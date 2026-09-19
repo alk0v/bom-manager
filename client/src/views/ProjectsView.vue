@@ -435,6 +435,8 @@
           @delete-item="confirmDeleteBom"
           @open-component-details="openComponentDetails"
           @open-photo="openPhotoLightbox($event.type, $event.src, $event.title)"
+          @manage-analogs="openAnalogsDialog"
+          @find-analog="openFindAnalogDialog"
         >
           <template #toolbar-actions>
             <v-btn
@@ -543,6 +545,15 @@
       @notify="notify"
     />
 
+    <!-- DIALOG: BOM Component Analogs / Substitutes -->
+    <BomAnalogsDialog
+      v-model="showAnalogsDialog"
+      :project="activeProject"
+      :bom-item="selectedAnalogsBomItem"
+      :open-catalog-immediately="openCatalogImmediately"
+      @updated="refreshActiveProjectBom"
+    />
+
     <!-- FULL SIZE MEDIA LIGHTBOX DIALOG -->
     <MediaLightboxDialog
       v-model="lightbox.show"
@@ -573,6 +584,7 @@ import ComponentDetailsDialog from '../components/ComponentDetailsDialog.vue';
 import ProjectFormDialog from '../components/ProjectFormDialog.vue';
 import ProduceProjectDialog from '../components/ProduceProjectDialog.vue';
 import DeleteProjectDialog from '../components/DeleteProjectDialog.vue';
+import BomAnalogsDialog from '../components/BomAnalogsDialog.vue';
 import { formatCurrency, formatDate } from '../utils/formatters';
 
 // State
@@ -580,6 +592,35 @@ const router = useRouter();
 const projects = ref([]);
 const activeProject = ref(null);
 const bomItems = ref([]);
+
+const showAnalogsDialog = ref(false);
+const selectedAnalogsBomItem = ref(null);
+const openCatalogImmediately = ref(false);
+
+const openAnalogsDialog = (item) => {
+  selectedAnalogsBomItem.value = item;
+  openCatalogImmediately.value = false;
+  showAnalogsDialog.value = true;
+};
+
+const openFindAnalogDialog = (item) => {
+  selectedAnalogsBomItem.value = item;
+  openCatalogImmediately.value = true;
+  showAnalogsDialog.value = true;
+};
+
+const refreshActiveProjectBom = async () => {
+  if (activeProject.value) {
+    await openBomModal(activeProject.value);
+    await loadProjects();
+    if (selectedAnalogsBomItem.value) {
+      const refreshed = bomItems.value.find(b => b.bomId === selectedAnalogsBomItem.value.bomId);
+      if (refreshed) {
+        selectedAnalogsBomItem.value = refreshed;
+      }
+    }
+  }
+};
 
 const lightbox = ref({
   show: false,

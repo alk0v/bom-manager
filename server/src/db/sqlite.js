@@ -85,6 +85,16 @@ function initSchema() {
       comment TEXT
     );
 
+    CREATE TABLE IF NOT EXISTS t_bom_substitutes (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      bomId INTEGER NOT NULL,
+      componentId INTEGER NOT NULL,
+      notes TEXT,
+      createdAt TEXT DEFAULT (datetime('now', 'localtime')),
+      FOREIGN KEY (bomId) REFERENCES t_bom(id) ON DELETE CASCADE,
+      FOREIGN KEY (componentId) REFERENCES i_components(ID) ON DELETE CASCADE
+    );
+
     CREATE TABLE IF NOT EXISTS t_busket (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       componentId INTEGER,
@@ -158,6 +168,8 @@ function initSchema() {
     CREATE INDEX IF NOT EXISTS idx_pi_comp ON t_production_items (componentId);
     CREATE INDEX IF NOT EXISTS idx_bom_proj ON t_bom (projectId);
     CREATE INDEX IF NOT EXISTS idx_bom_comp ON t_bom (componentId);
+    CREATE INDEX IF NOT EXISTS idx_sub_bom ON t_bom_substitutes (bomId);
+    CREATE INDEX IF NOT EXISTS idx_sub_comp ON t_bom_substitutes (componentId);
     CREATE INDEX IF NOT EXISTS idx_comp_cat ON i_components (category_id);
     CREATE INDEX IF NOT EXISTS idx_comp_pkg ON i_components (package_id);
     CREATE INDEX IF NOT EXISTS idx_wh_comp ON t_warehouse (componentId);

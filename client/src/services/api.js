@@ -75,6 +75,12 @@ export const api = {
   deleteProject: (id) => client.delete(`/projects/${id}`).then(res => res.data),
   produceProject: (id, data) => client.post(`/projects/${id}/produce`, data).then(res => res.data),
 
+  // BOM Substitutes / Analogs
+  addBomSubstitute: (projectId, bomId, data) => client.post(`/projects/${projectId}/bom/${bomId}/substitutes`, data).then(res => res.data),
+  updateBomSubstitute: (projectId, bomId, subId, data) => client.put(`/projects/${projectId}/bom/${bomId}/substitutes/${subId}`, data).then(res => res.data),
+  deleteBomSubstitute: (projectId, bomId, subId) => client.delete(`/projects/${projectId}/bom/${bomId}/substitutes/${subId}`).then(res => res.data),
+  swapBomPrimary: (projectId, bomId, substituteId) => client.post(`/projects/${projectId}/bom/${bomId}/swap-primary`, { substituteId }).then(res => res.data),
+
   // Project Files & Attachments
   getProjectFiles: (projectId) => client.get(`/projects/${projectId}/files`).then(res => res.data),
   uploadProjectFile: (projectId, formData) => client.post(`/projects/${projectId}/files`, formData, {

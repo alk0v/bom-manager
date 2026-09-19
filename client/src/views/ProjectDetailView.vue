@@ -211,6 +211,8 @@
         @open-photo="openImageLightbox($event.type, $event.src, $event.title)"
         @add-component="openAddComponentDialog"
         @import-ibom="openIbomDialog(null)"
+        @manage-analogs="openAnalogsDialog"
+        @find-analog="openFindAnalogDialog"
       />
     </v-card>
 
@@ -324,6 +326,15 @@
       @updated="loadData"
     />
 
+    <!-- DIALOG: BOM Component Analogs / Substitutes -->
+    <BomAnalogsDialog
+      v-model="showAnalogsDialog"
+      :project="project"
+      :bom-item="selectedAnalogsBomItem"
+      :open-catalog-immediately="openCatalogImmediately"
+      @updated="loadData"
+    />
+
     <!-- Notification Snackbar -->
     <v-snackbar v-model="snackbar.show" :color="snackbar.color" timeout="3000" location="bottom right">
       {{ snackbar.text }}
@@ -348,6 +359,7 @@ import ProjectFilesCard from '../components/ProjectFilesCard.vue';
 import IbomImportDialog from '../components/IbomImportDialog.vue';
 import ComponentDetailsDialog from '../components/ComponentDetailsDialog.vue';
 import ProduceProjectDialog from '../components/ProduceProjectDialog.vue';
+import BomAnalogsDialog from '../components/BomAnalogsDialog.vue';
 import { formatCurrency, formatDate } from '../utils/formatters';
 
 const route = useRoute();
@@ -363,6 +375,21 @@ const submittingBom = ref(false);
 const showAddDialog = ref(false);
 const showEditDialog = ref(false);
 const showProjectDialog = ref(false);
+const showAnalogsDialog = ref(false);
+const selectedAnalogsBomItem = ref(null);
+const openCatalogImmediately = ref(false);
+
+const openAnalogsDialog = (item) => {
+  selectedAnalogsBomItem.value = item;
+  openCatalogImmediately.value = false;
+  showAnalogsDialog.value = true;
+};
+
+const openFindAnalogDialog = (item) => {
+  selectedAnalogsBomItem.value = item;
+  openCatalogImmediately.value = true;
+  showAnalogsDialog.value = true;
+};
 const showDeleteDialog = ref(false);
 const showIbomDialog = ref(false);
 const showProduceDialog = ref(false);
@@ -500,6 +527,12 @@ const loadData = async () => {
     ]);
     project.value = pData;
     bomItems.value = bData;
+    if (selectedAnalogsBomItem.value) {
+      const refreshed = bData.find(b => b.bomId === selectedAnalogsBomItem.value.bomId);
+      if (refreshed) {
+        selectedAnalogsBomItem.value = refreshed;
+      }
+    }
   } catch (err) {
     notify('Failed to load project details: ' + err.message, 'error');
   } finally {

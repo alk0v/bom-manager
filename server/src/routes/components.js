@@ -1003,6 +1003,7 @@ router.delete('/:id', async (req, res) => {
       await conn.beginTransaction();
 
       await conn.query('DELETE FROM t_bom WHERE componentId = ?', [componentId]);
+      await conn.query('DELETE FROM t_bom_substitutes WHERE componentId = ?', [componentId]);
       await conn.query('DELETE FROM t_busket WHERE componentId = ?', [componentId]);
       await conn.query('DELETE FROM t_warehouse WHERE componentId = ?', [componentId]);
       await conn.query('DELETE FROM t_orders WHERE componentId = ?', [componentId]);
