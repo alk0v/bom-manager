@@ -1,5 +1,16 @@
 # Release Notes - BOM Manager
 
+## Version 0.2.6 (September 2026) - Bug Fixes & Refinements
+
+### Summary
+Version 0.2.6 addresses component catalog display behavior and ensures short descriptions are consistently prioritized in table lists.
+
+### What's New & Bug Fixes
+- **Component Catalog Description Column**: In the Components list (`/components`), the Description column now consistently renders the component's short description (`shortDescription`) instead of defaulting to lengthy technical specifications, with the full description still accessible via hover tooltip and the Component Details modal.
+- **Component Catalog Filters (Project & Stock)**: Fixed template variable mismatches (`selectedProjectId` → `selectedProject`, `projectsList` → `projects`, and `stockFilter` → `stockStatus`, `stockFilterOptions` → `stockStatusOptions`) that previously caused the Project and Stock dropdowns to show "No data available". Added clearable controls and full localization.
+
+---
+
 ## Version 0.2.5 (September 2026) - Internationalization
 
 ### Summary

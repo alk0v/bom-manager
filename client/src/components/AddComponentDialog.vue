@@ -264,7 +264,7 @@
               <!-- Description -->
               <td>
                 <div class="text-caption text-truncate text-slate-700" style="max-width: 480px;" :title="c.description || c.shortDescription">
-                  {{ c.description || c.shortDescription || '—' }}
+                  {{ c.shortDescription?.trim() || '—' }}
                 </div>
               </td>
 
