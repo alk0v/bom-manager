@@ -93,6 +93,7 @@
     "colDesignators": "Позиційні позначення / Коментар",
     "colActions": "Дії",
     "addToBasket": "Додати дефіцит до списку покупок",
+    "alreadyInBasket": "Вже у списку покупок",
     "editQuantity": "Змінити кількість",
     "removeComponent": "Вилучити з BOM",
     "emptyBomMessage": "До цієї відомості матеріалів ще не додано жодного компонента.",

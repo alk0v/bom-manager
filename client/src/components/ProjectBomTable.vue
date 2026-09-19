@@ -138,13 +138,13 @@
             <!-- Actions -->
             <td class="text-left">
               <div class="d-inline-flex align-center" style="gap: 2px;">
-                <!-- Add Shortage to Basket -->
+                <!-- Add Shortage to Basket / Already in Basket -->
                 <v-btn
-                  icon="mdi-cart-plus"
+                  :icon="shoppingListStore.isInShoppingList(item.componentId) ? 'mdi-cart-check' : 'mdi-cart-plus'"
                   size="x-small"
-                  color="amber-darken-3"
+                  :color="shoppingListStore.isInShoppingList(item.componentId) ? 'success' : 'amber-darken-3'"
                   variant="text"
-                  :title="t('projectDetail.addToBasket')"
+                  :title="shoppingListStore.isInShoppingList(item.componentId) ? t('projectDetail.alreadyInBasket') : t('projectDetail.addToBasket')"
                   :style="{
                     visibility: isShortage(item) ? 'visible' : 'hidden',
                     pointerEvents: isShortage(item) ? 'auto' : 'none'
@@ -267,11 +267,20 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import { useI18n } from 'vue-i18n';
 import MediaImage from './MediaImage.vue';
 import PackageLink from './PackageLink.vue';
 import { formatCurrency, formatDate } from '../utils/formatters';
+import { useShoppingListStore } from '../stores/shoppingList';
+
+const shoppingListStore = useShoppingListStore();
+
+onMounted(() => {
+  if (shoppingListStore.items.length === 0) {
+    shoppingListStore.refreshCount();
+  }
+});
 
 const props = defineProps({
   items: {

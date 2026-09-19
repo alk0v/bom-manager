@@ -431,7 +431,7 @@ const loadShoppingList = async () => {
   loading.value = true;
   try {
     items.value = await api.getShoppingList();
-    shoppingListStore.setCount(items.value.length);
+    shoppingListStore.setItems(items.value);
   } catch (err) {
     notify('Failed to load shopping list: ' + err.message, 'error');
   } finally {

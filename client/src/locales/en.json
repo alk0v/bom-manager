@@ -93,6 +93,7 @@
     "colDesignators": "Designators / Comment",
     "colActions": "Actions",
     "addToBasket": "Add shortage to shopping list",
+    "alreadyInBasket": "Already in shopping list",
     "editQuantity": "Edit Quantity",
     "removeComponent": "Remove from BOM",
     "emptyBomMessage": "No components have been added to this Bill of Materials yet.",
