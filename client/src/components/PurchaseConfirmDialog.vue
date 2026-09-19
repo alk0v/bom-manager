@@ -260,7 +260,7 @@
                     color="primary"
                     :href="form.url"
                     target="_blank"
-                    title="Test link in new tab"
+                    :title="t('dialogs.testLinkNewTab')"
                   />
                 </template>
               </v-text-field>
@@ -320,7 +320,7 @@
             prepend-icon="mdi-broom"
             @click="clearForm"
             :disabled="submitting"
-            title="Clear form and reset remembered kit values"
+            :title="t('dialogs.clearFormTooltip')"
           >
             Clear
           </v-btn>
@@ -343,9 +343,12 @@
 
 <script setup>
 import { ref, computed, watch, onMounted } from 'vue';
+import { useI18n } from 'vue-i18n';
 import api from '../services/api';
 import MediaImage from './MediaImage.vue';
 import { formatCurrency } from '../utils/formatters';
+
+const { t } = useI18n();
 
 const props = defineProps({
   modelValue: {

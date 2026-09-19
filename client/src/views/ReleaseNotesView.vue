@@ -1,28 +1,5 @@
 <template>
   <div class="release-notes-view">
-    <!-- Header Card -->
-    <v-card elevation="1" class="rounded-0 border bg-white mb-6">
-      <v-card-item class="py-4 px-5">
-        <div class="d-flex flex-wrap align-center justify-space-between gap-4">
-          <div>
-            <div class="d-flex align-center flex-wrap" style="gap: 12px;">
-              <h1 class="text-h5 font-weight-bold text-slate-900">
-                Release Notes
-              </h1>
-              <v-chip color="primary" variant="flat" size="small" class="font-mono font-weight-bold">
-                v{{ currentVersion }}
-              </v-chip>
-              <v-chip color="slate-600" variant="tonal" size="small" class="font-weight-medium">
-                Latest Release • September 2026
-              </v-chip>
-            </div>
-            <div class="text-body-2 text-slate-500 mt-1">
-              New features, workflow improvements, and updates in BOM Manager.
-            </div>
-          </div>
-        </div>
-      </v-card-item>
-    </v-card>
 
     <!-- Version Cards (Data-driven) -->
     <v-card
@@ -36,7 +13,7 @@
         <div class="d-flex align-center gap-2">
           <v-icon :color="rel.isCurrent ? 'primary' : 'slate-500'" size="22">mdi-tag-outline</v-icon>
           <span class="text-subtitle-1 font-weight-bold" :class="rel.isCurrent ? 'text-slate-900' : 'text-slate-700'">
-            Version {{ rel.version }}
+            {{ t('common.version') }} {{ rel.version }}
           </span>
           <v-chip
             v-if="rel.isCurrent"
@@ -45,7 +22,7 @@
             variant="flat"
             class="font-weight-bold ms-1"
           >
-            Current
+            {{ t('releaseNotes.current') }}
           </v-chip>
         </div>
         <span class="text-caption font-mono text-slate-500">
@@ -62,7 +39,7 @@
         <!-- Feature Points -->
         <div class="border-t pt-4">
           <div class="text-caption font-weight-bold text-primary text-uppercase tracking-wider mb-2">
-            What's New
+            {{ t('releaseNotes.whatsNew') }}
           </div>
 
           <v-list density="compact" class="pa-0 bg-transparent">
@@ -87,12 +64,39 @@
 
 <script setup>
 import { computed } from 'vue';
+import { useI18n } from 'vue-i18n';
+
+const { t } = useI18n();
 
 const releases = [
   {
-    version: '0.2.4',
+    version: '0.2.5',
     date: '2026-09-18',
     isCurrent: true,
+    summary: 'Version 0.2.5 introduces complete multi-language interface capabilities powered by JSON localization files, adding a full Ukrainian translation alongside existing English with persistent user language preferences.',
+    features: [
+      {
+        title: 'Multi-Language Architecture with JSON Files',
+        description: 'Standardized translation dictionaries in structured JSON format (locales/en.json and locales/uk.json), making adding new languages straightforward and maintainable.'
+      },
+      {
+        title: 'Full Ukrainian Interface Translation',
+        description: 'Comprehensive Ukrainian localization tailored for electronics engineering terminology, bill of materials management, component taxonomy, and production reporting.'
+      },
+      {
+        title: 'Synchronized Vuetify 3 Internationalization',
+        description: 'Configured Vuetify 3 vue-i18n adapter to automatically sync internal Vuetify components (data table pagination, dialogs, form validation) with the active language.'
+      },
+      {
+        title: 'Interactive Language Switcher',
+        description: 'Convenient 1-click language switcher in the top App Bar and dedicated Language settings section in SettingsView, saved to localStorage for seamless persistence.'
+      }
+    ]
+  },
+  {
+    version: '0.2.4',
+    date: '2026-09-18',
+    isCurrent: false,
     summary: 'Version 0.2.4 introduces dual-database engine support (MySQL & SQLite) for fully autonomous self-hosted deployments, a dedicated Settings view with live database and media diagnostics, and prepared containerization artifacts for publication.',
     features: [
       {
@@ -293,7 +297,7 @@ const releases = [
   }
 ];
 
-const currentVersion = computed(() => releases.find(r => r.isCurrent)?.version || '0.2.4');
+const currentVersion = computed(() => releases.find(r => r.isCurrent)?.version || '0.2.5');
 </script>
 
 <style scoped>

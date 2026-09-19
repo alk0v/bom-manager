@@ -12,7 +12,7 @@
         <div class="d-flex align-center">
           <v-icon :color="cloneModeOnly ? 'indigo' : 'primary'" class="me-2" size="22">{{ cloneModeOnly ? 'mdi-content-copy' : (pickerMode ? 'mdi-database-search-outline' : 'mdi-memory') }}</v-icon>
           <span class="text-subtitle-1 font-weight-bold text-slate-900">
-            {{ title || (cloneModeOnly ? 'Find Component to Clone' : (pickerMode ? 'Select Catalog Component' : 'Add Component to BOM')) }}
+            {{ title || (cloneModeOnly ? t('dialogs.findComponentToClone') : (pickerMode ? t('dialogs.selectCatalogComponent') : t('dialogs.addComponentToBom'))) }}
             <span v-if="projectName" class="text-caption font-weight-regular text-slate-500 ms-1">
               ({{ projectName }})
             </span>
@@ -32,7 +32,7 @@
             <v-text-field
               v-model="search"
               prepend-inner-icon="mdi-magnify"
-              placeholder="Search part name, marking, description..."
+              :placeholder="t('dialogs.searchCatalogPlaceholder')"
               density="compact"
               variant="outlined"
               hide-details
@@ -48,8 +48,8 @@
               :items="categories"
               item-title="category"
               item-value="ID"
-              label="Categories (multi-choice)"
-              placeholder="All categories"
+              :label="t('dialogs.categoriesMulti')"
+              :placeholder="t('dialogs.allCategories')"
               density="compact"
               variant="outlined"
               hide-details
@@ -69,8 +69,8 @@
                 :items="filteredPackagesList"
                 item-title="package"
                 item-value="ID"
-                :label="packageMountType === 'all' ? 'Packages (multi-choice)' : `Packages (${packageMountType.toUpperCase()})`"
-                placeholder="All packages"
+                :label="packageMountType === 'all' ? t('dialogs.packagesMulti') : `${t('dialogs.packagesTab')} (${packageMountType.toUpperCase()})`"
+                :placeholder="t('dialogs.allPackages')"
                 density="compact"
                 variant="outlined"
                 hide-details
@@ -82,8 +82,8 @@
                 class="flex-grow-1"
                 @update:model-value="onFilterChange"
               >
-                <template #item="{ props, item }">
-                  <v-list-item v-bind="props" :title="item.raw.package">
+                <template #item="{ props: itemProps, item }">
+                  <v-list-item v-bind="itemProps" :title="item.raw.package">
                     <template #append>
                       <v-chip
                         size="x-small"
@@ -109,7 +109,7 @@
                 style="height: 40px;"
                 @update:model-value="onMountTypeChange"
               >
-                <v-btn value="all" size="small" class="px-2 text-caption">All</v-btn>
+                <v-btn value="all" size="small" class="px-2 text-caption">{{ t('common.all') }}</v-btn>
                 <v-btn value="smd" size="small" class="px-2 text-caption">SMD</v-btn>
                 <v-btn value="tht" size="small" class="px-2 text-caption">THT</v-btn>
               </v-btn-toggle>
@@ -123,7 +123,7 @@
             <div class="d-flex align-center gap-2">
               <v-text-field
                 v-model.number="minPins"
-                label="Min Pins"
+                :label="t('common.minPins')"
                 type="number"
                 min="0"
                 density="compact"
@@ -136,7 +136,7 @@
               <span class="text-caption text-disabled font-weight-bold px-1">—</span>
               <v-text-field
                 v-model.number="maxPins"
-                label="Max Pins"
+                :label="t('common.maxPins')"
                 type="number"
                 min="0"
                 density="compact"
@@ -157,7 +157,7 @@
               size="small"
               class="font-weight-medium"
             >
-              {{ activeFilterCount }} active {{ activeFilterCount === 1 ? 'filter' : 'filters' }}
+              {{ t('common.activeFilters', { count: activeFilterCount }) }}
             </v-chip>
 
             <v-btn
@@ -168,7 +168,7 @@
               prepend-icon="mdi-filter-off-outline"
               @click="resetFilters"
             >
-              Reset Filters
+              {{ t('common.reset') }}
             </v-btn>
 
             <v-btn
@@ -177,7 +177,7 @@
               variant="outlined"
               :loading="loading"
               @click="fetchComponents"
-              title="Refresh components list"
+              :title="t('dialogs.refreshList')"
             />
           </v-col>
         </v-row>
@@ -189,13 +189,13 @@
           <thead>
             <tr>
               <th style="width: 40px;"></th>
-              <th style="width: 46px;">Photo</th>
-              <th class="text-left font-weight-bold">Part Name / Marking</th>
-              <th class="text-left font-weight-bold">Category</th>
-              <th class="text-left font-weight-bold">Package</th>
-              <th class="text-left font-weight-bold">Description</th>
-              <th class="text-center font-weight-bold" style="width: 90px;">In Stock</th>
-              <th v-if="pickerMode" class="text-center font-weight-bold" style="width: 80px;">Action</th>
+              <th style="width: 46px;">{{ t('common.photo') || 'Photo' }}</th>
+              <th class="text-left font-weight-bold">{{ t('dialogs.partNameMarking') }}</th>
+              <th class="text-left font-weight-bold">{{ t('common.category') }}</th>
+              <th class="text-left font-weight-bold">{{ t('common.package') }}</th>
+              <th class="text-left font-weight-bold">{{ t('common.description') }}</th>
+              <th class="text-center font-weight-bold" style="width: 90px;">{{ t('common.stock') }}</th>
+              <th v-if="pickerMode" class="text-center font-weight-bold" style="width: 80px;">{{ t('common.actions') }}</th>
             </tr>
           </thead>
 
@@ -238,7 +238,7 @@
                 <div
                   class="font-mono font-weight-bold text-body-2 text-primary comp-name-link d-inline-flex align-center gap-1"
                   @click.stop="openDetails(c)"
-                  title="Click to view component details"
+                  :title="t('dialogs.clickDetails')"
                 >
                   <span class="hover-underline">{{ c.component }}</span>
                   <v-icon size="13" class="opacity-60 info-icon">mdi-information-outline</v-icon>
@@ -277,7 +277,7 @@
 
               <!-- Action Column in Picker Mode -->
               <td v-if="pickerMode" class="text-center pa-1" @click.stop>
-                <v-tooltip :text="cloneModeOnly ? 'Clone this component' : 'Clone this component for mapping'" location="top">
+                <v-tooltip :text="cloneModeOnly ? t('dialogs.cloneThisComponent') : t('dialogs.cloneAndMap')" location="top">
                   <template #activator="{ props: tipProps }">
                     <v-btn
                       v-bind="tipProps"
@@ -295,7 +295,7 @@
             <tr v-if="components.length === 0 && !loading">
               <td :colspan="pickerMode ? 8 : 7" class="text-center py-8 text-disabled">
                 <v-icon size="36" class="mb-2">mdi-memory-off</v-icon>
-                <div>No components match your search.</div>
+                <div>{{ t('dialogs.noComponentsMatch') }}</div>
               </td>
             </tr>
 
@@ -311,7 +311,7 @@
       <!-- Pagination Sub-footer -->
       <div class="px-3 py-2 d-flex align-center justify-space-between border-t bg-slate-50 flex-shrink-0">
         <span class="text-caption text-slate-500 font-mono">
-          Showing {{ components.length }} of {{ totalComponents }} components
+          {{ t('common.showingOf', { count: components.length, total: totalComponents, item: t('nav.components').toLowerCase() }) }}
         </span>
         <div class="d-flex align-center gap-2">
           <v-btn
@@ -320,16 +320,16 @@
             :disabled="offset === 0 || loading"
             @click="prevPage"
           >
-            Prev
+            {{ t('common.prev') }}
           </v-btn>
-          <span class="text-caption font-mono px-1">Page {{ currentPage }}</span>
+          <span class="text-caption font-mono px-1">{{ t('common.page') }} {{ currentPage }}</span>
           <v-btn
             size="x-small"
             variant="outlined"
             :disabled="offset + limit >= totalComponents || loading"
             @click="nextPage"
           >
-            Next
+            {{ t('common.next') }}
           </v-btn>
         </div>
       </div>
@@ -351,7 +351,7 @@
                 class="font-mono font-weight-bold"
                 :color="selectedComponent.qty > 0 ? 'success' : 'error'"
               >
-                Stock: {{ selectedComponent.qty ?? 0 }}
+                {{ t('common.stock') }}: {{ selectedComponent.qty ?? 0 }}
               </v-chip>
             </div>
 
@@ -364,7 +364,7 @@
                 color="slate-600"
                 @click="selectedComponent = null"
               >
-                Cancel
+                {{ t('common.cancel') }}
               </v-btn>
               <v-btn
                 v-if="!cloneModeOnly"
@@ -376,7 +376,7 @@
                 class="px-5 font-weight-bold"
                 @click="confirmPick"
               >
-                Select This Component
+                {{ t('dialogs.selectThisComponent') }}
               </v-btn>
               <v-btn
                 color="indigo"
@@ -387,7 +387,7 @@
                 class="px-4 font-weight-bold"
                 @click="triggerClone(selectedComponent)"
               >
-                {{ cloneModeOnly ? 'Clone This Component' : 'Clone & Map' }}
+                {{ cloneModeOnly ? t('dialogs.cloneThisComponent') : t('dialogs.cloneAndMap') }}
               </v-btn>
             </div>
 
@@ -395,7 +395,7 @@
             <div v-else class="d-flex align-center flex-wrap flex-grow-1 justify-end" style="gap: 16px;">
               <v-text-field
                 v-model.number="bomForm.quantity"
-                label="Required Qty"
+                :label="t('dialogs.requiredQty')"
                 type="number"
                 min="1"
                 density="compact"
@@ -407,8 +407,8 @@
 
               <v-text-field
                 v-model="bomForm.comment"
-                label="Designators / Notes"
-                placeholder="e.g. C1, C2, U1, 10k pull-up"
+                :label="t('dialogs.designatorsNotes')"
+                :placeholder="t('dialogs.designatorsPlaceholder')"
                 density="compact"
                 variant="outlined"
                 hide-details
@@ -428,7 +428,7 @@
                 :disabled="!bomForm.quantity || bomForm.quantity < 1"
                 @click="submitAdd"
               >
-                Add to BOM
+                {{ t('dialogs.addToBom') }}
               </v-btn>
 
               <v-btn
@@ -437,9 +437,9 @@
                 height="40"
                 color="slate-600"
                 @click="selectedComponent = null"
-                title="Deselect component"
+                :title="t('common.cancel')"
               >
-                Cancel
+                {{ t('common.cancel') }}
               </v-btn>
             </div>
           </div>
@@ -449,13 +449,13 @@
             <span class="text-caption text-slate-500 d-flex align-center">
               <v-icon start size="16" color="primary">mdi-cursor-default-click</v-icon>
               {{ cloneModeOnly
-                ? 'Click any row to select a component to clone as a template, or click the clone icon.'
+                ? t('dialogs.clonePrompt')
                 : (pickerMode
-                  ? 'Click any row in the table above to pick a component, or double-click to select immediately.'
-                  : 'Click any row in the table above to select a component to add to this BOM.') }}
+                  ? t('dialogs.pickerPrompt')
+                  : t('dialogs.addToBomPrompt')) }}
             </span>
             <v-btn variant="text" size="small" @click="close">
-              Close
+              {{ t('common.close') }}
             </v-btn>
           </div>
         </v-slide-y-transition>
@@ -467,7 +467,7 @@
       v-model="showDetailsDialog"
       :component="detailComponent"
       :show-select-button="true"
-      :select-button-text="pickerMode ? 'Pick This Component' : 'Select for BOM'"
+      :select-button-text="pickerMode ? t('dialogs.pickThisComponent') : t('dialogs.selectForBom')"
       @select="onDetailComponentSelected"
     />
   </v-dialog>
@@ -475,10 +475,13 @@
 
 <script setup>
 import { ref, computed, watch, onMounted } from 'vue';
+import { useI18n } from 'vue-i18n';
 import api from '../services/api';
 import MediaImage from './MediaImage.vue';
 import PackageLink from './PackageLink.vue';
 import ComponentDetailsDialog from './ComponentDetailsDialog.vue';
+
+const { t } = useI18n();
 
 const props = defineProps({
   modelValue: {

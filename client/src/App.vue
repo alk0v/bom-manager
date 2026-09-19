@@ -23,12 +23,12 @@
               variant="flat"
               class="ms-2 font-mono font-weight-bold"
             >
-              0.2.4
+              0.2.5
             </v-chip>
           </div>
         </template>
         <template #subtitle>
-          <span class="text-caption text-slate-500">Electronic Parts & Projects</span>
+          <span class="text-caption text-slate-500">{{ t('common.brandTagline') }}</span>
         </template>
         <template #append>
           <v-btn
@@ -46,7 +46,7 @@
       <v-list density="comfortable" nav class="mt-2 nav-menu">
         <v-list-item
           prepend-icon="mdi-folder-cog-outline"
-          title="Projects"
+          :title="t('nav.projects')"
           value="projects"
           to="/projects"
           active-class="bg-primary text-white"
@@ -55,7 +55,7 @@
 
         <v-list-item
           prepend-icon="mdi-memory"
-          title="Components"
+          :title="t('nav.components')"
           value="components"
           to="/components"
           active-class="bg-primary text-white"
@@ -64,7 +64,7 @@
 
         <v-list-item
           prepend-icon="mdi-cart-outline"
-          title="Shopping List"
+          :title="t('nav.shoppingList')"
           value="shopping-list"
           to="/shopping-list"
           active-class="bg-primary text-white"
@@ -81,7 +81,7 @@
 
         <v-list-item
           prepend-icon="mdi-chart-box-outline"
-          title="Reports"
+          :title="t('nav.reports')"
           value="reports"
           to="/reports"
           active-class="bg-primary text-white"
@@ -90,7 +90,7 @@
 
         <v-list-item
           prepend-icon="mdi-cog-outline"
-          title="Settings"
+          :title="t('nav.settings')"
           value="settings"
           to="/settings"
           active-class="bg-primary text-white"
@@ -99,7 +99,7 @@
 
         <v-list-item
           prepend-icon="mdi-text-box-search-outline"
-          title="Release Notes"
+          :title="t('nav.releaseNotes')"
           value="release-notes"
           to="/release-notes"
           active-class="bg-primary text-white"
@@ -112,7 +112,7 @@
               variant="tonal"
               class="font-mono font-weight-bold"
             >
-              0.2.4
+              0.2.5
             </v-chip>
           </template>
         </v-list-item>
@@ -126,9 +126,9 @@
           >
             <span class="d-flex align-center font-mono">
               <v-icon size="14" color="primary" class="me-1">mdi-tag-outline</v-icon>
-              Version 0.2.4
+              {{ t('common.version') }} 0.2.5
             </span>
-            <span class="text-primary font-weight-medium">Notes &rarr;</span>
+            <span class="text-primary font-weight-medium">&rarr;</span>
           </router-link>
         </div>
       </template>
@@ -155,22 +155,21 @@
             variant="flat"
             class="ms-2 font-weight-bold"
           >
-            {{ componentsStore.totalComponents }} items
+            {{ componentsStore.totalComponents }} {{ t('common.items') }}
+          </v-chip>
+          <v-chip
+            v-else-if="route.path === '/shopping-list'"
+            size="small"
+            color="primary"
+            variant="flat"
+            class="ms-2 font-weight-bold font-mono"
+          >
+            {{ shoppingListStore.count }} {{ t('common.items') }}
           </v-chip>
         </div>
       </v-app-bar-title>
 
       <v-spacer />
-
-      <v-chip
-        size="small"
-        color="primary"
-        variant="tonal"
-        class="font-mono me-2"
-      >
-        <v-icon start size="14">mdi-database-check</v-icon>
-        MySQL (retool_bommanager)
-      </v-chip>
     </v-app-bar>
 
     <!-- Main Content Area -->
@@ -191,6 +190,7 @@
 <script setup>
 import { ref, computed, watch, onMounted } from 'vue';
 import { useRoute } from 'vue-router';
+import { useI18n } from 'vue-i18n';
 import api from './services/api';
 import { useComponentsStore } from './stores/components';
 import { useShoppingListStore } from './stores/shoppingList';
@@ -198,6 +198,7 @@ import PackageDetailsDialog from './components/PackageDetailsDialog.vue';
 import MediaUploadDialog from './components/MediaUploadDialog.vue';
 
 const route = useRoute();
+const { t } = useI18n();
 const componentsStore = useComponentsStore();
 const shoppingListStore = useShoppingListStore();
 
@@ -207,21 +208,21 @@ const showUploadDialog = ref(false);
 
 const currentTitle = computed(() => {
   if (route.path.startsWith('/projects')) {
-    return 'Projects & Bill of Materials';
+    return t('header.projectsTitle');
   }
   switch (route.path) {
     case '/components':
-      return 'Components Catalog';
+      return t('header.componentsTitle');
     case '/shopping-list':
-      return 'Procurement Shopping List';
+      return t('header.shoppingListTitle');
     case '/reports':
-      return 'Production & Inventory Reports';
+      return t('header.reportsTitle');
     case '/settings':
-      return 'Settings & System Deployment';
+      return t('header.settingsTitle');
     case '/release-notes':
-      return 'Release Notes (v0.2.4)';
+      return `${t('header.releaseNotesTitle')} (v0.2.5)`;
     default:
-      return 'BOM Manager';
+      return t('common.appName');
   }
 });
 

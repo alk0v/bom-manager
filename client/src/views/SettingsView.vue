@@ -1,61 +1,5 @@
 <template>
   <div class="settings-view">
-    <!-- Top Header Bar -->
-    <v-card elevation="1" class="rounded-0 border bg-white mb-6">
-      <v-card-item class="py-4 px-5">
-        <div class="d-flex flex-wrap align-center justify-space-between gap-4">
-          <!-- Title & Meta -->
-          <div>
-            <div class="d-flex align-center flex-wrap gap-2">
-              <h1 class="text-h5 font-weight-bold text-slate-900">
-                Settings & System Deployment
-              </h1>
-              <v-chip
-                :color="databaseInfo.engine === 'sqlite' ? 'indigo-darken-1' : 'teal-darken-2'"
-                variant="flat"
-                size="small"
-                class="font-weight-bold"
-              >
-                <v-icon start size="14">
-                  {{ databaseInfo.engine === 'sqlite' ? 'mdi-database-outline' : 'mdi-database' }}
-                </v-icon>
-                {{ databaseInfo.displayName || (databaseInfo.engine === 'sqlite' ? 'SQLite (Autonomous)' : 'MySQL') }}
-              </v-chip>
-              <v-chip color="primary" variant="tonal" size="small" class="font-mono font-weight-bold">
-                v{{ appInfo.version || '0.2.4' }}
-              </v-chip>
-            </div>
-            <div class="text-body-2 text-slate-500 mt-1">
-              Configure database engine (MySQL / SQLite), media asset storage paths, and manage self-hosted deployment options.
-            </div>
-          </div>
-
-          <!-- Quick Action Buttons -->
-          <div class="d-flex align-center gap-2">
-            <v-btn
-              variant="outlined"
-              color="primary"
-              size="small"
-              prepend-icon="mdi-refresh"
-              :loading="loading"
-              @click="loadSettings"
-            >
-              Refresh
-            </v-btn>
-            <v-btn
-              variant="flat"
-              color="primary"
-              size="small"
-              prepend-icon="mdi-heart-pulse"
-              :loading="diagnosticsLoading"
-              @click="runDiagnostics"
-            >
-              Test Latency
-            </v-btn>
-          </div>
-        </div>
-      </v-card-item>
-    </v-card>
 
     <!-- Top KPI Cards -->
     <v-row dense class="mb-6">
@@ -143,23 +87,129 @@
 
     <!-- Main Navigation Tabs -->
     <v-card elevation="1" class="rounded-0 border bg-white mb-6">
-      <v-tabs v-model="activeTab" color="primary" class="border-b">
-        <v-tab value="database" class="text-none font-weight-bold">
-          <v-icon start size="18">mdi-database-cog-outline</v-icon>
-          Database & Deployment
-        </v-tab>
-        <v-tab value="media" class="text-none font-weight-bold">
-          <v-icon start size="18">mdi-folder-image</v-icon>
-          Media & Storage Paths
-        </v-tab>
-        <v-tab value="about" class="text-none font-weight-bold">
-          <v-icon start size="18">mdi-information-outline</v-icon>
-          About & Publication
-        </v-tab>
-      </v-tabs>
+      <div class="d-flex align-center justify-space-between border-b flex-wrap">
+        <v-tabs v-model="activeTab" color="primary">
+          <v-tab value="general" class="text-none font-weight-bold">
+            <v-icon start size="18">mdi-translate</v-icon>
+            {{ t('settings.tabGeneral') }}
+          </v-tab>
+          <v-tab value="database" class="text-none font-weight-bold">
+            <v-icon start size="18">mdi-database-cog-outline</v-icon>
+            {{ t('settings.tabDatabase') }}
+          </v-tab>
+          <v-tab value="media" class="text-none font-weight-bold">
+            <v-icon start size="18">mdi-folder-image</v-icon>
+            {{ t('settings.tabStorage') }}
+          </v-tab>
+          <v-tab value="about" class="text-none font-weight-bold">
+            <v-icon start size="18">mdi-information-outline</v-icon>
+            {{ t('settings.tabAbout') }}
+          </v-tab>
+        </v-tabs>
 
-      <!-- TAB 1: DATABASE & DEPLOYMENT -->
+        <div class="d-flex align-center gap-2 px-4 py-2">
+          <v-btn
+            variant="outlined"
+            color="primary"
+            size="small"
+            prepend-icon="mdi-refresh"
+            :loading="loading"
+            @click="loadSettings"
+          >
+            {{ t('common.refresh') }}
+          </v-btn>
+          <v-btn
+            variant="flat"
+            color="primary"
+            size="small"
+            prepend-icon="mdi-heart-pulse"
+            :loading="diagnosticsLoading"
+            @click="runDiagnostics"
+          >
+            {{ t('settings.testLatency') }}
+          </v-btn>
+        </div>
+      </div>
+
       <v-window v-model="activeTab">
+        <!-- TAB 0: GENERAL & LANGUAGE -->
+        <v-window-item value="general" class="pa-6">
+          <v-row>
+            <v-col cols="12" md="7">
+              <v-card variant="outlined" class="rounded-0 border bg-white mb-6">
+                <v-card-title class="text-subtitle-1 font-weight-bold text-slate-900 pa-4 border-b bg-slate-50 d-flex align-center">
+                  <v-icon color="primary" class="me-2">mdi-translate</v-icon>
+                  {{ t('settings.languageTitle') }}
+                </v-card-title>
+                <v-card-text class="pa-5">
+                  <p class="text-body-2 text-slate-600 mb-4">
+                    {{ t('settings.languageDescription') }}
+                  </p>
+                  
+                  <v-radio-group
+                    v-model="selectedLanguage"
+                    @update:model-value="onLanguageChange"
+                    hide-details
+                  >
+                    <v-card
+                      variant="outlined"
+                      class="rounded-0 border pa-3 mb-3 cursor-pointer"
+                      :class="{ 'border-primary bg-blue-50': selectedLanguage === 'en' }"
+                      @click="onLanguageChange('en')"
+                    >
+                      <div class="d-flex align-center">
+                        <v-radio value="en" color="primary" class="me-3" />
+                        <span class="text-h6 me-3">🇬🇧</span>
+                        <div>
+                          <div class="font-weight-bold text-slate-900">English</div>
+                          <div class="text-caption text-slate-500">English (Default)</div>
+                        </div>
+                      </div>
+                    </v-card>
+
+                    <v-card
+                      variant="outlined"
+                      class="rounded-0 border pa-3 cursor-pointer"
+                      :class="{ 'border-primary bg-blue-50': selectedLanguage === 'uk' }"
+                      @click="onLanguageChange('uk')"
+                    >
+                      <div class="d-flex align-center">
+                        <v-radio value="uk" color="primary" class="me-3" />
+                        <span class="text-h6 me-3">🇺🇦</span>
+                        <div>
+                          <div class="font-weight-bold text-slate-900">Українська</div>
+                          <div class="text-caption text-slate-500">Ukrainian Translation</div>
+                        </div>
+                      </div>
+                    </v-card>
+                  </v-radio-group>
+                </v-card-text>
+              </v-card>
+            </v-col>
+
+            <v-col cols="12" md="5">
+              <v-card variant="outlined" class="rounded-0 border bg-slate-50">
+                <v-card-title class="text-subtitle-1 font-weight-bold text-slate-900 pa-4 border-b bg-white">
+                  <v-icon color="primary" class="me-2">mdi-information-outline</v-icon>
+                  {{ t('common.info') }}
+                </v-card-title>
+                <v-card-text class="pa-4 text-body-2 text-slate-600">
+                  <p class="mb-3">
+                    <strong>Version:</strong> v0.2.5
+                  </p>
+                  <p class="mb-3">
+                    Translations are stored as modular JSON files in <code>client/src/locales/</code> and synchronized with Vuetify 3 components.
+                  </p>
+                  <p class="mb-0">
+                    Language preferences are automatically saved in local browser storage and loaded whenever you revisit BOM Manager.
+                  </p>
+                </v-card-text>
+              </v-card>
+            </v-col>
+          </v-row>
+        </v-window-item>
+
+        <!-- TAB 1: DATABASE & DEPLOYMENT -->
         <v-window-item value="database" class="pa-6">
           <v-row>
             <!-- Left Column: Active Connection Details -->
@@ -545,7 +595,7 @@ PORT=3001</pre>
                 </v-card-title>
                 <v-card-text class="pa-4">
                   <p class="text-body-2 text-slate-600 mb-4">
-                    Version 0.2.4 completes pre-production enhancements, adds comprehensive settings, autonomous self-hosted deployment support with SQLite 3, and updates containerization workflows.
+                    Version 0.2.5 introduces multi-language translation support with JSON localization dictionaries (English & Ukrainian) and seamless Vuetify locale synchronization.
                   </p>
                   <div class="d-flex flex-wrap gap-2">
                     <v-btn
@@ -591,18 +641,37 @@ PORT=3001</pre>
 </template>
 
 <script setup>
-import { ref, reactive, onMounted } from 'vue';
+import { ref, reactive, watch, onMounted } from 'vue';
+import { useI18n } from 'vue-i18n';
 import axios from 'axios';
 
-const activeTab = ref('database');
+const { t, locale } = useI18n();
+
+const activeTab = ref('general');
+const selectedLanguage = ref(locale.value);
 const loading = ref(false);
 const diagnosticsLoading = ref(false);
 const savingConfig = ref(false);
 const latencyMs = ref(null);
 
+const onLanguageChange = (val) => {
+  if (val) {
+    selectedLanguage.value = val;
+    locale.value = val;
+    localStorage.setItem('bom_language', val);
+    snackbar.color = 'success';
+    snackbar.text = val === 'uk' ? 'Мову інтерфейсу змінено на Українську' : 'Interface language set to English';
+    snackbar.show = true;
+  }
+};
+
+watch(() => locale.value, (newVal) => {
+  selectedLanguage.value = newVal;
+});
+
 const appInfo = reactive({
   name: 'BOM Manager',
-  version: '0.2.4',
+  version: '0.2.5',
   environment: 'development',
   nodeVersion: '',
   platform: '',

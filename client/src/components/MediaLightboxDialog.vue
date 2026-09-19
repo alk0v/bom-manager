@@ -39,7 +39,7 @@
             color="primary"
             class="font-weight-medium"
           >
-            Open Original
+            {{ t('dialogs.openOriginal') }}
           </v-btn>
 
           <v-btn
@@ -48,7 +48,7 @@
             color="slate-600"
             size="small"
             @click="close"
-            title="Close"
+            :title="t('common.close')"
           />
         </div>
       </v-card-title>
@@ -82,7 +82,7 @@
           prepend-icon="mdi-close"
           @click="close"
         >
-          Close
+          {{ t('common.close') }}
         </v-btn>
       </v-card-actions>
     </v-card>
@@ -91,7 +91,10 @@
 
 <script setup>
 import { computed } from 'vue';
+import { useI18n } from 'vue-i18n';
 import { resolveMediaUrl } from '../services/api';
+
+const { t } = useI18n();
 
 const props = defineProps({
   modelValue: {

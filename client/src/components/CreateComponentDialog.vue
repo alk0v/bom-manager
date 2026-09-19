@@ -32,9 +32,9 @@
             class="font-weight-medium text-caption"
             :disabled="submitting"
             @click="cloneComponent"
-            title="Clone into a new component"
+            :title="t('dialogs.cloneComponent')"
           >
-            Clone
+            {{ t('dialogs.cloneComponent') }}
           </v-btn>
           <v-btn
             icon="mdi-close"
@@ -43,7 +43,7 @@
             color="slate-500"
             :disabled="submitting"
             @click="close"
-            title="Close dialog"
+            :title="t('common.close')"
           />
         </div>
       </div>
@@ -63,7 +63,7 @@
         >
           <div class="d-flex align-center justify-space-between flex-wrap gap-2">
             <div>
-              Cloned from <strong class="font-mono text-primary">{{ clonedSourceName }}</strong>. Specifications and parameters have been populated. Modify the component name or values and click <strong>Create Component</strong>.
+              {{ t('dialogs.clonedAlertPrefix') }} <strong class="font-mono text-primary">{{ clonedSourceName }}</strong>. {{ t('dialogs.clonedAlertSuffix') }}
             </div>
           </div>
         </v-alert>
@@ -87,11 +87,11 @@
             <div class="d-flex align-center gap-2">
               <v-icon icon="mdi-tag-outline" size="18" color="primary" />
               <span class="text-caption font-weight-bold text-slate-700 text-uppercase tracking-wider">
-                Component Identification & Footprint
+                {{ t('dialogs.sectionIdentification') }}
               </span>
             </div>
             <div class="d-flex align-center gap-2">
-              <span class="text-caption text-slate-500 font-weight-medium">Package Filter:</span>
+              <span class="text-caption text-slate-500 font-weight-medium">{{ t('dialogs.packageFilter') }}:</span>
               <v-btn-toggle
                 v-model="packageMountType"
                 mandatory
@@ -113,8 +113,8 @@
             <v-col cols="12" md="7">
               <v-text-field
                 v-model="form.component"
-                label="Part Name / Value *"
-                placeholder="e.g. STM32F103C8T6, 100nF, AMS1117-3.3, 10k"
+                :label="t('dialogs.partNumber') + ' *'"
+                :placeholder="t('dialogs.partNumberPlaceholder')"
                 density="compact"
                 variant="outlined"
                 rounded="lg"
@@ -129,8 +129,8 @@
             <v-col cols="12" md="5">
               <v-text-field
                 v-model="form.marking"
-                label="Surface Marking Code"
-                placeholder="e.g. A7, 104, Y1, W2"
+                :label="t('dialogs.marking')"
+                :placeholder="t('dialogs.markingPlaceholder')"
                 density="compact"
                 variant="outlined"
                 rounded="lg"
@@ -149,8 +149,8 @@
                 :items="availableCategories"
                 item-title="category"
                 item-value="ID"
-                label="Category *"
-                placeholder="Select component category"
+                :label="t('dialogs.category') + ' *'"
+                :placeholder="t('dialogs.categoryPlaceholder')"
                 density="compact"
                 variant="outlined"
                 rounded="lg"
@@ -164,7 +164,7 @@
                     size="x-small"
                     variant="tonal"
                     color="primary"
-                    title="Create new category"
+                    :title="t('dialogs.createCategoryTooltip')"
                     @click="openQuickCategory"
                   />
                 </template>
@@ -178,8 +178,8 @@
                 :items="filteredPackagesList"
                 item-title="package"
                 item-value="ID"
-                :label="packageMountType === 'all' ? 'Package / Footprint *' : `Package / Footprint (${packageMountType.toUpperCase()}) *`"
-                placeholder="Select package footprint"
+                :label="packageMountType === 'all' ? `${t('dialogs.package')} *` : `${t('dialogs.package')} (${packageMountType.toUpperCase()}) *`"
+                :placeholder="t('dialogs.packagePlaceholder')"
                 density="compact"
                 variant="outlined"
                 rounded="lg"
@@ -193,13 +193,13 @@
                     size="x-small"
                     variant="tonal"
                     color="primary"
-                    title="Create new package footprint"
+                    :title="t('dialogs.createPackageTooltip')"
                     @click="openQuickPackage"
                   />
                 </template>
                 <template #prepend-item>
                   <div class="pa-2 px-3 bg-slate-50 border-b d-flex align-center justify-space-between">
-                    <span class="text-caption font-weight-bold text-slate-600">Filter By Mount Type:</span>
+                    <span class="text-caption font-weight-bold text-slate-600">{{ t('dialogs.filterByMountType') }}:</span>
                     <v-btn-toggle
                       v-model="packageMountType"
                       mandatory
@@ -236,7 +236,7 @@
                         size="14"
                         color="primary"
                         class="ms-1"
-                        title="Drawing available"
+                        :title="t('dialogs.drawingAvailable')"
                       />
                     </template>
                   </v-list-item>
@@ -252,7 +252,7 @@
           >
             <div class="d-flex align-center gap-2">
               <v-icon icon="mdi-information-outline" size="16" color="primary" />
-              <span class="text-slate-600">Selected Footprint:</span>
+              <span class="text-slate-600">{{ t('dialogs.selectedFootprint') }}:</span>
               <span class="font-weight-bold text-slate-900">{{ selectedPackageObj.package }}</span>
               <v-chip
                 size="x-small"
@@ -260,15 +260,15 @@
                 variant="flat"
                 class="font-weight-bold"
               >
-                {{ selectedPackageObj.isSmd ? 'SMD' : 'Through-Hole' }}
+                {{ selectedPackageObj.isSmd ? 'SMD' : t('dialogs.throughHole') }}
               </v-chip>
               <span v-if="selectedPackageObj.pinQuantity" class="text-slate-700">
-                {{ selectedPackageObj.pinQuantity }} pins
+                {{ selectedPackageObj.pinQuantity }} {{ t('dialogs.pins') }}
               </span>
             </div>
             <div v-if="selectedPackageObj.drawingURL" class="text-primary d-flex align-center gap-1 font-weight-medium">
               <v-icon icon="mdi-drawing" size="14" />
-              <span>Drawing: {{ selectedPackageObj.drawingURL }}</span>
+              <span>{{ t('dialogs.drawing') }}: {{ selectedPackageObj.drawingURL }}</span>
             </div>
           </div>
 
@@ -277,8 +277,8 @@
             <v-col cols="12">
               <v-text-field
                 v-model="form.shortDescription"
-                label="Short Description"
-                placeholder="e.g. 100nF 50V X7R 0805, 3.3V 1A LDO linear regulator, 16MHz Crystal Oscillator"
+                :label="t('dialogs.shortDescription')"
+                :placeholder="t('dialogs.shortDescriptionPlaceholder')"
                 density="compact"
                 variant="outlined"
                 rounded="lg"
@@ -293,7 +293,7 @@
           <div class="d-flex align-center gap-2 mb-3 mt-4 pb-1 border-b border-slate-200">
             <v-icon icon="mdi-warehouse" size="18" color="primary" />
             <span class="text-caption font-weight-bold text-slate-700 text-uppercase tracking-wider">
-              Stock & Storage Location
+              {{ t('dialogs.sectionInventory') }}
             </span>
           </div>
 
@@ -302,7 +302,7 @@
             <v-col cols="12" md="4">
               <v-text-field
                 v-model.number="form.qty"
-                label="Initial In-Stock Qty"
+                :label="t('dialogs.initialStock')"
                 type="number"
                 min="0"
                 density="compact"
@@ -318,7 +318,7 @@
             <v-col cols="12" md="4">
               <v-text-field
                 v-model.number="form.minQty"
-                label="Min. Acceptable Qty"
+                :label="t('dialogs.minQty')"
                 type="number"
                 min="0"
                 density="compact"
@@ -326,7 +326,7 @@
                 rounded="lg"
                 class="font-mono"
                 prepend-inner-icon="mdi-alert-circle-check-outline"
-                hint="Default 0. Warns when stock is low"
+                :hint="t('dialogs.minQtyHint')"
                 persistent-hint
               />
             </v-col>
@@ -338,14 +338,14 @@
                 :items="storages"
                 item-title="storage"
                 item-value="ID"
-                label="Storage Location"
-                placeholder="Select bin or drawer"
+                :label="t('dialogs.storageLocation')"
+                :placeholder="t('dialogs.storageLocationPlaceholder')"
                 density="compact"
                 variant="outlined"
                 rounded="lg"
                 prepend-inner-icon="mdi-map-marker-outline"
                 clearable
-                :hint="form.qty > 0 ? 'Allocates initial stock' : 'Optional storage'"
+                :hint="form.qty > 0 ? t('dialogs.allocatesStockHint') : t('dialogs.optionalStorageHint')"
                 persistent-hint
               />
             </v-col>
@@ -355,7 +355,7 @@
           <div class="d-flex align-center gap-2 mb-3 mt-4 pb-1 border-b border-slate-200">
             <v-icon icon="mdi-file-document-outline" size="18" color="primary" />
             <span class="text-caption font-weight-bold text-slate-700 text-uppercase tracking-wider">
-              Documentation & Media
+              {{ t('dialogs.sectionDocumentation') }}
             </span>
           </div>
 
@@ -364,8 +364,8 @@
             <v-col cols="12">
               <v-textarea
                 v-model="form.description"
-                label="Detailed Description / Electrical Specifications"
-                placeholder="Full specs, pinout functions, voltage ratings, package tolerances, manufacturer notes, or KiCAD designator links..."
+                :label="t('dialogs.detailedDescription')"
+                :placeholder="t('dialogs.detailedDescriptionPlaceholder')"
                 rows="2"
                 density="compact"
                 variant="outlined"
@@ -382,7 +382,7 @@
             <v-col cols="12" md="6">
               <v-text-field
                 v-model="form.datasheetURL"
-                label="Datasheet (URL or PDF filename)"
+                :label="t('dialogs.datasheet')"
                 placeholder="e.g. stm32f103.pdf or https://..."
                 density="compact"
                 variant="outlined"
@@ -399,9 +399,9 @@
                     prepend-icon="mdi-upload"
                     :loading="uploadingDatasheet"
                     @click.stop="datasheetInputRef?.click()"
-                    title="Upload PDF to media/datasheets/"
+                    :title="t('common.upload')"
                   >
-                    Upload
+                    {{ t('common.upload') }}
                   </v-btn>
                 </template>
               </v-text-field>
@@ -418,7 +418,7 @@
             <v-col cols="12" md="6">
               <v-text-field
                 v-model="form.photoURL"
-                label="Component Photo (URL or filename)"
+                :label="t('dialogs.componentPhoto')"
                 placeholder="e.g. stm32.jpg or https://..."
                 density="compact"
                 variant="outlined"
@@ -435,9 +435,9 @@
                     prepend-icon="mdi-upload"
                     :loading="uploadingPhoto"
                     @click.stop="photoInputRef?.click()"
-                    title="Upload image to media/components/"
+                    :title="t('common.upload')"
                   >
-                    Upload
+                    {{ t('common.upload') }}
                   </v-btn>
                 </template>
               </v-text-field>
@@ -464,7 +464,7 @@
                 />
               </v-avatar>
               <div class="overflow-hidden">
-                <div class="text-caption font-weight-bold text-slate-800">Photo Attached</div>
+                <div class="text-caption font-weight-bold text-slate-800">{{ t('dialogs.photoAttached') }}</div>
                 <div class="text-caption font-mono text-slate-500 text-truncate" style="max-width: 380px;">
                   {{ form.photoURL }}
                 </div>
@@ -476,7 +476,7 @@
                 color="slate-400"
                 class="ms-auto"
                 @click="form.photoURL = ''"
-                title="Remove photo"
+                :title="t('common.delete')"
               />
             </div>
 
@@ -486,7 +486,7 @@
                 <v-icon icon="mdi-file-pdf-box" color="red-darken-2" size="28" />
               </v-avatar>
               <div class="overflow-hidden">
-                <div class="text-caption font-weight-bold text-slate-800">Datasheet PDF Attached</div>
+                <div class="text-caption font-weight-bold text-slate-800">{{ t('dialogs.datasheetAttached') }}</div>
                 <div class="text-caption font-mono text-slate-500 text-truncate" style="max-width: 380px;">
                   {{ form.datasheetURL }}
                 </div>
@@ -498,7 +498,7 @@
                 color="slate-400"
                 class="ms-auto"
                 @click="form.datasheetURL = ''"
-                title="Remove datasheet"
+                :title="t('common.delete')"
               />
             </div>
           </div>
@@ -512,7 +512,7 @@
           <v-checkbox
             v-if="!hideAddAnother && !isEditMode"
             v-model="addAnother"
-            label="Add another component after saving"
+            :label="t('dialogs.addAnother')"
             density="compact"
             hide-details
             color="primary"
@@ -528,9 +528,9 @@
             prepend-icon="mdi-content-copy"
             :disabled="submitting"
             @click="cloneComponent"
-            title="Create a new component pre-filled with these values"
+            :title="t('dialogs.cloneComponent')"
           >
-            Clone Component
+            {{ t('dialogs.cloneComponent') }}
           </v-btn>
 
           <v-btn
@@ -539,7 +539,7 @@
             :disabled="submitting"
             @click="close"
           >
-            Cancel
+            {{ t('common.cancel') }}
           </v-btn>
 
           <v-btn
@@ -563,23 +563,23 @@
       <div class="bg-amber-lighten-5 py-3 px-5 d-flex align-center gap-2 border-b border-amber-200 text-amber-darken-4">
         <v-icon icon="mdi-alert-circle-outline" color="amber-darken-3" size="24" />
         <span class="font-weight-bold text-subtitle-1">
-          Similar Component Already Exists
+          {{ t('dialogs.duplicateWarningTitle') }}
         </span>
       </div>
 
       <v-card-text class="pa-5">
         <p class="text-body-2 text-slate-700 mb-3">
-          The catalog already has component(s) matching
+          {{ t('dialogs.duplicateWarningDesc') }}
           <strong class="font-mono text-primary">{{ form.component }}</strong>:
         </p>
 
         <v-table density="compact" class="border rounded mb-3 text-caption">
           <thead class="bg-slate-50">
             <tr>
-              <th class="text-left font-weight-bold">Component</th>
-              <th class="text-left font-weight-bold">Category</th>
-              <th class="text-left font-weight-bold">Package</th>
-              <th class="text-center font-weight-bold">In Stock</th>
+              <th class="text-left font-weight-bold">{{ t('dialogs.partNumber') }}</th>
+              <th class="text-left font-weight-bold">{{ t('dialogs.category') }}</th>
+              <th class="text-left font-weight-bold">{{ t('dialogs.package') }}</th>
+              <th class="text-center font-weight-bold">{{ t('common.stock') }}</th>
             </tr>
           </thead>
           <tbody>
@@ -606,7 +606,7 @@
           class="rounded-lg text-caption"
           icon="mdi-help-circle-outline"
         >
-          A component with this name or package/category combination is already cataloged. Are you sure you want to create a new entry?
+          {{ t('dialogs.duplicateWarningAlert') }}
         </v-alert>
       </v-card-text>
 
@@ -616,16 +616,16 @@
           color="slate-700"
           @click="showDuplicateWarning = false"
         >
-          Review & Edit
+          {{ t('dialogs.reviewEdit') }}
         </v-btn>
         <v-btn
           color="amber-darken-4"
           variant="flat"
           prepend-icon="mdi-check"
           :loading="submitting"
-          @click="proceedCreate(true)"
+          @click="proceedSave(true)"
         >
-          Yes, Create Anyway
+          {{ t('dialogs.createAnyway') }}
         </v-btn>
       </div>
     </v-card>
@@ -635,13 +635,13 @@
   <v-dialog v-model="showQuickCategory" max-width="420px" persistent>
     <v-card class="rounded-0 border bg-white">
       <v-card-title class="bg-slate-50 py-3 px-4 border-b font-weight-bold text-subtitle-1">
-        Add New Category
+        {{ t('dialogs.addNewCategory') }}
       </v-card-title>
       <v-card-text class="pa-4">
         <v-text-field
           v-model="quickCategoryName"
-          label="Category Name *"
-          placeholder="e.g. Relays, Microcontrollers, Sensors"
+          :label="t('dialogs.categoryName') + ' *'"
+          :placeholder="t('dialogs.categoryNamePlaceholder')"
           variant="outlined"
           density="comfortable"
           autofocus
@@ -651,7 +651,7 @@
       </v-card-text>
       <v-divider />
       <v-card-actions class="pa-3 px-4 bg-slate-50 d-flex justify-end gap-2">
-        <v-btn variant="text" size="small" @click="showQuickCategory = false">Cancel</v-btn>
+        <v-btn variant="text" size="small" @click="showQuickCategory = false">{{ t('common.cancel') }}</v-btn>
         <v-btn
           color="primary"
           variant="flat"
@@ -660,7 +660,7 @@
           :loading="quickCategorySaving"
           @click="submitQuickCategory"
         >
-          Create Category
+          {{ t('common.create') }}
         </v-btn>
       </v-card-actions>
     </v-card>
@@ -670,13 +670,13 @@
   <v-dialog v-model="showQuickPackage" max-width="480px" persistent>
     <v-card class="rounded-0 border bg-white">
       <v-card-title class="bg-slate-50 py-3 px-4 border-b font-weight-bold text-subtitle-1">
-        Add New Package Footprint
+        {{ t('dialogs.addNewPackage') }}
       </v-card-title>
       <v-card-text class="pa-4">
         <v-text-field
           v-model="quickPackageForm.package"
-          label="Package Footprint Name *"
-          placeholder="e.g. TSSOP-20, SOT-23-5, 1206"
+          :label="t('dialogs.packageFootprintName') + ' *'"
+          :placeholder="t('dialogs.packageNamePlaceholder')"
           variant="outlined"
           density="comfortable"
           class="font-mono mb-3"
@@ -689,7 +689,7 @@
           <v-col cols="12" sm="5">
             <v-text-field
               v-model.number="quickPackageForm.pinQuantity"
-              label="Pin / Pad Count"
+              :label="t('dialogs.pinsCount')"
               type="number"
               min="1"
               placeholder="e.g. 20"
@@ -701,7 +701,7 @@
           <v-col cols="12" sm="7">
             <div class="border rounded-lg d-flex align-center px-3 justify-space-between bg-slate-50" style="height: 48px;">
               <span class="text-caption font-weight-medium text-slate-600 me-2 flex-shrink-0">
-                Mount:
+                {{ t('dialogs.mount') }}:
               </span>
               <v-btn-toggle
                 v-model="quickPackageForm.isSmd"
@@ -717,7 +717,7 @@
                   SMD
                 </v-btn>
                 <v-btn :value="0" size="small" class="flex-grow-1 text-caption font-weight-bold">
-                  Through-Hole
+                  THT
                 </v-btn>
               </v-btn-toggle>
             </div>
@@ -742,7 +742,7 @@
 
           <v-text-field
             v-model="quickPackageForm.drawingURL"
-            label="Drawing / Pinout Image (Filename or URL)"
+            :label="t('dialogs.drawingOrPinout')"
             placeholder="e.g. tssop20.png or https://..."
             variant="outlined"
             density="comfortable"
@@ -760,9 +760,9 @@
                 prepend-icon="mdi-upload"
                 :loading="uploadingQuickDrawing"
                 @click.stop="quickDrawingInputRef?.click()"
-                title="Upload drawing to media/packages/"
+                :title="t('common.upload')"
               >
-                Upload
+                {{ t('common.upload') }}
               </v-btn>
             </template>
           </v-text-field>
@@ -774,13 +774,10 @@
             @change="handleQuickDrawingUpload"
           />
         </div>
-        <div class="text-caption text-slate-500 mt-1 ms-1">
-          Stored in <code>media/packages/</code> or specify an external image URL.
-        </div>
       </v-card-text>
       <v-divider />
       <v-card-actions class="pa-3 px-4 bg-slate-50 d-flex justify-end gap-2">
-        <v-btn variant="text" size="small" @click="showQuickPackage = false">Cancel</v-btn>
+        <v-btn variant="text" size="small" @click="showQuickPackage = false">{{ t('common.cancel') }}</v-btn>
         <v-btn
           color="primary"
           variant="flat"
@@ -789,7 +786,7 @@
           :loading="quickPackageSaving"
           @click="submitQuickPackage"
         >
-          Create Package
+          {{ t('common.create') }}
         </v-btn>
       </v-card-actions>
     </v-card>
@@ -798,8 +795,11 @@
 
 <script setup>
 import { ref, reactive, computed, watch } from 'vue';
+import { useI18n } from 'vue-i18n';
 import api from '../services/api';
 import MediaImage from './MediaImage.vue';
+
+const { t } = useI18n();
 
 const props = defineProps({
   modelValue: {
@@ -870,18 +870,18 @@ const isEditMode = computed(() => {
 
 const dialogTitle = computed(() => {
   if (props.title) return props.title;
-  if (isCloning.value) return 'Add New Component';
-  return isEditMode.value ? 'Edit Component' : 'Add New Component';
+  if (isCloning.value) return t('dialogs.newComponent');
+  return isEditMode.value ? t('dialogs.editComponent') : t('dialogs.newComponent');
 });
 
 const dialogSubtitle = computed(() => {
   if (props.subtitle) return props.subtitle;
   if (isCloning.value) {
-    return `Create a new component pre-filled with specifications from "${clonedSourceName.value || 'cloned part'}"`;
+    return `${t('dialogs.cloneComponentSubtitle')} "${clonedSourceName.value || ''}"`;
   }
   return isEditMode.value
-    ? 'Update catalog specifications, inventory parameters, and documentation'
-    : 'Add a new electronic component, IC, passive part, or module to the catalog database';
+    ? t('dialogs.editComponentSubtitle')
+    : t('dialogs.newComponentSubtitle');
 });
 
 const dialogIcon = computed(() => {
@@ -889,8 +889,8 @@ const dialogIcon = computed(() => {
 });
 
 const submitButtonText = computed(() => {
-  if (props.draftMode) return 'Apply Component';
-  return isEditMode.value ? 'Save Changes' : 'Create Component';
+  if (props.draftMode) return t('common.apply');
+  return isEditMode.value ? t('dialogs.saveChanges') : t('dialogs.createComponent');
 });
 
 const dialogModel = computed({
@@ -923,7 +923,7 @@ const handleDatasheetUpload = async (event) => {
     form.datasheetURL = res.filename;
   } catch (err) {
     console.error('Failed to upload datasheet:', err);
-    alert('Failed to upload datasheet: ' + (err.response?.data?.error || err.message));
+    alert(`${t('dialogs.failedUploadDatasheet')}: ` + (err.response?.data?.error || err.message));
   } finally {
     uploadingDatasheet.value = false;
     if (event.target) event.target.value = '';
@@ -940,7 +940,7 @@ const handlePhotoUpload = async (event) => {
     form.photoURL = res.filename;
   } catch (err) {
     console.error('Failed to upload component photo:', err);
-    alert('Failed to upload photo: ' + (err.response?.data?.error || err.message));
+    alert(`${t('dialogs.failedUploadPhoto')}: ` + (err.response?.data?.error || err.message));
   } finally {
     uploadingPhoto.value = false;
     if (event.target) event.target.value = '';
@@ -965,10 +965,10 @@ const form = reactive(initialForm());
 
 // Form validation rules
 const rules = {
-  required: (v) => (!!v && !!String(v).trim()) || 'This field is required',
-  requiredSelection: (v) => (v !== null && v !== undefined && v !== '') || 'Please select an option',
-  nonNegativeNumber: (v) => (v === null || v === undefined || v === '' || (Number(v) >= 0 && Number.isInteger(Number(v)))) || 'Must be a non-negative integer',
-  maxLength: (max) => (v) => (!v || String(v).length <= max) || `Maximum ${max} characters`
+  required: (v) => (!!v && !!String(v).trim()) || t('common.requiredField'),
+  requiredSelection: (v) => (v !== null && v !== undefined && v !== '') || t('common.selectOption'),
+  nonNegativeNumber: (v) => (v === null || v === undefined || v === '' || (Number(v) >= 0 && Number.isInteger(Number(v)))) || t('common.nonNegativeInteger'),
+  maxLength: (max) => (v) => (!v || String(v).length <= max) || t('common.maxCharacters', { max })
 };
 
 // Local catalog state with props sync
@@ -1028,7 +1028,7 @@ const openQuickCategory = () => {
 const submitQuickCategory = async () => {
   const name = quickCategoryName.value.trim();
   if (!name) {
-    quickCategoryError.value = 'Category name is required';
+    quickCategoryError.value = t('dialogs.categoryRequired');
     return;
   }
   quickCategorySaving.value = true;
@@ -1070,7 +1070,7 @@ const handleQuickDrawingUpload = async (event) => {
     quickPackageForm.drawingURL = res.filename;
   } catch (err) {
     console.error('Failed to upload package drawing:', err);
-    alert('Failed to upload drawing: ' + (err.response?.data?.error || err.message));
+    alert(`${t('dialogs.failedUploadDrawing')}: ` + (err.response?.data?.error || err.message));
   } finally {
     uploadingQuickDrawing.value = false;
     if (event.target) event.target.value = '';
@@ -1089,7 +1089,7 @@ const openQuickPackage = () => {
 const submitQuickPackage = async () => {
   const name = quickPackageForm.package.trim();
   if (!name) {
-    quickPackageError.value = 'Package footprint name is required';
+    quickPackageError.value = t('dialogs.packageRequired');
     return;
   }
   quickPackageSaving.value = true;
@@ -1235,7 +1235,7 @@ const submitForm = async () => {
     await proceedSave(false);
   } catch (err) {
     console.error('Error checking duplicate component:', err);
-    errorMessage.value = err.response?.data?.error || err.message || 'Validation failed';
+    errorMessage.value = err.response?.data?.error || err.message || t('dialogs.validationFailed');
     submitting.value = false;
   }
 };
@@ -1318,7 +1318,7 @@ const proceedSave = async (fromConfirmation = false) => {
     }
   } catch (err) {
     console.error('Error saving component:', err);
-    errorMessage.value = err.response?.data?.error || err.message || 'Failed to save component';
+    errorMessage.value = err.response?.data?.error || err.message || t('dialogs.failedSaveComponent');
   } finally {
     submitting.value = false;
   }

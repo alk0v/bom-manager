@@ -1,13 +1,17 @@
-# BOM Manager (Bill of Materials) - v0.2.4
+# BOM Manager (Bill of Materials) - v0.2.5
 
 A modern web application designed to manage electronic components, hardware project builds, Bill of Materials (BOM), warehouse inventory stocks, and procurement shopping lists.
 
-Built with **Vue 3**, **Vuetify 3**, **Node.js/Express**, with out-of-the-box dual database support: **SQLite 3** (for fully autonomous, zero-config self-hosting) and **MySQL / MariaDB** (for centralized/multi-user deployments).
+Built with **Vue 3**, **Vuetify 3**, **Node.js/Express**, with out-of-the-box dual database support (**SQLite 3** & **MySQL / MariaDB**) and internationalized interface (**English** & **Ukrainian**).
 
 ---
 
 ## Key Features
 
+- **Multi-Language Interface (English & Ukrainian)**:
+  - Full localization powered by `vue-i18n` using structured JSON translation files (`locales/en.json` and `locales/uk.json`).
+  - Seamless Vuetify 3 locale synchronization (data tables, pagination, dialogs, form validation).
+  - 1-click language switcher in the top App Bar (🇬🇧 / 🇺🇦) and dedicated Language settings section with `localStorage` persistence.
 - **Hardware Projects Catalog**:
   - Interactive grid view of hardware project cards with photos, metadata, and repository links.
   - Interactive **BOM Pop-up Window** and dedicated full-page BOM view (`/projects/:id`).

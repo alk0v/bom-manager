@@ -1,46 +1,5 @@
 <template>
   <div class="reports-view">
-    <!-- Top Header Bar -->
-    <v-card elevation="1" class="rounded-0 border bg-white mb-6">
-      <v-card-item class="py-4 px-5">
-        <div class="d-flex flex-wrap align-center justify-space-between gap-4">
-          <!-- Title & Meta -->
-          <div>
-            <div class="d-flex align-center flex-wrap gap-2">
-              <h1 class="text-h5 font-weight-bold text-slate-900">
-                Production History & Reports
-              </h1>
-              <v-chip color="primary" variant="flat" size="small" class="font-weight-bold">
-                {{ stats.totalRuns || 0 }} Total Runs
-              </v-chip>
-              <v-chip color="success" variant="tonal" size="small" class="font-weight-bold">
-                {{ stats.totalUnitsActive || 0 }} Units Produced
-              </v-chip>
-              <v-chip v-if="stats.cancelledRunsCount > 0" color="slate-600" variant="tonal" size="small" class="font-weight-medium">
-                {{ stats.cancelledRunsCount }} Cancelled
-              </v-chip>
-            </div>
-            <div class="text-body-2 text-slate-500 mt-1">
-              Audit hardware manufacturing runs, track consumed components, and roll back production to return parts to storage.
-            </div>
-          </div>
-
-          <!-- Quick Action Buttons -->
-          <div class="d-flex align-center gap-2">
-            <v-btn
-              icon="mdi-refresh"
-              variant="outlined"
-              size="small"
-              color="primary"
-              :loading="loading"
-              @click="loadReport"
-              title="Refresh report data"
-            />
-          </div>
-        </div>
-      </v-card-item>
-    </v-card>
-
     <!-- Summary Statistics KPI Cards -->
     <v-row dense class="mb-6">
       <!-- Total Active Units Produced -->
@@ -50,10 +9,10 @@
             <v-icon size="26" color="primary">mdi-factory</v-icon>
           </v-avatar>
           <div>
-            <div class="text-caption text-slate-500 font-weight-bold text-uppercase">Active Units Produced</div>
+            <div class="text-caption text-slate-500 font-weight-bold text-uppercase">{{ t('reports.activeUnitsProduced') }}</div>
             <div class="text-h5 font-weight-bold text-slate-900 font-mono">{{ stats.totalUnitsActive || 0 }}</div>
             <div class="text-caption text-success font-weight-medium">
-              across {{ stats.activeRunsCount || 0 }} completed {{ stats.activeRunsCount === 1 ? 'run' : 'runs' }}
+              {{ t('reports.acrossCompletedRuns', { count: stats.activeRunsCount || 0, runs: (stats.activeRunsCount === 1 ? t('reports.run') : t('reports.runs')) }) }}
             </div>
           </div>
         </v-card>
@@ -66,10 +25,10 @@
             <v-icon size="26" color="info">mdi-chip</v-icon>
           </v-avatar>
           <div>
-            <div class="text-caption text-slate-500 font-weight-bold text-uppercase">Parts Consumed</div>
+            <div class="text-caption text-slate-500 font-weight-bold text-uppercase">{{ t('reports.partsConsumed') }}</div>
             <div class="text-h5 font-weight-bold text-slate-900 font-mono">{{ stats.totalPartsActive || 0 }}</div>
             <div class="text-caption text-slate-500">
-              currently deducted in storage
+              {{ t('reports.currentlyDeducted') }}
             </div>
           </div>
         </v-card>
@@ -82,10 +41,10 @@
             <v-icon size="26" color="amber-darken-3">mdi-undo-variant</v-icon>
           </v-avatar>
           <div>
-            <div class="text-caption text-slate-500 font-weight-bold text-uppercase">Parts Restored</div>
+            <div class="text-caption text-slate-500 font-weight-bold text-uppercase">{{ t('reports.partsRestored') }}</div>
             <div class="text-h5 font-weight-bold text-slate-900 font-mono">{{ stats.totalPartsReturned || 0 }}</div>
             <div class="text-caption text-amber-darken-3 font-weight-medium">
-              from {{ stats.cancelledRunsCount || 0 }} cancelled {{ stats.cancelledRunsCount === 1 ? 'run' : 'runs' }}
+              {{ t('reports.fromCancelledRuns', { count: stats.cancelledRunsCount || 0, runs: (stats.cancelledRunsCount === 1 ? t('reports.run') : t('reports.runs')) }) }}
             </div>
           </div>
         </v-card>
@@ -98,10 +57,10 @@
             <v-icon size="26" color="secondary">mdi-folder-cog-outline</v-icon>
           </v-avatar>
           <div>
-            <div class="text-caption text-slate-500 font-weight-bold text-uppercase">Projects Produced</div>
+            <div class="text-caption text-slate-500 font-weight-bold text-uppercase">{{ t('reports.projectsProduced') }}</div>
             <div class="text-h5 font-weight-bold text-slate-900 font-mono">{{ stats.uniqueProjectsCount || 0 }}</div>
             <div class="text-caption text-slate-500">
-              unique hardware designs
+              {{ t('reports.uniqueHardwareDesigns') }}
             </div>
           </div>
         </v-card>
@@ -118,7 +77,7 @@
             <!-- Search input -->
             <v-text-field
               v-model="search"
-              placeholder="Search project, notes, part..."
+              :placeholder="t('reports.searchPlaceholder')"
               prepend-inner-icon="mdi-magnify"
               density="compact"
               variant="outlined"
@@ -136,7 +95,7 @@
               :items="projectOptions"
               item-title="projectName"
               item-value="id"
-              placeholder="All Hardware Projects"
+              :placeholder="t('reports.allHardwareProjects')"
               prepend-inner-icon="mdi-folder-outline"
               density="compact"
               variant="outlined"
@@ -151,7 +110,7 @@
             <!-- Status Toggle -->
             <div class="d-flex align-center gap-2">
               <span class="text-caption text-slate-600 font-weight-bold text-uppercase flex-shrink-0">
-                Status:
+                {{ t('common.status') }}:
               </span>
               <v-btn-toggle
                 v-model="selectedStatus"
@@ -164,14 +123,14 @@
                 style="height: 40px;"
                 @update:model-value="loadReport"
               >
-                <v-btn value="all" size="small" class="px-3 text-caption font-weight-medium">All</v-btn>
-                <v-btn value="completed" size="small" class="px-3 text-caption font-weight-medium">Completed</v-btn>
-                <v-btn value="cancelled" size="small" class="px-3 text-caption font-weight-medium">Cancelled</v-btn>
+                <v-btn value="all" size="small" class="px-3 text-caption font-weight-medium">{{ t('common.all') }}</v-btn>
+                <v-btn value="completed" size="small" class="px-3 text-caption font-weight-medium">{{ t('reports.statusCompleted') }}</v-btn>
+                <v-btn value="cancelled" size="small" class="px-3 text-caption font-weight-medium">{{ t('reports.statusCancelled') }}</v-btn>
               </v-btn-toggle>
             </div>
           </div>
 
-          <!-- Right side: Count & Reset -->
+          <!-- Right side: Count & Reset & Refresh -->
           <div class="d-flex align-center gap-2 text-caption text-slate-500">
             <v-btn
               v-if="search || selectedProjectId || selectedStatus !== 'all'"
@@ -182,11 +141,20 @@
               prepend-icon="mdi-filter-off-outline"
               @click="resetFilters"
             >
-              Reset
+              {{ t('common.reset') }}
             </v-btn>
             <span>
-              Showing <strong>{{ productionRuns.length }}</strong> of {{ totalRuns }}
+              {{ t('common.showingOf', { count: productionRuns.length, total: totalRuns, item: t('common.items') }) }}
             </span>
+            <v-btn
+              icon="mdi-refresh"
+              variant="text"
+              size="small"
+              color="slate-600"
+              :loading="loading"
+              @click="loadReport"
+              :title="t('reports.refreshTooltip')"
+            />
           </div>
         </div>
       </v-card-item>
@@ -195,13 +163,13 @@
       <v-table density="comfortable" hover class="reports-table">
         <thead>
           <tr class="bg-slate-50">
-            <th class="text-left font-weight-bold" style="width: 80px;">Run ID</th>
-            <th class="text-left font-weight-bold" style="width: 180px;">Date & Time</th>
-            <th class="text-left font-weight-bold">Hardware Project</th>
-            <th class="text-center font-weight-bold">Produced</th>
-            <th class="text-left font-weight-bold">Parts Consumed</th>
-            <th class="text-center font-weight-bold" style="width: 130px;">Status</th>
-            <th class="text-left font-weight-bold" style="width: 220px;">Actions</th>
+            <th class="text-left font-weight-bold" style="width: 80px;">{{ t('reports.colRunId') }}</th>
+            <th class="text-left font-weight-bold" style="width: 180px;">{{ t('reports.colDateTime') }}</th>
+            <th class="text-left font-weight-bold">{{ t('reports.colHardwareProject') }}</th>
+            <th class="text-center font-weight-bold">{{ t('reports.colProduced') }}</th>
+            <th class="text-left font-weight-bold">{{ t('reports.colPartsConsumed') }}</th>
+            <th class="text-center font-weight-bold" style="width: 130px;">{{ t('common.status') }}</th>
+            <th class="text-left font-weight-bold" style="width: 220px;">{{ t('common.actions') }}</th>
           </tr>
         </thead>
 
@@ -241,10 +209,10 @@
                       :to="`/projects/${run.projectId}`"
                       class="text-body-2 font-weight-bold text-primary text-decoration-none hover-underline"
                     >
-                      {{ run.projectName || 'Project #' + run.projectId }}
+                      {{ run.projectName || t('reports.projectNum', { id: run.projectId }) }}
                     </router-link>
                     <div class="text-caption text-slate-400 line-clamp-1" v-if="run.notes">
-                      Note: {{ run.notes }}
+                      {{ t('common.notes') }}: {{ run.notes }}
                     </div>
                   </div>
                 </div>
@@ -258,17 +226,17 @@
                   :variant="run.status === 'completed' ? 'flat' : 'tonal'"
                   class="font-mono font-weight-bold"
                 >
-                  {{ run.count }} {{ run.count === 1 ? 'unit' : 'units' }}
+                  {{ run.count }} {{ run.count === 1 ? t('reports.unit') : t('reports.units') }}
                 </v-chip>
               </td>
 
               <!-- Parts Consumed -->
               <td>
                 <div class="text-body-2 text-slate-800">
-                  <strong>{{ run.totalComponentsDeducted }}</strong> components
+                  <strong>{{ run.totalComponentsDeducted }}</strong> {{ t('reports.componentsCount') }}
                 </div>
                 <div class="text-caption text-slate-500">
-                  across {{ run.itemsCount }} BOM entries
+                  {{ t('reports.acrossBomEntries', { count: run.itemsCount }) }}
                 </div>
               </td>
 
@@ -282,7 +250,7 @@
                   class="font-weight-bold"
                 >
                   <v-icon start size="12">mdi-check-circle</v-icon>
-                  Completed
+                  {{ t('reports.statusCompleted') }}
                 </v-chip>
                 <div v-else class="d-flex flex-column align-center">
                   <v-chip
@@ -292,7 +260,7 @@
                     class="font-weight-bold text-slate-600"
                   >
                     <v-icon start size="12">mdi-undo</v-icon>
-                    Cancelled
+                    {{ t('reports.statusCancelled') }}
                   </v-chip>
                   <span class="text-caption text-slate-400 font-mono mt-1" v-if="run.cancelledAt" style="font-size: 0.68rem;">
                     {{ formatDate(run.cancelledAt) }}
@@ -313,7 +281,7 @@
                     prepend-icon="mdi-format-list-bulleted"
                     @click="openRunDetails(run)"
                   >
-                    Details
+                    {{ t('common.details') }}
                   </v-btn>
 
                   <!-- Cancel Run / Parts Restored Slot -->
@@ -325,17 +293,17 @@
                       color="error"
                       class="font-weight-bold w-100"
                       prepend-icon="mdi-undo-variant"
-                      title="Cancel production run and return components to stock"
+                      :title="t('reports.cancelProductionRun')"
                       @click="openCancelConfirmDialog(run)"
                     >
-                      Cancel Run
+                      {{ t('reports.cancelRun') }}
                     </v-btn>
 
                     <span
                       v-else
                       class="text-caption text-slate-400 italic text-center"
                     >
-                      Parts Restored
+                      {{ t('reports.partsRestored') }}
                     </span>
                   </div>
                 </div>
@@ -346,9 +314,9 @@
           <tr v-if="productionRuns.length === 0 && !loading">
             <td colspan="7" class="text-center py-12 text-disabled">
               <v-icon size="48" class="mb-2">mdi-history</v-icon>
-              <div class="text-subtitle-1 text-slate-700 font-weight-medium">No production history found</div>
+              <div class="text-subtitle-1 text-slate-700 font-weight-medium">{{ t('reports.noHistoryTitle') }}</div>
               <div class="text-caption text-slate-400 mt-1">
-                Produce units of any hardware project to see manufacturing logs and component deductions here.
+                {{ t('reports.noHistorySubtitle') }}
               </div>
             </td>
           </tr>
@@ -356,7 +324,7 @@
           <tr v-if="loading">
             <td colspan="7" class="text-center py-12">
               <v-progress-circular indeterminate color="primary" />
-              <div class="text-caption text-slate-500 mt-2">Loading production reports...</div>
+              <div class="text-caption text-slate-500 mt-2">{{ t('reports.loadingReports') }}</div>
             </td>
           </tr>
         </tbody>
@@ -382,7 +350,7 @@
             <div>
               <div class="d-flex align-center gap-2">
                 <span class="text-h6 font-weight-bold text-slate-900">
-                  Production Run #{{ selectedRun.id }}: {{ selectedRun.projectName }}
+                  {{ t('reports.dialogRunTitle', { id: selectedRun.id, name: selectedRun.projectName }) }}
                 </span>
                 <v-chip
                   size="x-small"
@@ -390,11 +358,11 @@
                   variant="flat"
                   class="font-weight-bold"
                 >
-                  {{ selectedRun.status === 'completed' ? 'Completed' : 'Cancelled & Returned' }}
+                  {{ selectedRun.status === 'completed' ? t('reports.statusCompleted') : t('reports.statusCancelledReturned') }}
                 </v-chip>
               </div>
               <div class="text-caption text-slate-500 font-mono">
-                Produced {{ selectedRun.count }} {{ selectedRun.count === 1 ? 'unit' : 'units' }} on {{ formatFullDateTime(selectedRun.producedAt) }}
+                {{ t('reports.producedOn', { count: selectedRun.count, units: (selectedRun.count === 1 ? t('reports.unit') : t('reports.units')), date: formatFullDateTime(selectedRun.producedAt) }) }}
               </div>
             </div>
           </div>
@@ -406,14 +374,14 @@
           <v-table density="comfortable" hover class="breakdown-table">
             <thead>
               <tr class="bg-slate-50">
-                <th class="text-left font-weight-bold" style="width: 50px;">Photo</th>
-                <th class="text-left font-weight-bold">Component / Part</th>
-                <th class="text-left font-weight-bold">Category</th>
-                <th class="text-left font-weight-bold">Package</th>
-                <th class="text-center font-weight-bold">Per Unit</th>
-                <th class="text-center font-weight-bold text-primary">Deducted for Run</th>
-                <th class="text-center font-weight-bold">Current Catalog Stock</th>
-                <th class="text-center font-weight-bold">Status</th>
+                <th class="text-left font-weight-bold" style="width: 50px;">{{ t('common.photo') }}</th>
+                <th class="text-left font-weight-bold">{{ t('reports.colComponentPart') }}</th>
+                <th class="text-left font-weight-bold">{{ t('common.category') }}</th>
+                <th class="text-left font-weight-bold">{{ t('common.package') }}</th>
+                <th class="text-center font-weight-bold">{{ t('produceModal.colPerUnit') }}</th>
+                <th class="text-center font-weight-bold text-primary">{{ t('reports.colDeductedForRun') }}</th>
+                <th class="text-center font-weight-bold">{{ t('reports.colCurrentCatalogStock') }}</th>
+                <th class="text-center font-weight-bold">{{ t('common.status') }}</th>
               </tr>
             </thead>
             <tbody>
@@ -432,7 +400,7 @@
                   <div
                     class="font-mono font-weight-bold text-body-2 text-primary comp-name-link d-inline-flex align-center gap-1"
                     @click="openComponentDetails(item)"
-                    title="View component details"
+                    :title="t('dialogs.clickDetails')"
                   >
                     <span class="hover-underline">{{ item.component }}</span>
                     <v-icon size="13" class="opacity-60 info-icon">mdi-information-outline</v-icon>
@@ -468,7 +436,7 @@
                     variant="tonal"
                     class="font-weight-medium"
                   >
-                    Deducted
+                    {{ t('reports.deducted') }}
                   </v-chip>
                   <v-chip
                     v-else
@@ -477,7 +445,7 @@
                     variant="flat"
                     class="font-weight-bold"
                   >
-                    Restored
+                    {{ t('reports.restored') }}
                   </v-chip>
                 </td>
               </tr>
@@ -490,7 +458,7 @@
         <!-- Footer -->
         <v-card-actions class="pa-4 bg-slate-50 d-flex align-center justify-space-between flex-shrink-0">
           <div class="text-caption text-slate-500">
-            Total {{ selectedRun.totalComponentsDeducted }} parts across {{ selectedRun.items?.length || 0 }} components
+            {{ t('reports.breakdownSummary', { total: selectedRun.totalComponentsDeducted, count: selectedRun.items?.length || 0 }) }}
           </div>
           <div class="d-flex align-center gap-2">
             <v-btn
@@ -500,10 +468,10 @@
               prepend-icon="mdi-undo-variant"
               @click="openCancelConfirmDialog(selectedRun)"
             >
-              Cancel Production & Return Parts
+              {{ t('reports.cancelProductionAndReturn') }}
             </v-btn>
             <v-btn variant="outlined" color="slate-600" @click="showDetailsDialog = false">
-              Close
+              {{ t('common.close') }}
             </v-btn>
           </div>
         </v-card-actions>
@@ -519,14 +487,14 @@
         <v-card-title class="bg-red-50 py-3 px-5 border-b d-flex align-center text-error">
           <v-icon color="error" class="me-2" size="22">mdi-alert-circle-outline</v-icon>
           <span class="text-subtitle-1 font-weight-bold">
-            Cancel Production Run #{{ runToCancel.id }}?
+            {{ t('reports.cancelConfirmTitle', { id: runToCancel.id }) }}
           </span>
         </v-card-title>
 
         <!-- Content -->
         <v-card-text class="pa-5">
           <p class="text-body-1 text-slate-800 mb-3">
-            Are you sure you want to cancel the production of <strong>{{ runToCancel.count }} {{ runToCancel.count === 1 ? 'unit' : 'units' }}</strong> of <strong>{{ runToCancel.projectName }}</strong>?
+            {{ t('reports.cancelConfirmMsg', { count: runToCancel.count, units: (runToCancel.count === 1 ? t('reports.unit') : t('reports.units')), name: `"${runToCancel.projectName}"` }) }}
           </p>
 
           <v-alert
@@ -536,19 +504,19 @@
             class="mb-4 rounded-0 border text-caption"
             icon="mdi-warehouse"
           >
-            <strong>Stock Restoration:</strong> This action will automatically return <strong>{{ runToCancel.totalComponentsDeducted }} components</strong> back into your catalog inventory.
+            <strong>{{ t('reports.stockRestoration') }}:</strong> {{ t('reports.stockRestorationMsg', { count: runToCancel.totalComponentsDeducted }) }}
           </v-alert>
 
           <div class="text-caption font-weight-bold text-slate-700 text-uppercase mb-2">
-            Parts to be returned to stock:
+            {{ t('reports.partsToReturn') }}:
           </div>
 
           <v-table density="compact" class="border bg-slate-50 mb-2">
             <thead>
               <tr>
-                <th class="text-left font-weight-bold">Component</th>
-                <th class="text-left font-weight-bold">Category</th>
-                <th class="text-center font-weight-bold">Quantity to Return</th>
+                <th class="text-left font-weight-bold">{{ t('shoppingList.colComponent') }}</th>
+                <th class="text-left font-weight-bold">{{ t('common.category') }}</th>
+                <th class="text-center font-weight-bold">{{ t('reports.colQtyToReturn') }}</th>
               </tr>
             </thead>
             <tbody>
@@ -559,7 +527,7 @@
                 </td>
                 <td class="text-caption text-slate-600">{{ item.category || '—' }}</td>
                 <td class="text-center font-mono font-weight-bold text-success text-body-2">
-                  +{{ item.totalDeducted }} pcs
+                  +{{ item.totalDeducted }} {{ t('shoppingList.pcs') }}
                 </td>
               </tr>
             </tbody>
@@ -571,7 +539,7 @@
         <!-- Actions -->
         <v-card-actions class="pa-4 bg-slate-50 d-flex align-center justify-space-between">
           <v-btn variant="outlined" color="slate-600" @click="showCancelDialog = false" :disabled="cancelling">
-            Keep Production Run
+            {{ t('reports.keepRun') }}
           </v-btn>
 
           <v-btn
@@ -582,7 +550,7 @@
             :loading="cancelling"
             @click="confirmCancelRun"
           >
-            Confirm & Return Parts
+            {{ t('reports.confirmReturnParts') }}
           </v-btn>
         </v-card-actions>
       </v-card>
@@ -604,8 +572,11 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue';
+import { ref, computed, onMounted } from 'vue';
+import { useI18n } from 'vue-i18n';
 import api from '../services/api';
+
+const { t } = useI18n();
 import MediaImage from '../components/MediaImage.vue';
 import PackageLink from '../components/PackageLink.vue';
 import ComponentDetailsDialog from '../components/ComponentDetailsDialog.vue';
@@ -641,11 +612,11 @@ const notify = (text, color = 'success') => {
   snackbar.value = { show: true, text, color };
 };
 
-const statusOptions = [
-  { title: 'All Statuses', value: 'all' },
-  { title: 'Completed Only', value: 'completed' },
-  { title: 'Cancelled Only', value: 'cancelled' }
-];
+const statusOptions = computed(() => [
+  { title: t('common.all'), value: 'all' },
+  { title: t('reports.completedOnly'), value: 'completed' },
+  { title: t('reports.cancelledOnly'), value: 'cancelled' }
+]);
 
 let searchTimer = null;
 const debounceFetch = () => {
@@ -671,7 +642,7 @@ const loadReport = async () => {
     stats.value = res.stats || {};
   } catch (err) {
     console.error('Error loading production report:', err);
-    notify('Failed to load production report: ' + err.message, 'error');
+    notify(t('reports.loadError') + ': ' + err.message, 'error');
   } finally {
     loading.value = false;
   }
@@ -707,13 +678,13 @@ const confirmCancelRun = async () => {
   cancelling.value = true;
   try {
     const res = await api.cancelProductionRun(runToCancel.value.id);
-    notify(`Production run #${res.runId} cancelled! Restored ${res.totalComponentsRestored} components to stock.`, 'success');
+    notify(t('reports.cancelSuccess', { id: res.runId, count: res.totalComponentsRestored }), 'success');
     showCancelDialog.value = false;
     showDetailsDialog.value = false;
     await loadReport();
   } catch (err) {
     console.error('Error cancelling production run:', err);
-    notify('Failed to cancel production run: ' + (err.response?.data?.error || err.message), 'error');
+    notify(t('reports.cancelError') + ': ' + (err.response?.data?.error || err.message), 'error');
   } finally {
     cancelling.value = false;
   }
