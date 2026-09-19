@@ -110,6 +110,8 @@ export const api = {
   purchaseComponent: (id, data) => client.post(`/components/${id}/purchase`, data).then(res => res.data),
   getComponentUsage: (id) => client.get(`/components/${id}/usage`).then(res => res.data),
   deleteComponent: (id, force = false) => client.delete(`/components/${id}`, { params: { force } }).then(res => res.data),
+  downloadComponentsTemplate: () => client.get('/components/template-csv', { responseType: 'blob' }).then(res => res.data),
+  importComponentsCsv: (payload) => client.post('/components/import-csv', payload).then(res => res.data),
 
   // Categories, Packages & Storages
   getCategories: () => client.get('/categories').then(res => res.data),

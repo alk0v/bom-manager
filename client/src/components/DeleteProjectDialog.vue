@@ -12,7 +12,7 @@
         <div class="d-flex align-center gap-2">
           <v-icon color="error" size="22">mdi-delete-alert-outline</v-icon>
           <span class="text-subtitle-1 font-weight-bold text-slate-900">
-            Delete Hardware Project
+            {{ t('deleteProjectModal.title') }}
           </span>
         </div>
         <v-btn
@@ -42,7 +42,7 @@
           <div class="d-flex align-center gap-2 flex-wrap mt-1">
             <v-chip size="x-small" color="primary" variant="tonal" class="font-weight-medium">
               <v-icon start size="13">mdi-chip</v-icon>
-              {{ project.bomItemCount ?? 0 }} BOM parts
+              {{ t('deleteProjectModal.bomParts', { count: project.bomItemCount ?? 0 }) }}
             </v-chip>
             <v-chip
               v-if="project.filesCount > 0"
@@ -52,7 +52,7 @@
               class="font-weight-medium"
             >
               <v-icon start size="13">mdi-paperclip</v-icon>
-              {{ project.filesCount }} files
+              {{ t('deleteProjectModal.filesCount', { count: project.filesCount }) }}
             </v-chip>
             <span v-if="project.url" class="text-caption text-slate-400 text-truncate" style="max-width: 200px;">
               {{ project.url }}
@@ -67,17 +67,14 @@
           <v-icon color="error" size="24" class="flex-shrink-0 mt-0.5">mdi-alert-circle-outline</v-icon>
           <div>
             <div class="font-weight-bold text-subtitle-2 text-red-950">
-              Permanent Deletion Warning
+              {{ t('deleteProjectModal.warningTitle') }}
             </div>
-            <div class="text-body-2 text-red-900 mt-1">
-              Are you sure you want to delete <strong class="font-weight-bold">"{{ project.projectName }}"</strong>?
-              This action <span class="font-weight-bold text-decoration-underline">cannot be undone</span>.
-            </div>
+            <div class="text-body-2 text-red-900 mt-1" v-html="t('deleteProjectModal.warningMessage', { name: project.projectName })" />
           </div>
         </div>
 
         <div class="text-body-2 text-slate-600 mb-3">
-          Deleting this project will permanently remove:
+          {{ t('deleteProjectModal.willRemove') }}
         </div>
 
         <v-list density="compact" class="border rounded bg-slate-50 py-1 mb-2">
@@ -85,36 +82,36 @@
             <template #prepend>
               <v-icon icon="mdi-trash-can-outline" size="18" color="error" class="me-3" />
             </template>
-            <v-list-item-title class="text-body-2 text-slate-800">
-              Project record and description metadata
-            </v-list-item-title>
+            <div class="text-body-2 text-slate-800 text-wrap">
+              {{ t('deleteProjectModal.itemMetadata') }}
+            </div>
           </v-list-item>
 
           <v-list-item class="py-1">
             <template #prepend>
               <v-icon icon="mdi-trash-can-outline" size="18" color="error" class="me-3" />
             </template>
-            <v-list-item-title class="text-body-2 text-slate-800">
-              All constituent Bill of Materials items (<strong>{{ project.bomItemCount ?? 0 }}</strong> part requirements)
-            </v-list-item-title>
+            <div class="text-body-2 text-slate-800 text-wrap">
+              {{ t('deleteProjectModal.itemBom', { count: project.bomItemCount ?? 0 }) }}
+            </div>
           </v-list-item>
 
           <v-list-item class="py-1" v-if="(project.filesCount ?? 0) > 0">
             <template #prepend>
               <v-icon icon="mdi-trash-can-outline" size="18" color="error" class="me-3" />
             </template>
-            <v-list-item-title class="text-body-2 text-slate-800">
-              All attached project files and iBOM documents (<strong>{{ project.filesCount }}</strong> files)
-            </v-list-item-title>
+            <div class="text-body-2 text-slate-800 text-wrap">
+              {{ t('deleteProjectModal.itemFiles', { count: project.filesCount }) }}
+            </div>
           </v-list-item>
 
           <v-list-item class="py-1">
             <template #prepend>
               <v-icon icon="mdi-shield-check-outline" size="18" color="success" class="me-3" />
             </template>
-            <v-list-item-title class="text-body-2 text-slate-600 font-italic">
-              Catalog components will NOT be deleted; their warehouse stock remains safe.
-            </v-list-item-title>
+            <div class="text-body-2 text-slate-600 font-italic text-wrap">
+              {{ t('deleteProjectModal.safeNotice') }}
+            </div>
           </v-list-item>
         </v-list>
       </v-card-text>
@@ -130,7 +127,7 @@
           :disabled="deleting"
           @click="close"
         >
-          Cancel
+          {{ t('common.cancel') }}
         </v-btn>
 
         <v-btn
@@ -142,7 +139,7 @@
           :loading="deleting"
           @click="handleDelete"
         >
-          Delete Project
+          {{ t('deleteProjectModal.deleteButton') }}
         </v-btn>
       </v-card-actions>
     </v-card>
@@ -151,8 +148,11 @@
 
 <script setup>
 import { ref } from 'vue';
+import { useI18n } from 'vue-i18n';
 import api from '../services/api';
 import MediaImage from './MediaImage.vue';
+
+const { t } = useI18n();
 
 const props = defineProps({
   modelValue: {
@@ -186,7 +186,17 @@ async function handleDelete() {
   } catch (err) {
     deleting.value = false;
     console.error('Failed to delete project:', err);
-    alert('Failed to delete project: ' + (err.response?.data?.details || err.message));
+    alert(`${t('deleteProjectModal.deleteError')}: ${err.response?.data?.details || err.message}`);
   }
 }
 </script>
+
+<style scoped>
+:deep(.v-list-item) {
+  min-height: 36px;
+}
+:deep(.v-list-item__content) {
+  white-space: normal !important;
+  overflow: visible !important;
+}
+</style>

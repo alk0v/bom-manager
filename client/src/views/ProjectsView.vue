@@ -1,34 +1,26 @@
 <template>
   <div class="projects-view">
-    <!-- Top Header Bar -->
+    <!-- Projects Toolbar -->
     <v-card elevation="1" class="rounded-0 border bg-white mb-6">
-      <v-card-item class="py-4 px-5">
+      <v-card-item class="py-3 px-4">
         <div class="d-flex flex-wrap align-center justify-space-between gap-4">
-          <!-- Title & Stats -->
-          <div>
-            <div class="d-flex align-center">
-              <h1 class="text-h5 font-weight-bold text-slate-900 me-3">
-                Hardware Projects
-              </h1>
-              <v-chip color="primary" variant="flat" size="small" class="font-weight-bold me-3">
-                {{ projects.length }} Projects
-              </v-chip>
-              <v-chip color="secondary" variant="tonal" size="small" class="font-weight-bold me-3">
-                {{ totalBomEntries }} Total BOM Items
-              </v-chip>
-              <v-chip
-                v-if="shortageProjectsCount > 0"
-                color="error"
-                variant="tonal"
-                size="small"
-                class="font-weight-bold"
-              >
-                {{ shortageProjectsCount }} with Shortages
-              </v-chip>
-            </div>
-            <div class="text-body-2 text-disabled mt-1">
-              Select any project card to view its complete Bill of Materials (BOM), parts stock, and designators.
-            </div>
+          <!-- Stats Chips -->
+          <div class="d-flex align-center flex-wrap gap-2">
+            <v-chip color="primary" variant="flat" size="small" class="font-weight-bold">
+              {{ projects.length }} {{ t('nav.projects') }}
+            </v-chip>
+            <v-chip color="secondary" variant="tonal" size="small" class="font-weight-bold">
+              {{ totalBomEntries }} {{ t('common.total') }} BOM
+            </v-chip>
+            <v-chip
+              v-if="shortageProjectsCount > 0"
+              color="error"
+              variant="tonal"
+              size="small"
+              class="font-weight-bold"
+            >
+              {{ shortageProjectsCount }} {{ t('common.shortage') }}
+            </v-chip>
           </div>
 
           <!-- Search & Actions -->
@@ -36,7 +28,7 @@
             <v-text-field
               v-model="searchQuery"
               prepend-inner-icon="mdi-magnify"
-              placeholder="Search project name, description..."
+              :placeholder="t('projects.searchPlaceholder')"
               density="compact"
               variant="outlined"
               hide-details
@@ -53,7 +45,7 @@
               prepend-icon="mdi-plus"
               @click="openNewProjectDialog"
             >
-              New Project
+              {{ t('projects.newProject') }}
             </v-btn>
 
             <v-btn
@@ -62,7 +54,7 @@
               size="small"
               :loading="loadingProjects"
               @click="loadProjects"
-              title="Refresh projects"
+              :title="t('projects.refreshTooltip')"
             />
           </div>
         </div>
@@ -90,7 +82,7 @@
           <div
             class="position-relative bg-slate-50 border-b d-flex align-center justify-center pa-2 project-photo-cover"
             :class="{ 'cursor-pointer': !!p.photoUrl }"
-            :title="p.photoUrl ? 'Click to view photo in full size' : ''"
+            :title="p.photoUrl ? t('dialogs.viewFullSize') : ''"
             style="height: 200px;"
             @click.stop="p.photoUrl ? openPhotoLightbox('project', p.photoUrl, p.projectName) : navigateToProject(p.id)"
           >
@@ -188,7 +180,7 @@
                   color="success"
                   variant="flat"
                   class="font-weight-bold"
-                  title="KiCAD Interactive HTML BOM attached"
+                  :title="t('projects.ibomAttached')"
                 >
                   <v-icon start size="15">mdi-chip</v-icon>
                   iBOM
@@ -208,7 +200,7 @@
                     size="small"
                     variant="text"
                     color="primary"
-                    title="Open external documentation link"
+                    :title="t('projects.openExternalLink')"
                     @click.stop
                   />
                   <!-- Edit Project button -->
@@ -217,7 +209,7 @@
                     size="small"
                     variant="text"
                     color="slate-600"
-                    title="Edit project details"
+                    :title="t('projects.editProject')"
                     @click.stop="openEditProjectDialog(p)"
                   />
                   <!-- Produce Project button -->
@@ -226,7 +218,7 @@
                     size="small"
                     variant="text"
                     color="primary"
-                    title="Produce project units and deduct parts"
+                    :title="t('projects.produceTooltip')"
                     @click.stop="openProduceDialog(p)"
                   />
                   <!-- Delete Project button -->
@@ -235,7 +227,7 @@
                     size="small"
                     variant="text"
                     color="error"
-                    title="Delete project"
+                    :title="t('projects.deleteProject')"
                     @click.stop="openDeleteProjectDialog(p)"
                   />
                 </div>
@@ -249,7 +241,7 @@
                   prepend-icon="mdi-format-list-bulleted-square"
                   @click.stop="openBomModal(p)"
                 >
-                  View BOM
+                  {{ t('projects.viewBom') }}
                 </v-btn>
               </div>
             </div>
@@ -261,10 +253,10 @@
     <!-- Empty State -->
     <v-card v-else-if="!loadingProjects" class="pa-12 text-center rounded-0 border bg-white">
       <v-icon size="56" color="disabled" class="mb-3">mdi-folder-search-outline</v-icon>
-      <div class="text-h6 text-slate-800">No projects match your search</div>
-      <div class="text-caption text-disabled mb-4">Try clearing or adjusting your search keywords</div>
+      <div class="text-h6 text-slate-800">{{ t('projects.noProjects') }}</div>
+      <div class="text-caption text-disabled mb-4">{{ t('projects.noProjectsMatching') }}</div>
       <v-btn variant="outlined" color="primary" size="small" @click="searchQuery = ''">
-        Clear Filter
+        {{ t('common.clear') }}
       </v-btn>
     </v-card>
 
@@ -300,9 +292,9 @@
                 {{ activeProject.projectName }}
               </div>
               <div class="text-caption text-disabled">
-                Project ID: #{{ activeProject.id }}
+                {{ t('projects.projectId', { id: activeProject.id }) }}
                 <span class="mx-1">•</span>
-                Bill of Materials (BOM)
+                {{ t('projectDetail.bomTitle') }}
               </div>
             </div>
           </div>
@@ -318,7 +310,7 @@
               color="primary"
               prepend-icon="mdi-open-in-new"
             >
-              Project URL
+              {{ t('projects.externalLink') }}
             </v-btn>
 
             <!-- Produce Button -->
@@ -330,7 +322,7 @@
               prepend-icon="mdi-factory"
               @click="openProduceDialog(activeProject)"
             >
-              Produce
+              {{ t('projects.produce') }}
             </v-btn>
 
             <!-- Edit Project Button -->
@@ -339,10 +331,10 @@
               size="small"
               color="primary"
               prepend-icon="mdi-pencil-outline"
-              title="Edit project details"
+              :title="t('projects.editProject')"
               @click="openEditProjectDialog(activeProject)"
             >
-              Edit Project
+              {{ t('projects.editProject') }}
             </v-btn>
 
             <!-- Dedicated Page Button -->
@@ -352,9 +344,9 @@
               size="small"
               color="primary"
               prepend-icon="mdi-window-maximize"
-              title="Open dedicated page for this project"
+              :title="t('projects.openDedicatedPage')"
             >
-              Full Page
+              {{ t('common.details') }}
             </v-btn>
 
             <!-- Delete Project Button -->
@@ -363,10 +355,10 @@
               size="small"
               color="error"
               prepend-icon="mdi-delete-outline"
-              title="Delete project"
+              :title="t('projects.deleteProject')"
               @click="openDeleteProjectDialog(activeProject)"
             >
-              Delete
+              {{ t('common.delete') }}
             </v-btn>
 
             <!-- Close Button -->
@@ -384,10 +376,10 @@
           <v-row dense align="center">
             <v-col cols="12" md="8">
               <div class="text-caption text-slate-500 font-weight-medium text-uppercase mb-1">
-                Description
+                {{ t('common.description') }}
               </div>
               <p class="text-body-2 text-slate-700 mb-0 pre-line">
-                {{ activeProject.description || 'No description provided.' }}
+                {{ activeProject.description || t('projectDetail.noDescription') }}
               </p>
             </v-col>
 
@@ -397,10 +389,10 @@
                 color="primary"
                 variant="tonal"
                 class="font-mono font-weight-bold"
-                :title="`${modalBomCost.pricedCount} of ${bomItems.length} parts priced in database`"
+                :title="t('projectDetail.partsPricedTooltip', { priced: modalBomCost.pricedCount, total: bomItems.length })"
               >
                 <v-icon start size="14">mdi-currency-usd</v-icon>
-                Est. BOM Cost: {{ formatCurrency(modalBomCost.totalCost) }}
+                {{ t('projectDetail.estBomCost') }}: {{ formatCurrency(modalBomCost.totalCost) }}
                 <span class="ms-1 text-caption opacity-80" v-if="bomItems.length > 0">
                   ({{ modalBomCost.pricedCount }}/{{ bomItems.length }})
                 </span>
@@ -415,7 +407,7 @@
                 <v-icon start size="14">
                   {{ bomHealth.allSufficient ? 'mdi-check-circle' : 'mdi-alert-circle-outline' }}
                 </v-icon>
-                {{ bomHealth.inStockCount }} / {{ bomItems.length }} Parts Available
+                {{ bomHealth.inStockCount }} / {{ bomItems.length }} {{ t('projectDetail.partsInStock') }}
               </v-chip>
 
               <v-btn
@@ -427,31 +419,24 @@
                 :loading="addingAllShortages"
                 @click="addAllShortagesToCart"
               >
-                Buy Shortages ({{ shortageItems.length }})
+                {{ t('projectDetail.buyAllShortages', { count: shortageItems.length }) }}
               </v-btn>
             </v-col>
           </v-row>
         </div>
 
-        <!-- BOM Table Filter Toolbar -->
-        <div class="px-5 py-3 bg-white border-b d-flex flex-wrap align-center justify-space-between gap-3">
-          <v-text-field
-            v-model="bomSearch"
-            density="compact"
-            variant="outlined"
-            placeholder="Filter components in this BOM..."
-            prepend-inner-icon="mdi-magnify"
-            hide-details
-            clearable
-            rounded="lg"
-            style="width: 360px; max-width: 400px;"
-          />
-
-          <div class="d-flex align-center gap-2">
-            <span class="text-caption text-disabled me-2">
-              {{ filteredBomItems.length }} components listed
-            </span>
-
+        <!-- BOM Table Component -->
+        <ProjectBomTable
+          :items="bomItems"
+          :loading="loadingBom"
+          max-height="550px"
+          @add-to-cart="addToCart"
+          @edit-item="openEditBomDialog"
+          @delete-item="confirmDeleteBom"
+          @open-component-details="openComponentDetails"
+          @open-photo="openPhotoLightbox($event.type, $event.src, $event.title)"
+        >
+          <template #toolbar-actions>
             <v-btn
               color="primary"
               variant="flat"
@@ -460,207 +445,20 @@
               class="font-weight-bold"
               @click="openAddComponentDialog"
             >
-              Add Component
+              {{ t('projects.addComponent') }}
             </v-btn>
-          </div>
-        </div>
-
-        <!-- BOM Table Body -->
-        <v-card-text class="pa-0 overflow-y-auto" style="max-height: 550px;">
-          <v-table density="comfortable" hover class="bom-table">
-            <thead>
-              <tr class="bg-slate-50">
-                <th class="text-left font-weight-bold" style="width: 50px;">Photo</th>
-                <th class="text-left font-weight-bold">Component / Part</th>
-                <th class="text-left font-weight-bold">Category</th>
-                <th class="text-left font-weight-bold">Package</th>
-                <th class="text-center font-weight-bold">Required</th>
-                <th class="text-center font-weight-bold">In Stock</th>
-                <th class="text-right font-weight-bold">Unit Price</th>
-                <th class="text-right font-weight-bold">Total Cost</th>
-                <th class="text-left font-weight-bold">Designators / Comment</th>
-                <th class="text-left font-weight-bold" style="width: 130px;">Actions</th>
-              </tr>
-            </thead>
-
-            <tbody>
-              <tr
-                v-for="item in filteredBomItems"
-                :key="item.bomId"
-                :class="{ 'row-shortage': !item.isStockSufficient }"
-              >
-                <!-- Photo Thumbnail -->
-                <td>
-                  <v-avatar
-                    rounded="lg"
-                    size="36"
-                    class="border bg-slate-50"
-                    :class="{ 'cursor-pointer hover-zoom': !!item.componentPhotoURL }"
-                    :title="item.componentPhotoURL ? 'Click to view photo in full size' : ''"
-                    @click.stop="item.componentPhotoURL && openPhotoLightbox('component', item.componentPhotoURL, item.component)"
-                  >
-                    <MediaImage
-                      type="component"
-                      :src="item.componentPhotoURL"
-                      height="36px"
-                      width="36px"
-                    />
-                  </v-avatar>
-                </td>
-
-                <!-- Component Name & Marking -->
-                <td>
-                  <div class="font-mono font-weight-bold text-body-2 text-primary">
-                    {{ item.component }}
-                  </div>
-                  <div class="text-caption text-disabled" v-if="item.marking || item.shortDescription">
-                    <span v-if="item.marking" class="font-mono me-2">Mark: {{ item.marking }}</span>
-                    <span v-if="item.shortDescription">{{ item.shortDescription }}</span>
-                  </div>
-                </td>
-
-                <!-- Category -->
-                <td>
-                  <v-chip size="x-small" variant="tonal" color="info" v-if="item.category">
-                    {{ item.category }}
-                  </v-chip>
-                  <span v-else class="text-disabled text-caption">—</span>
-                </td>
-
-                <!-- Package / Footprint -->
-                <td>
-                  <PackageLink :item="item" />
-                </td>
-
-                <!-- Required Quantity -->
-                <td class="text-center font-weight-bold text-body-2 font-mono">
-                  {{ item.requiredQuantity }}
-                </td>
-
-                <!-- In Stock -->
-                <td class="text-center font-mono font-weight-bold text-body-2">
-                  <span :class="item.isStockSufficient ? 'text-slate-800' : 'text-error font-weight-bold'">
-                    {{ item.stockQuantity ?? 0 }}
-                  </span>
-                  <span v-if="!item.isStockSufficient" class="text-caption text-error font-weight-bold ms-1">
-                    (-{{ item.shortageQuantity }})
-                  </span>
-                </td>
-
-                <!-- Unit Price -->
-                <td class="text-right font-mono text-body-2">
-                  <span
-                    v-if="item.unitPrice != null"
-                    class="text-slate-800"
-                    :title="item.latestOrderDate ? `Purchased: ${formatDate(item.latestOrderDate)}` : ''"
-                  >
-                    {{ formatCurrency(item.unitPrice) }}
-                  </span>
-                  <span v-else class="text-disabled text-caption italic">—</span>
-                </td>
-
-                <!-- Total Item Cost -->
-                <td class="text-right font-mono text-body-2 font-weight-bold">
-                  <span v-if="item.totalItemCost != null" class="text-primary">
-                    {{ formatCurrency(item.totalItemCost) }}
-                  </span>
-                  <span v-else class="text-disabled text-caption italic">—</span>
-                </td>
-
-                <!-- Circuit Comment / Designators -->
-                <td>
-                  <span v-if="item.comment" class="text-body-2 font-mono text-slate-700">
-                    {{ item.comment }}
-                  </span>
-                  <span v-else class="text-disabled text-caption italic">No notes</span>
-                </td>
-
-                <!-- Actions -->
-                <td class="text-left">
-                  <div class="d-inline-flex align-center" style="gap: 2px;">
-                    <!-- Add to Cart (placeholder preserves column alignment when stock is sufficient) -->
-                    <v-btn
-                      icon="mdi-cart-plus"
-                      size="x-small"
-                      color="amber-darken-3"
-                      variant="text"
-                      title="Add shortage to shopping list"
-                      :style="{
-                        visibility: !item.isStockSufficient ? 'visible' : 'hidden',
-                        pointerEvents: !item.isStockSufficient ? 'auto' : 'none'
-                      }"
-                      :tabindex="!item.isStockSufficient ? 0 : -1"
-                      :aria-hidden="item.isStockSufficient"
-                      @click="!item.isStockSufficient && addToCart(item)"
-                    />
-
-                    <!-- Edit -->
-                    <v-btn
-                      icon="mdi-pencil-outline"
-                      size="x-small"
-                      variant="text"
-                      title="Edit quantity or comment"
-                      @click="openEditBomDialog(item)"
-                    />
-
-                    <!-- Delete -->
-                    <v-btn
-                      icon="mdi-delete-outline"
-                      size="x-small"
-                      color="error"
-                      variant="text"
-                      title="Remove from BOM"
-                      @click="confirmDeleteBom(item)"
-                    />
-                  </div>
-                </td>
-              </tr>
-
-              <tr v-if="filteredBomItems.length === 0 && !loadingBom">
-                <td colspan="10" class="text-center py-8 text-disabled">
-                  <v-icon size="40" class="mb-2">mdi-cube-off-outline</v-icon>
-                  <div>No components match your search.</div>
-                </td>
-              </tr>
-
-              <tr v-if="loadingBom">
-                <td colspan="10" class="text-center py-8">
-                  <v-progress-circular indeterminate color="primary" />
-                </td>
-              </tr>
-            </tbody>
-
-            <!-- Modal BOM Table Footer -->
-            <tfoot v-if="filteredBomItems.length > 0">
-              <tr class="bg-slate-50 font-weight-bold border-t">
-                <td colspan="4" class="py-3 px-4 text-subtitle-2 font-weight-bold text-slate-800">
-                  Total Estimated BOM Cost
-                  <span class="text-caption text-disabled ms-2 font-normal">
-                    ({{ modalBomCost.pricedCount }} of {{ bomItems.length }} parts priced)
-                  </span>
-                </td>
-                <td class="text-center font-mono font-weight-bold py-3 text-body-2">
-                  {{ bomItems.reduce((acc, i) => acc + (Number(i.requiredQuantity) || 0), 0) }}
-                </td>
-                <td colspan="2"></td>
-                <td class="text-right font-mono font-weight-bold text-subtitle-2 text-primary py-3">
-                  {{ formatCurrency(modalBomCost.totalCost) }}
-                </td>
-                <td colspan="2"></td>
-              </tr>
-            </tfoot>
-          </v-table>
-        </v-card-text>
+          </template>
+        </ProjectBomTable>
 
         <v-divider />
 
         <!-- Modal Footer -->
         <v-card-actions class="pa-4 bg-slate-50 d-flex align-center justify-space-between">
           <div class="text-caption text-disabled">
-            Total {{ bomItems.length }} components in this BOM
+            {{ t('projects.componentsListed', { count: bomItems.length }) }}
           </div>
           <v-btn variant="flat" color="slate-200" @click="showBomDialog = false">
-            Close
+            {{ t('common.close') }}
           </v-btn>
         </v-card-actions>
       </v-card>
@@ -678,7 +476,7 @@
     <v-dialog v-model="showEditDialog" max-width="500">
       <v-card class="rounded-0 border bg-white" v-if="editingBom">
         <v-card-title class="bg-slate-50 py-3 px-4 font-weight-bold text-subtitle-1 border-b">
-          Edit BOM Item
+          {{ t('projectDetail.editBomItem') }}
         </v-card-title>
         <v-card-text class="pa-4">
           <div class="font-mono font-weight-bold text-subtitle-2 mb-3 text-primary">
@@ -686,7 +484,7 @@
           </div>
           <v-text-field
             v-model.number="editingBom.requiredQuantity"
-            label="Required Quantity"
+            :label="t('dialogs.requiredQty')"
             type="number"
             min="1"
             variant="outlined"
@@ -695,7 +493,7 @@
           />
           <v-text-field
             v-model="editingBom.comment"
-            label="Designators / Notes"
+            :label="t('dialogs.designatorsNotes')"
             variant="outlined"
             density="comfortable"
           />
@@ -703,18 +501,24 @@
         <v-divider />
         <v-card-actions class="pa-3 bg-slate-50">
           <v-spacer />
-          <v-btn variant="text" @click="showEditDialog = false">Cancel</v-btn>
+          <v-btn variant="text" @click="showEditDialog = false">{{ t('common.cancel') }}</v-btn>
           <v-btn
             color="primary"
             variant="flat"
             :loading="submittingBom"
             @click="submitEditBom"
           >
-            Save
+            {{ t('common.save') }}
           </v-btn>
         </v-card-actions>
       </v-card>
     </v-dialog>
+
+    <!-- Component Details Dialog -->
+    <ComponentDetailsDialog
+      v-model="showDetailsDialog"
+      :component="selectedDetailComponent"
+    />
 
     <!-- DIALOG: Create / Edit Project -->
     <ProjectFormDialog
@@ -757,11 +561,15 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
+import { useI18n } from 'vue-i18n';
 import api from '../services/api';
+
+const { t } = useI18n();
 import MediaImage from '../components/MediaImage.vue';
 import MediaLightboxDialog from '../components/MediaLightboxDialog.vue';
 import AddComponentDialog from '../components/AddComponentDialog.vue';
-import PackageLink from '../components/PackageLink.vue';
+import ProjectBomTable from '../components/ProjectBomTable.vue';
+import ComponentDetailsDialog from '../components/ComponentDetailsDialog.vue';
 import ProjectFormDialog from '../components/ProjectFormDialog.vue';
 import ProduceProjectDialog from '../components/ProduceProjectDialog.vue';
 import DeleteProjectDialog from '../components/DeleteProjectDialog.vue';
@@ -791,7 +599,6 @@ const openPhotoLightbox = (type, src, title) => {
 };
 
 const searchQuery = ref('');
-const bomSearch = ref('');
 const loadingProjects = ref(false);
 const loadingBom = ref(false);
 const submittingBom = ref(false);
@@ -803,6 +610,8 @@ const showEditDialog = ref(false);
 const showProjectDialog = ref(false);
 const showProduceDialog = ref(false);
 const showDeleteDialog = ref(false);
+const showDetailsDialog = ref(false);
+const selectedDetailComponent = ref(null);
 const selectedProjectForDelete = ref(null);
 
 const editingBom = ref(null);
@@ -831,17 +640,6 @@ const filteredProjects = computed(() => {
 
 const totalBomEntries = computed(() => {
   return projects.value.reduce((acc, p) => acc + (p.bomItemCount || 0), 0);
-});
-
-const filteredBomItems = computed(() => {
-  if (!bomSearch.value.trim()) return bomItems.value;
-  const q = bomSearch.value.toLowerCase();
-  return bomItems.value.filter(item =>
-    item.component.toLowerCase().includes(q) ||
-    (item.comment && item.comment.toLowerCase().includes(q)) ||
-    (item.category && item.category.toLowerCase().includes(q)) ||
-    (item.marking && item.marking.toLowerCase().includes(q))
-  );
 });
 
 const bomHealth = computed(() => {
@@ -956,7 +754,6 @@ const loadProjects = async () => {
 const openBomModal = async (project) => {
   activeProject.value = project;
   showBomDialog.value = true;
-  bomSearch.value = '';
   loadingBom.value = true;
   try {
     bomItems.value = await api.getProjectBom(project.id);
@@ -965,6 +762,15 @@ const openBomModal = async (project) => {
   } finally {
     loadingBom.value = false;
   }
+};
+
+const openComponentDetails = (item) => {
+  selectedDetailComponent.value = {
+    ...item,
+    ID: item.componentId || item.ID,
+    id: item.componentId || item.id
+  };
+  showDetailsDialog.value = true;
 };
 
 const openAddComponentDialog = () => {

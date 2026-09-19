@@ -1,5 +1,18 @@
 # Release Notes - BOM Manager
 
+## Version 0.2.5 (September 2026) - Internationalization
+
+### Summary
+Version 0.2.5 introduces complete multi-language interface capabilities powered by JSON localization files, adding a comprehensive Ukrainian translation alongside English, synchronized with Vuetify 3 internal components and persistent across sessions.
+
+### What's New
+- **Multi-Language Interface with JSON Dictionaries**: Standardized localization dictionaries in structured JSON format (`client/src/locales/en.json` and `client/src/locales/uk.json`), providing a modular architecture that makes contributing new language translations simple and clean.
+- **Full Ukrainian Translation**: Authentic, high-quality Ukrainian localization tailored for electronics engineering, hardware Bill of Materials (BOM), component taxonomies, warehouse stock, procurement, and reports.
+- **Vuetify 3 Locale Synchronization**: Connected `vue-i18n` with Vuetify 3's locale adapter (`createVueI18nAdapter`) to ensure all native Vuetify components (data table pagination, search, dialogs, form validation messages) instantly match the active language.
+- **Interactive Language Switcher**: Fast 1-click language toggling in the top App Bar (🇬🇧 EN / 🇺🇦 UA) as well as a dedicated Regional & Language configuration panel in Settings (`/settings`), automatically persisted in `localStorage`.
+
+---
+
 ## Version 0.2.4 (September 2026) - Pre-Production
 
 ### Summary

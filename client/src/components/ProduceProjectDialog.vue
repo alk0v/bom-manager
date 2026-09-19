@@ -21,14 +21,14 @@
           <div>
             <div class="d-flex align-center gap-2">
               <span class="text-h6 font-weight-bold text-slate-900">
-                Produce Project: {{ project.projectName }}
+                {{ t('produceModal.title', { name: project.projectName }) }}
               </span>
               <v-chip color="primary" variant="flat" size="x-small" class="font-weight-bold">
-                Production Run
+                {{ t('produceModal.badgeRun') }}
               </v-chip>
             </div>
             <div class="text-caption text-slate-500">
-              Select production quantity to calculate and automatically deduct components from your warehouse stock.
+              {{ t('produceModal.subtitle') }}
             </div>
           </div>
         </div>
@@ -42,7 +42,7 @@
           <v-col cols="12" md="6">
             <div class="text-caption text-slate-700 font-weight-bold text-uppercase mb-2 d-flex align-center">
               <v-icon size="16" class="me-1 text-primary">mdi-factory</v-icon>
-              Units to Produce
+              {{ t('produceModal.unitsToProduce') }}
             </div>
             <div class="d-flex align-center flex-wrap gap-2">
               <div class="d-flex align-center border bg-white rounded-lg p-1" style="height: 40px;">
@@ -84,7 +84,7 @@
                   :color="produceCount === preset ? 'primary' : 'slate-600'"
                   @click="setCount(preset)"
                 >
-                  {{ preset }} pcs
+                  {{ preset }} {{ t('produceModal.pcs') }}
                 </v-chip>
 
                 <v-chip
@@ -93,10 +93,10 @@
                   variant="flat"
                   color="success"
                   class="font-weight-bold cursor-pointer"
-                  title="Set to maximum units buildable with current available stock"
+                  :title="t('dialogs.setMaxBuildable')"
                   @click="setCount(maxProducibleCount)"
                 >
-                  Max ({{ maxProducibleCount }})
+                  {{ t('produceModal.maxCount', { count: maxProducibleCount }) }}
                 </v-chip>
               </div>
             </div>
@@ -114,24 +114,24 @@
                 <v-icon start size="14">
                   {{ maxProducibleCount >= produceCount ? 'mdi-check-circle' : 'mdi-alert-circle-outline' }}
                 </v-icon>
-                Max Producible from Stock: {{ maxProducibleCount }} {{ maxProducibleCount === 1 ? 'unit' : 'units' }}
+                {{ t('produceModal.maxProducible', { count: maxProducibleCount }) }}
               </v-chip>
 
               <v-chip size="small" color="secondary" variant="tonal" class="font-weight-medium">
-                {{ bomItems.length }} unique BOM parts
+                {{ t('produceModal.uniqueParts', { count: bomItems.length }) }}
               </v-chip>
 
               <v-chip size="small" color="primary" variant="tonal" class="font-weight-bold font-mono">
                 <v-icon start size="14">mdi-currency-usd</v-icon>
-                Est. Batch Cost: {{ formatCurrency(totalBatchCost) }}
+                {{ t('produceModal.estBatchCost') }}: {{ formatCurrency(totalBatchCost) }}
               </v-chip>
 
               <v-chip size="small" color="slate-700" variant="tonal" class="font-weight-bold font-mono">
-                Total parts to consume: {{ totalComponentsToConsume }} pcs
+                {{ t('produceModal.totalToConsume', { count: totalComponentsToConsume }) }}
               </v-chip>
             </div>
             <div class="text-caption text-slate-500">
-              {{ shortageCount === 0 ? 'All required components are in stock.' : `${shortageCount} component(s) have stock shortages for this batch.` }}
+              {{ shortageCount === 0 ? t('produceModal.allInStock') : t('produceModal.shortageWarningSummary', { count: shortageCount }) }}
             </div>
           </v-col>
         </v-row>
@@ -143,10 +143,10 @@
           <v-icon color="error" class="me-2" size="20">mdi-alert-circle</v-icon>
           <div>
             <span class="text-subtitle-2 font-weight-bold text-error">
-              Stock Shortage Detected ({{ shortageCount }} of {{ bomItems.length }} parts)
+              {{ t('produceModal.shortageDetected', { count: shortageCount, total: bomItems.length }) }}
             </span>
             <div class="text-caption text-slate-700">
-              Total missing items across all shortage components: <strong class="text-error font-mono">{{ totalShortageUnits }} pcs</strong>
+              {{ t('produceModal.totalMissing') }}: <strong class="text-error font-mono">{{ totalShortageUnits }} {{ t('produceModal.pcs') }}</strong>
             </div>
           </div>
         </div>
@@ -161,7 +161,7 @@
             :loading="addingToCart"
             @click="addShortagesToShoppingList"
           >
-            Add Missing to Shopping List
+            {{ t('produceModal.addMissingToShoppingList') }}
           </v-btn>
         </div>
       </div>
@@ -170,7 +170,7 @@
       <div class="px-5 py-2 bg-white border-b d-flex align-center justify-space-between flex-shrink-0">
         <v-text-field
           v-model="searchQuery"
-          placeholder="Filter components in deduction table..."
+          :placeholder="t('produceModal.filterPlaceholder')"
           prepend-inner-icon="mdi-magnify"
           density="compact"
           variant="outlined"
@@ -184,7 +184,7 @@
           <v-checkbox
             v-if="shortageCount > 0"
             v-model="allowNegativeStock"
-            label="Allow production with insufficient stock (deduct anyway)"
+            :label="t('produceModal.allowNegativeStock')"
             density="compact"
             color="warning"
             hide-details
@@ -198,15 +198,15 @@
         <v-table density="comfortable" hover class="produce-table">
           <thead>
             <tr class="bg-slate-50">
-              <th class="text-left font-weight-bold" style="width: 50px;">Photo</th>
-              <th class="text-left font-weight-bold">Component / Part</th>
-              <th class="text-left font-weight-bold">Category</th>
-              <th class="text-left font-weight-bold">Package</th>
-              <th class="text-center font-weight-bold">Per Unit</th>
-              <th class="text-center font-weight-bold text-primary">Required for {{ produceCount }}x</th>
-              <th class="text-center font-weight-bold">Current Stock</th>
-              <th class="text-center font-weight-bold">Stock After Build</th>
-              <th class="text-center font-weight-bold" style="width: 140px;">Status</th>
+              <th class="text-left font-weight-bold" style="width: 50px;">{{ t('projectDetail.colPhoto') }}</th>
+              <th class="text-left font-weight-bold">{{ t('projectDetail.colComponent') }}</th>
+              <th class="text-left font-weight-bold">{{ t('projectDetail.colCategory') }}</th>
+              <th class="text-left font-weight-bold">{{ t('projectDetail.colPackage') }}</th>
+              <th class="text-center font-weight-bold">{{ t('produceModal.colPerUnit') }}</th>
+              <th class="text-center font-weight-bold text-primary">{{ t('produceModal.colRequiredForBatch', { count: produceCount }) }}</th>
+              <th class="text-center font-weight-bold">{{ t('produceModal.colCurrentStock') }}</th>
+              <th class="text-center font-weight-bold">{{ t('produceModal.colStockAfter') }}</th>
+              <th class="text-center font-weight-bold" style="width: 140px;">{{ t('common.status') }}</th>
             </tr>
           </thead>
 
@@ -239,13 +239,13 @@
                 <div
                   class="font-mono font-weight-bold text-body-2 text-primary comp-name-link d-inline-flex align-center gap-1"
                   @click="openComponentDetails(item)"
-                  title="Click to view full component details"
+                  :title="t('dialogs.clickDetails')"
                 >
                   <span class="hover-underline">{{ item.component }}</span>
                   <v-icon size="13" class="opacity-60 info-icon">mdi-information-outline</v-icon>
                 </div>
                 <div class="text-caption text-disabled" v-if="item.marking || item.shortDescription">
-                  <span v-if="item.marking" class="font-mono me-2">Mark: {{ item.marking }}</span>
+                  <span v-if="item.marking" class="font-mono me-2">{{ t('projectDetail.colMarking') }}: {{ item.marking }}</span>
                   <span v-if="item.shortDescription">{{ item.shortDescription }}</span>
                 </div>
               </td>
@@ -295,7 +295,7 @@
                   class="font-weight-bold"
                 >
                   <v-icon start size="12">mdi-check</v-icon>
-                  Available
+                  {{ t('produceModal.statusAvailable') }}
                 </v-chip>
                 <v-chip
                   v-else
@@ -305,7 +305,7 @@
                   class="font-weight-bold"
                 >
                   <v-icon start size="12">mdi-alert-circle-outline</v-icon>
-                  Missing {{ item.shortage }}
+                  {{ t('produceModal.statusMissing', { count: item.shortage }) }}
                 </v-chip>
               </td>
             </tr>
@@ -313,7 +313,7 @@
             <tr v-if="filteredDeductions.length === 0 && !loading">
               <td colspan="9" class="text-center py-8 text-disabled">
                 <v-icon size="36" class="mb-2">mdi-filter-variant-remove</v-icon>
-                <div>No components match your search filter.</div>
+                <div>{{ t('projectDetail.noComponentsMatchFilter') }}</div>
               </td>
             </tr>
 
@@ -331,9 +331,9 @@
       <!-- Dialog Footer Actions -->
       <v-card-actions class="pa-4 bg-slate-50 d-flex align-center justify-space-between flex-shrink-0">
         <div class="text-body-2 text-slate-700">
-          Ready to produce <strong>{{ produceCount }}</strong> {{ produceCount === 1 ? 'unit' : 'units' }} of <strong>{{ project.projectName }}</strong>
+          <span v-html="t('produceModal.readyToProduce', { count: produceCount, name: project.projectName })" />
           <span v-if="unitBomCost > 0" class="ms-1 font-mono">
-            (Est. BOM Cost: <strong class="text-primary">{{ formatCurrency(totalBatchCost) }}</strong>)
+            ({{ t('produceModal.estBatchCost') }}: <strong class="text-primary">{{ formatCurrency(totalBatchCost) }}</strong>)
           </span>.
         </div>
 
@@ -344,7 +344,7 @@
             @click="close"
             :disabled="producing"
           >
-            Cancel
+            {{ t('common.cancel') }}
           </v-btn>
 
           <v-btn
@@ -356,7 +356,7 @@
             :disabled="shortageCount > 0 && !allowNegativeStock"
             @click="confirmProduce"
           >
-            Produce {{ produceCount }} {{ produceCount === 1 ? 'Unit' : 'Units' }}
+            {{ t('produceModal.produceUnitsBtn', { count: produceCount }) }}
           </v-btn>
         </div>
       </v-card-actions>
@@ -372,6 +372,7 @@
 
 <script setup>
 import { ref, computed, watch } from 'vue';
+import { useI18n } from 'vue-i18n';
 import api from '../services/api';
 import MediaImage from './MediaImage.vue';
 import PackageLink from './PackageLink.vue';
@@ -390,6 +391,8 @@ const props = defineProps({
 });
 
 const emit = defineEmits(['update:modelValue', 'produced', 'notify']);
+
+const { t } = useI18n();
 
 // State
 const produceCount = ref(1);
@@ -415,7 +418,7 @@ const loadBom = async () => {
     bomItems.value = data || [];
   } catch (err) {
     console.error('Error loading BOM for production:', err);
-    emit('notify', 'Failed to load project BOM: ' + err.message, 'error');
+    emit('notify', `${t('produceModal.loadBomError')}: ${err.message}`, 'error');
   } finally {
     loading.value = false;
   }
@@ -529,9 +532,9 @@ const addShortagesToShoppingList = async () => {
         qty: item.shortage
       });
     }
-    emit('notify', `Added ${shortageItems.value.length} shortage items to shopping list!`, 'success');
+    emit('notify', t('produceModal.addedShortagesSuccess', { count: shortageItems.value.length }), 'success');
   } catch (err) {
-    emit('notify', 'Failed to add shortages to shopping list: ' + err.message, 'error');
+    emit('notify', `${t('produceModal.addedShortagesError')}: ${err.message}`, 'error');
   } finally {
     addingToCart.value = false;
   }
@@ -547,13 +550,13 @@ const confirmProduce = async () => {
       allowNegativeStock: allowNegativeStock.value
     });
 
-    emit('notify', `Successfully produced ${res.producedCount} ${res.producedCount === 1 ? 'unit' : 'units'} of "${props.project.projectName}"! Component stocks updated.`, 'success');
+    emit('notify', t('produceModal.produceSuccess', { count: res.producedCount, name: props.project.projectName }), 'success');
     emit('produced', res);
     close();
   } catch (err) {
     console.error('Error producing project:', err);
     const errorMsg = err.response?.data?.error || err.message || 'Production failed';
-    emit('notify', 'Production failed: ' + errorMsg, 'error');
+    emit('notify', `${t('produceModal.produceFailed')}: ${errorMsg}`, 'error');
   } finally {
     producing.value = false;
   }

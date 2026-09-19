@@ -1,52 +1,7 @@
 <template>
   <div class="shopping-list-view">
-    <!-- Top Header Card -->
+    <!-- Main Shopping List Card -->
     <v-card elevation="1" class="rounded-0 border bg-white mb-4">
-      <v-card-item class="bg-slate-50 py-3 px-5 border-b">
-        <div class="d-flex flex-wrap align-center justify-space-between gap-3">
-          <div class="d-flex align-center">
-            <v-icon color="primary" size="24" class="me-2">mdi-cart-outline</v-icon>
-            <div>
-              <div class="d-flex align-center gap-2">
-                <span class="text-h6 font-weight-bold text-slate-900">
-                  Procurement Shopping List
-                </span>
-                <v-chip size="x-small" color="primary" variant="flat" class="font-weight-bold font-mono">
-                  {{ items.length }} items
-                </v-chip>
-              </div>
-              <div class="text-caption text-slate-500">
-                Manage planned part purchases, replenish shortages, and log purchase orders into database
-              </div>
-            </div>
-          </div>
-
-          <div class="d-flex align-center gap-2">
-            <v-btn
-              prepend-icon="mdi-content-copy"
-              size="small"
-              variant="outlined"
-              color="slate-700"
-              class="font-weight-medium"
-              :disabled="items.length === 0"
-              @click="copyShoppingList"
-            >
-              Copy List
-            </v-btn>
-
-            <v-btn
-              icon="mdi-refresh"
-              size="small"
-              variant="text"
-              color="slate-600"
-              :loading="loading"
-              title="Refresh shopping list"
-              @click="loadShoppingList"
-            />
-          </div>
-        </div>
-      </v-card-item>
-
       <!-- KPI Summary Cards -->
       <div class="px-5 py-3 bg-white border-b">
         <v-row dense>
@@ -54,7 +9,9 @@
             <v-card variant="outlined" class="pa-3 bg-slate-50 rounded-lg">
               <div class="d-flex align-center justify-space-between">
                 <div>
-                  <div class="text-caption text-disabled text-uppercase font-weight-bold">Distinct Parts</div>
+                  <div class="text-caption text-disabled text-uppercase font-weight-bold">
+                    {{ t('shoppingList.distinctParts') }}
+                  </div>
                   <div class="text-h5 font-weight-bold text-slate-900 font-mono mt-1">
                     {{ items.length }}
                   </div>
@@ -70,9 +27,11 @@
             <v-card variant="outlined" class="pa-3 bg-slate-50 rounded-lg">
               <div class="d-flex align-center justify-space-between">
                 <div>
-                  <div class="text-caption text-disabled text-uppercase font-weight-bold">Total Units to Buy</div>
+                  <div class="text-caption text-disabled text-uppercase font-weight-bold">
+                    {{ t('shoppingList.totalUnitsToBuy') }}
+                  </div>
                   <div class="text-h5 font-weight-bold text-slate-900 font-mono mt-1">
-                    {{ totalUnitsNeeded }} pcs
+                    {{ totalUnitsNeeded }} {{ t('shoppingList.pcs') }}
                   </div>
                 </div>
                 <v-avatar color="secondary" variant="tonal" rounded="lg" size="40">
@@ -86,7 +45,9 @@
             <v-card variant="outlined" class="pa-3 bg-slate-50 rounded-lg">
               <div class="d-flex align-center justify-space-between">
                 <div>
-                  <div class="text-caption text-disabled text-uppercase font-weight-bold">Est. Procurement Cost</div>
+                  <div class="text-caption text-disabled text-uppercase font-weight-bold">
+                    {{ t('shoppingList.estProcurementCost') }}
+                  </div>
                   <div class="text-h5 font-weight-bold text-primary font-mono mt-1">
                     {{ formatCurrency(estimatedTotalCost) }}
                   </div>
@@ -100,11 +61,11 @@
         </v-row>
       </div>
 
-      <!-- Filter / Search Toolbar -->
+      <!-- Filter / Search & Actions Toolbar -->
       <div class="px-5 py-3 bg-white d-flex align-center justify-space-between flex-wrap gap-3">
         <v-text-field
           v-model="searchQuery"
-          placeholder="Filter shopping list by name, package, marking, or store..."
+          :placeholder="t('shoppingList.searchPlaceholder')"
           prepend-inner-icon="mdi-magnify"
           density="compact"
           variant="outlined"
@@ -114,8 +75,32 @@
           style="max-width: 420px; width: 100%;"
         />
 
-        <div class="text-caption text-disabled font-mono">
-          Showing {{ filteredItems.length }} of {{ items.length }} items
+        <div class="d-flex align-center gap-2">
+          <div class="text-caption text-disabled font-mono me-2">
+            {{ t('common.showingOf', { count: filteredItems.length, total: items.length, item: t('common.items') }) }}
+          </div>
+
+          <v-btn
+            prepend-icon="mdi-content-copy"
+            size="small"
+            variant="outlined"
+            color="slate-700"
+            class="font-weight-medium"
+            :disabled="items.length === 0"
+            @click="copyShoppingList"
+          >
+            {{ t('shoppingList.copyList') }}
+          </v-btn>
+
+          <v-btn
+            icon="mdi-refresh"
+            size="small"
+            variant="text"
+            color="slate-600"
+            :loading="loading"
+            :title="t('shoppingList.refreshTooltip')"
+            @click="loadShoppingList"
+          />
         </div>
       </div>
 
@@ -126,15 +111,15 @@
         <thead>
           <tr class="bg-slate-50">
             <th class="text-left font-weight-bold" style="width: 50px;">Photo</th>
-            <th class="text-left font-weight-bold">Component / Part</th>
-            <th class="text-left font-weight-bold">Category</th>
-            <th class="text-left font-weight-bold">Package</th>
-            <th class="text-center font-weight-bold">Current Stock</th>
-            <th class="text-center font-weight-bold" style="width: 140px;">Quantity to Buy</th>
-            <th class="text-right font-weight-bold">Est. Unit Price</th>
-            <th class="text-right font-weight-bold">Est. Total</th>
-            <th class="text-center font-weight-bold">Date Added</th>
-            <th class="text-left font-weight-bold" style="width: 100px;">Actions</th>
+            <th class="text-left font-weight-bold">{{ t('shoppingList.colComponent') }}</th>
+            <th class="text-left font-weight-bold">{{ t('common.category') }}</th>
+            <th class="text-left font-weight-bold">{{ t('common.package') }}</th>
+            <th class="text-center font-weight-bold">{{ t('shoppingList.colCurrentStock') }}</th>
+            <th class="text-center font-weight-bold" style="width: 140px;">{{ t('shoppingList.colNeeded') }}</th>
+            <th class="text-right font-weight-bold">{{ t('dialogs.unitPrice') }}</th>
+            <th class="text-right font-weight-bold">{{ t('common.total') }}</th>
+            <th class="text-center font-weight-bold">{{ t('shoppingList.colDateAdded') }}</th>
+            <th class="text-left font-weight-bold" style="width: 100px;">{{ t('shoppingList.colActions') }}</th>
           </tr>
         </thead>
 
@@ -147,7 +132,7 @@
                 size="36"
                 class="border bg-slate-50"
                 :class="{ 'cursor-pointer hover-zoom': !!item.photoURL }"
-                :title="item.photoURL ? 'Click to view photo in full size' : ''"
+                :title="item.photoURL ? t('dialogs.viewFullSize') : ''"
                 @click="item.photoURL ? openImageLightbox(item) : openComponentDetails(item)"
               >
                 <MediaImage
@@ -164,7 +149,7 @@
               <div
                 class="font-mono font-weight-bold text-body-2 text-primary comp-name-link d-inline-flex align-center gap-1 cursor-pointer"
                 @click="openComponentDetails(item)"
-                title="Click to view component details & purchase history"
+                :title="t('shoppingList.viewDetailsAndHistory')"
               >
                 <span class="hover-underline">{{ item.component }}</span>
                 <v-icon size="13" class="opacity-60 info-icon">mdi-information-outline</v-icon>
@@ -210,7 +195,7 @@
                   variant="text"
                   density="compact"
                   :disabled="item.qty <= 1"
-                  title="Decrease quantity"
+                  :title="t('shoppingList.decreaseQty')"
                   @click="updateQuantity(item, item.qty - 1)"
                 />
                 <input
@@ -226,7 +211,7 @@
                   size="x-small"
                   variant="text"
                   density="compact"
-                  title="Increase quantity"
+                  :title="t('shoppingList.increaseQty')"
                   @click="updateQuantity(item, item.qty + 1)"
                 />
               </div>
@@ -265,7 +250,7 @@
                 size="small"
                 color="primary"
                 variant="text"
-                title="Buy Component"
+                :title="t('shoppingList.buyComponent')"
                 @click="openPurchaseDialog(item)"
               />
 
@@ -275,7 +260,7 @@
                 size="small"
                 color="error"
                 variant="text"
-                title="Remove from shopping list"
+                :title="t('shoppingList.removeFromList')"
                 @click="removeItem(item)"
               />
             </td>
@@ -286,10 +271,10 @@
             <td colspan="10" class="text-center py-10 text-disabled">
               <v-icon size="48" class="mb-2">mdi-cart-check</v-icon>
               <div class="text-subtitle-1 text-slate-800 font-weight-medium">
-                {{ searchQuery ? 'No shopping list items match your filter' : 'Your procurement shopping list is empty' }}
+                {{ searchQuery ? t('shoppingList.noMatch') : t('shoppingList.emptyTitle') }}
               </div>
               <div class="text-caption mt-1">
-                {{ searchQuery ? 'Try adjusting your search terms' : 'Add shortage parts from project BOMs or from the component catalog.' }}
+                {{ searchQuery ? t('shoppingList.adjustSearch') : t('shoppingList.emptySubtitle') }}
               </div>
             </td>
           </tr>
@@ -306,13 +291,13 @@
         <tfoot v-if="filteredItems.length > 0">
           <tr class="bg-slate-50 font-weight-bold border-t">
             <td colspan="5" class="py-3 px-4 text-subtitle-2 font-weight-bold text-slate-800">
-              Total Shopping List Requirements
+              {{ t('shoppingList.totalRequirements') }}
               <span class="text-caption text-disabled ms-2 font-normal">
-                ({{ filteredItems.length }} components listed)
+                ({{ t('shoppingList.componentsListed', { count: filteredItems.length }) }})
               </span>
             </td>
             <td class="text-center font-mono font-weight-bold py-3 text-body-2">
-              {{ totalFilteredUnits }} pcs
+              {{ totalFilteredUnits }} {{ t('shoppingList.pcs') }}
             </td>
             <td></td>
             <td class="text-right font-mono font-weight-bold text-subtitle-2 text-primary py-3">
@@ -358,7 +343,10 @@
 
 <script setup>
 import { ref, computed, onMounted } from 'vue';
+import { useI18n } from 'vue-i18n';
 import api from '../services/api';
+
+const { t } = useI18n();
 import MediaImage from '../components/MediaImage.vue';
 import MediaLightboxDialog from '../components/MediaLightboxDialog.vue';
 import PackageLink from '../components/PackageLink.vue';
@@ -526,7 +514,7 @@ const copyShoppingList = () => {
     .map(i => `${i.component} (${i.package || 'N/A'}) - Qty: ${i.qty}`)
     .join('\n');
   navigator.clipboard.writeText(text);
-  notify('Shopping list copied to clipboard!');
+  notify(t('shoppingList.listCopied'));
 };
 
 onMounted(() => {

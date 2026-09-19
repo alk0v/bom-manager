@@ -229,6 +229,278 @@ router.get('/check-existing', async (req, res) => {
   }
 });
 
+// GET /api/components/template-csv - download CSV import template
+router.get('/template-csv', (req, res) => {
+  const csvHeader = 'component,category,package,marking,shortDescription,description,qty,minQty,storage,isSmd,pins\r\n';
+  const csvRows = [
+    'STM32F401CDU6,Microcontrollers,UFQFPN-48,32F401CD,"ARM Cortex-M4 MCU 84MHz, 384KB Flash",General purpose 32-bit MCU,15,5,Box A1,1,48',
+    'NE555P,Analog ICs,DIP-08,NE555,Precision Timer Single,Standard 555 precision timer oscillator,50,10,Drawer 2,0,8',
+    'GRM188R71H104KA93D,Capacitors,0603,,"0.1uF 50V X7R 10% Ceramic Capacitor",MLCC ceramic capacitor,500,100,Reel 12,1,2',
+    'AMS1117-3.3,Voltage Regulators,SOT-223,AMS1117-3.3,3.3V 1A LDO Linear Voltage Regulator,Low dropout linear voltage regulator,25,10,Box B3,1,4'
+  ].join('\r\n');
+
+  const csvContent = '\uFEFF' + csvHeader + csvRows;
+  res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+  res.setHeader('Content-Disposition', 'attachment; filename="components_template.csv"');
+  res.send(csvContent);
+});
+
+// POST /api/components/import-csv - import components with category/package mapping and duplicate handling
+router.post('/import-csv', async (req, res) => {
+  const {
+    components = [],
+    categoryMappings = [],
+    packageMappings = [],
+    duplicateHandling = 'skip'
+  } = req.body;
+
+  if (!Array.isArray(components) || components.length === 0) {
+    return res.status(400).json({ error: 'No components provided for import' });
+  }
+
+  const conn = await pool.getConnection();
+  try {
+    await conn.beginTransaction();
+
+    let createdCategoriesCount = 0;
+    let createdPackagesCount = 0;
+    let importedCount = 0;
+    let updatedCount = 0;
+    let skippedCount = 0;
+    const errors = [];
+
+    // 1. Resolve Category Mappings
+    const categoryLookup = new Map();
+    const [allCategories] = await conn.query('SELECT ID, category FROM i_categories');
+    const existingCatByName = new Map();
+    for (const c of allCategories) {
+      if (c.category) existingCatByName.set(c.category.trim().toLowerCase(), c.ID);
+    }
+
+    const catMapList = Array.isArray(categoryMappings)
+      ? categoryMappings
+      : Object.entries(categoryMappings).map(([k, v]) => ({ csvCategory: k, ...v }));
+
+    for (const m of catMapList) {
+      const origKey = (m.csvCategory || '').trim().toLowerCase();
+      if (!origKey) continue;
+
+      if (m.action === 'skip') {
+        categoryLookup.set(origKey, null);
+      } else if (m.action === 'existing' && m.categoryId) {
+        categoryLookup.set(origKey, parseInt(m.categoryId, 10));
+      } else if (m.action === 'create') {
+        const catName = (m.newCategoryName || m.csvCategory || '').trim();
+        if (catName) {
+          const lowerName = catName.toLowerCase();
+          if (existingCatByName.has(lowerName)) {
+            categoryLookup.set(origKey, existingCatByName.get(lowerName));
+          } else {
+            const [catRes] = await conn.query('INSERT INTO i_categories (category) VALUES (?)', [catName]);
+            const newCatId = catRes.insertId;
+            existingCatByName.set(lowerName, newCatId);
+            categoryLookup.set(origKey, newCatId);
+            createdCategoriesCount++;
+          }
+        }
+      }
+    }
+
+    // 2. Resolve Package Mappings
+    const packageLookup = new Map();
+    const [allPackages] = await conn.query('SELECT ID, package, pinQuantity, isSmd FROM i_packages');
+    const existingPkgByName = new Map();
+    for (const p of allPackages) {
+      if (p.package) existingPkgByName.set(p.package.trim().toLowerCase(), p.ID);
+    }
+
+    const pkgMapList = Array.isArray(packageMappings)
+      ? packageMappings
+      : Object.entries(packageMappings).map(([k, v]) => ({ csvPackage: k, ...v }));
+
+    for (const m of pkgMapList) {
+      const origKey = (m.csvPackage || '').trim().toLowerCase();
+      if (!origKey) continue;
+
+      if (m.action === 'skip') {
+        packageLookup.set(origKey, 28);
+      } else if (m.action === 'existing' && m.packageId) {
+        packageLookup.set(origKey, parseInt(m.packageId, 10));
+      } else if (m.action === 'create') {
+        const pkgName = (m.newPackageName || m.csvPackage || '').trim();
+        if (pkgName) {
+          const lowerPkg = pkgName.toLowerCase();
+          if (existingPkgByName.has(lowerPkg)) {
+            packageLookup.set(origKey, existingPkgByName.get(lowerPkg));
+          } else {
+            const pinQty = m.pinQuantity !== undefined && m.pinQuantity !== null && m.pinQuantity !== ''
+              ? parseInt(m.pinQuantity, 10) : (m.pins ? parseInt(m.pins, 10) : 0);
+            const smdVal = (m.isSmd === true || m.isSmd === 1 || m.isSmd === '1' || String(m.isSmd).toLowerCase() === 'true' || String(m.isSmd).toLowerCase() === 'smd') ? 1 : 0;
+            const [pkgRes] = await conn.query(
+              'INSERT INTO i_packages (package, pinQuantity, isSmd, drawingURL) VALUES (?, ?, ?, ?)',
+              [pkgName, isNaN(pinQty) ? 0 : pinQty, smdVal, null]
+            );
+            const newPkgId = pkgRes.insertId;
+            existingPkgByName.set(lowerPkg, newPkgId);
+            packageLookup.set(origKey, newPkgId);
+            createdPackagesCount++;
+          }
+        }
+      }
+    }
+
+    // 3. Cache Storages
+    const [allStorages] = await conn.query('SELECT ID, storage FROM i_storages');
+    const storageLookup = new Map();
+    for (const s of allStorages) {
+      if (s.storage) storageLookup.set(s.storage.trim().toLowerCase(), s.ID);
+    }
+
+    // 4. Process each component
+    for (let i = 0; i < components.length; i++) {
+      const row = components[i];
+      const compName = (row.component || '').trim();
+      if (!compName) {
+        errors.push({ row: i + 1, error: 'Empty component name' });
+        continue;
+      }
+
+      // Resolve category ID
+      let categoryId = null;
+      if (row.categoryId) {
+        categoryId = parseInt(row.categoryId, 10);
+      } else if (row.category || row.categoryName) {
+        const rawCat = (row.category || row.categoryName).trim().toLowerCase();
+        if (categoryLookup.has(rawCat)) {
+          categoryId = categoryLookup.get(rawCat);
+        } else if (existingCatByName.has(rawCat)) {
+          categoryId = existingCatByName.get(rawCat);
+        }
+      }
+
+      // Resolve package ID
+      let packageId = 28;
+      if (row.packageId) {
+        packageId = parseInt(row.packageId, 10);
+      } else if (row.package || row.packageName) {
+        const rawPkg = (row.package || row.packageName).trim().toLowerCase();
+        if (packageLookup.has(rawPkg)) {
+          packageId = packageLookup.get(rawPkg);
+        } else if (existingPkgByName.has(rawPkg)) {
+          packageId = existingPkgByName.get(rawPkg);
+        }
+      }
+
+      // Resolve storage ID
+      let storageId = null;
+      const rawStorage = (row.storage || row.storageName || '').trim();
+      if (rawStorage) {
+        const lowerStorage = rawStorage.toLowerCase();
+        if (storageLookup.has(lowerStorage)) {
+          storageId = storageLookup.get(lowerStorage);
+        } else {
+          const [storeRes] = await conn.query('INSERT INTO i_storages (storage) VALUES (?)', [rawStorage]);
+          storageId = storeRes.insertId;
+          storageLookup.set(lowerStorage, storageId);
+        }
+      } else if (row.storageId) {
+        storageId = parseInt(row.storageId, 10) || null;
+      }
+
+      const qty = parseInt(row.qty, 10) || 0;
+      const minQty = parseInt(row.minQty, 10) || 0;
+      const description = (row.description || '').trim();
+      const shortDescription = (row.shortDescription || '').trim();
+      const marking = (row.marking || '').trim();
+      const datasheetURL = (row.datasheetURL || '').trim() || null;
+
+      // Duplicate check by component name (case-insensitive)
+      const [existing] = await conn.query(
+        'SELECT ID, component, qty FROM i_components WHERE LOWER(TRIM(component)) = LOWER(TRIM(?))',
+        [compName]
+      );
+
+      if (existing.length > 0) {
+        const existingComp = existing[0];
+        if (duplicateHandling === 'skip') {
+          skippedCount++;
+          continue;
+        } else if (duplicateHandling === 'updateStock') {
+          if (qty > 0) {
+            await conn.query('UPDATE i_components SET qty = qty + ? WHERE ID = ?', [qty, existingComp.ID]);
+            if (storageId) {
+              const [wRows] = await conn.query(
+                'SELECT id, quantity FROM t_warehouse WHERE componentId = ? AND storageId = ?',
+                [existingComp.ID, storageId]
+              );
+              if (wRows.length > 0) {
+                await conn.query('UPDATE t_warehouse SET quantity = quantity + ? WHERE id = ?', [qty, wRows[0].id]);
+              } else {
+                await conn.query('INSERT INTO t_warehouse (componentId, storageId, quantity) VALUES (?, ?, ?)', [
+                  existingComp.ID,
+                  storageId,
+                  qty
+                ]);
+              }
+            }
+          }
+          updatedCount++;
+          continue;
+        }
+        // If 'createAnyway', fall through to insert
+      }
+
+      // Insert new component
+      const [insertRes] = await conn.query(
+        `INSERT INTO i_components 
+         (component, category_id, package_id, description, shortDescription, marking, datasheetURL, photoURL, qty, minQty)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [
+          compName,
+          categoryId,
+          packageId,
+          description,
+          shortDescription,
+          marking,
+          datasheetURL,
+          null,
+          qty,
+          minQty
+        ]
+      );
+
+      const newCompId = insertRes.insertId;
+
+      if (qty > 0 && storageId) {
+        await conn.query(
+          'INSERT INTO t_warehouse (componentId, storageId, quantity) VALUES (?, ?, ?)',
+          [newCompId, storageId, qty]
+        );
+      }
+
+      importedCount++;
+    }
+
+    await conn.commit();
+
+    res.json({
+      success: true,
+      importedCount,
+      updatedCount,
+      skippedCount,
+      createdCategoriesCount,
+      createdPackagesCount,
+      errors
+    });
+  } catch (error) {
+    await conn.rollback();
+    console.error('Error importing components:', error);
+    res.status(500).json({ error: 'Failed to import components', details: error.message });
+  } finally {
+    conn.release();
+  }
+});
+
 // GET /api/components/:id - single component details + warehouse stock breakdown
 router.get('/:id', async (req, res) => {
   try {

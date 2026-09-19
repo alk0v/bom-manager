@@ -165,6 +165,17 @@ Locations and stock quantity per storage bin/box.
   - Typography: High contrast slate text (`text-slate-900`, `text-slate-700`, `text-slate-500`).
   - Primary accents: Tech blue buttons and active states (`color="primary"`).
 
+### STRICT DIRECTIVE: Internationalization (i18n) by Default
+- **100% i18n Compatibility for All New Implementations**:
+  - Every user-facing string in all new or modified views, dialogs, modals, cards, tables, form inputs, tooltips, validation messages, and notification snackbars MUST use `vue-i18n` (`t(...)` / `$t(...)`).
+  - Never hardcode raw user-facing English or Ukrainian text strings in templates or script messages.
+- **Strict Key Parity across Locales**:
+  - Every key added to `client/src/locales/en.json` MUST be simultaneously added to `client/src/locales/uk.json` with a precise, high-quality translation (and vice-versa).
+  - Always verify that the total key count and key hierarchy between `en.json` and `uk.json` match 1:1 with zero discrepancies.
+- **Logical Grouping & Interpolation**:
+  - Organize keys into clean component or dialog namespaces (e.g. `importComponentsModal`, `componentDetailsModal`, `produceModal`) or common shared namespaces (`common`, `dialogs`).
+  - Use interpolation placeholders (e.g. `{name}`, `{count}`) rather than manual string concatenation so word order and grammatical inflection remain natural in all target languages.
+
 ### Core UI Layout
 - Persistent `v-navigation-drawer` with brand logo and navigation items:
   1. **Projects** (`/projects`)

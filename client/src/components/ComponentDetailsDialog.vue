@@ -20,10 +20,10 @@
             variant="tonal"
             class="font-mono font-weight-bold ms-1"
           >
-            Mark: {{ displayComponent.marking }}
+            {{ t('componentDetailsModal.mark', { marking: displayComponent.marking }) }}
           </v-chip>
         </div>
-        <v-btn icon="mdi-close" variant="text" size="small" @click="close" />
+        <v-btn icon="mdi-close" variant="text" size="small" @click="close" :title="t('common.close')" />
       </v-card-title>
 
       <!-- Tabs to organize details without overloading the screen -->
@@ -35,11 +35,11 @@
       >
         <v-tab value="overview" class="text-capitalize font-weight-medium">
           <v-icon start size="18">mdi-information-outline</v-icon>
-          Overview & Specs
+          {{ t('componentDetailsModal.tabOverview') }}
         </v-tab>
         <v-tab value="projects" class="text-capitalize font-weight-medium">
           <v-icon start size="18">mdi-folder-outline</v-icon>
-          Used in Projects
+          {{ t('componentDetailsModal.tabProjects') }}
           <v-badge
             v-if="projectList.length > 0"
             :content="projectList.length"
@@ -50,7 +50,7 @@
         </v-tab>
         <v-tab value="orders" class="text-capitalize font-weight-medium">
           <v-icon start size="18">mdi-cash-multiple</v-icon>
-          Purchases & Pricing
+          {{ t('componentDetailsModal.tabOrders') }}
           <v-badge
             v-if="displayComponent.pricing?.orderCount > 0"
             :content="displayComponent.pricing.orderCount"
@@ -81,7 +81,7 @@
                 <div
                   class="position-relative border rounded-lg bg-slate-50 w-100 d-flex align-center justify-center overflow-hidden photo-zoom-wrapper"
                   :class="{ 'cursor-pointer': !!displayComponent.photoURL }"
-                  :title="displayComponent.photoURL ? 'Click to view photo in full size' : ''"
+                  :title="displayComponent.photoURL ? t('dialogs.viewFullSize') : ''"
                   style="height: 180px; max-height: 200px;"
                   @click="displayComponent.photoURL && (showPhotoLightbox = true)"
                 >
@@ -104,7 +104,7 @@
               <!-- Component Metadata -->
               <v-col cols="12" sm="7">
                 <!-- Category -->
-                <div class="text-caption text-disabled text-uppercase font-weight-bold">Category</div>
+                <div class="text-caption text-disabled text-uppercase font-weight-bold">{{ t('common.category') }}</div>
                 <div class="text-body-2 font-weight-medium mb-2">
                   <v-chip size="small" variant="tonal" color="info" v-if="displayComponent.category">
                     {{ displayComponent.category }}
@@ -113,11 +113,11 @@
                 </div>
 
                 <!-- Package / Footprint -->
-                <div class="text-caption text-disabled text-uppercase font-weight-bold">Package / Footprint</div>
+                <div class="text-caption text-disabled text-uppercase font-weight-bold">{{ t('dialogs.package') }}</div>
                 <div class="text-body-2 font-mono mb-2 d-flex align-center gap-1 flex-wrap">
                   <PackageLink :item="displayComponent" />
                   <v-chip size="x-small" class="ms-1" v-if="displayComponent.package">
-                    {{ displayComponent.isSmd ? 'SMD' : 'Through-Hole' }}
+                    {{ displayComponent.isSmd ? 'SMD' : t('dialogs.throughHole') }}
                   </v-chip>
                   <v-chip
                     size="x-small"
@@ -126,12 +126,12 @@
                     class="ms-1 font-mono"
                     v-if="displayComponent.pinQuantity"
                   >
-                    {{ displayComponent.pinQuantity }} pins
+                    {{ displayComponent.pinQuantity }} {{ t('dialogs.pins') }}
                   </v-chip>
                 </div>
 
                 <!-- Marking -->
-                <div class="text-caption text-disabled text-uppercase font-weight-bold">Marking Code</div>
+                <div class="text-caption text-disabled text-uppercase font-weight-bold">{{ t('componentDetailsModal.markingCode') }}</div>
                 <div class="text-body-2 font-mono mb-2 text-slate-800">
                   {{ displayComponent.marking || '—' }}
                 </div>
@@ -139,7 +139,7 @@
                 <!-- In Stock Quantity, Min Acceptable Qty & Latest Unit Price -->
                 <v-row dense class="mb-1">
                   <v-col cols="4">
-                    <div class="text-caption text-disabled text-uppercase font-weight-bold">In Stock</div>
+                    <div class="text-caption text-disabled text-uppercase font-weight-bold">{{ t('componentDetailsModal.inStock') }}</div>
                     <div class="d-inline-flex align-center border rounded px-1 bg-white" style="height: 28px; width: 78px;">
                       <input
                         type="number"
@@ -151,13 +151,13 @@
                           (!displayComponent.qty || displayComponent.qty <= 0) ? 'text-error' : (displayComponent.minQty > 0 && displayComponent.qty <= displayComponent.minQty ? 'text-orange-darken-3' : 'text-slate-800')
                         ]"
                         style="font-size: 0.85rem;"
-                        title="Current stock quantity (click to edit)"
+                        :title="t('dialogs.editStockQty')"
                       />
                     </div>
                   </v-col>
 
                   <v-col cols="4">
-                    <div class="text-caption text-disabled text-uppercase font-weight-bold">Min Acceptable</div>
+                    <div class="text-caption text-disabled text-uppercase font-weight-bold">{{ t('componentDetailsModal.minAcceptable') }}</div>
                     <div class="d-inline-flex align-center border rounded px-1 bg-white" style="height: 28px; width: 78px;">
                       <input
                         type="number"
@@ -166,13 +166,13 @@
                         @change="e => saveMinQty(e.target.value)"
                         class="font-mono font-weight-bold text-center text-slate-800 border-0 outline-none w-100"
                         style="font-size: 0.85rem;"
-                        title="Minimal acceptable quantity (click to edit)"
+                        :title="t('dialogs.editMinQty')"
                       />
                     </div>
                   </v-col>
 
                   <v-col cols="4">
-                    <div class="text-caption text-disabled text-uppercase font-weight-bold">Latest Price</div>
+                    <div class="text-caption text-disabled text-uppercase font-weight-bold">{{ t('componentDetailsModal.latestPrice') }}</div>
                     <div>
                       <v-chip
                         v-if="displayComponent.pricing?.latestPrice != null"
@@ -198,7 +198,7 @@
                   icon="mdi-alert-outline"
                   class="mt-2 mb-0 text-caption font-weight-medium"
                 >
-                  Stock is near to end: <strong>{{ displayComponent.qty }} pcs</strong> remaining (min. acceptable is <strong>{{ displayComponent.minQty }} pcs</strong>).
+                  {{ t('componentDetailsModal.lowStockAlert', { qty: displayComponent.qty, min: displayComponent.minQty }) }}
                 </v-alert>
               </v-col>
             </v-row>
@@ -206,14 +206,14 @@
             <v-divider class="my-3" />
 
             <!-- Description -->
-            <div class="text-caption text-disabled text-uppercase font-weight-bold mb-1">Description</div>
+            <div class="text-caption text-disabled text-uppercase font-weight-bold mb-1">{{ t('common.description') }}</div>
             <p class="text-body-2 text-slate-700 mb-3" style="white-space: pre-line;">
-              {{ displayComponent.description || displayComponent.shortDescription || 'No description provided.' }}
+              {{ displayComponent.description || displayComponent.shortDescription || t('componentDetailsModal.noDescription') }}
             </p>
 
             <!-- Warehouse Allocations -->
             <div class="mt-2">
-              <div class="text-caption text-disabled text-uppercase font-weight-bold mb-1">Warehouse Storage Locations</div>
+              <div class="text-caption text-disabled text-uppercase font-weight-bold mb-1">{{ t('componentDetailsModal.warehouseStorage') }}</div>
               <div v-if="displayComponent.warehouse && displayComponent.warehouse.length > 0">
                 <v-chip-group class="flex-wrap">
                   <v-chip
@@ -225,12 +225,12 @@
                     class="font-mono"
                   >
                     <v-icon start size="14" color="primary">mdi-archive-outline</v-icon>
-                    {{ w.storage || 'Box #' + w.storageId }}: <strong class="ms-1">{{ w.quantity }} pcs</strong>
+                    {{ w.storage || t('componentDetailsModal.boxStorage', { id: w.storageId }) }}: <strong class="ms-1">{{ w.quantity }} {{ t('componentDetailsModal.pcs') }}</strong>
                   </v-chip>
                 </v-chip-group>
               </div>
               <div v-else class="text-caption text-disabled italic">
-                No warehouse storage locations assigned.
+                {{ t('componentDetailsModal.noWarehouseStorage') }}
               </div>
             </div>
           </v-window-item>
@@ -239,9 +239,9 @@
           <v-window-item value="projects">
             <div v-if="projectList.length === 0 && !loading" class="text-center py-8 text-disabled">
               <v-icon size="48" class="mb-2">mdi-folder-open-outline</v-icon>
-              <div class="text-body-1 font-weight-medium text-slate-700">Not used in any project BOM yet</div>
+              <div class="text-body-1 font-weight-medium text-slate-700">{{ t('componentDetailsModal.notUsedInProjects') }}</div>
               <div class="text-caption text-disabled mt-1" style="max-width: 440px; margin: 0 auto;">
-                When you add this component to a project's Bill of Materials, it will appear here with its required quantities and reference designators.
+                {{ t('componentDetailsModal.notUsedInProjectsHint') }}
               </div>
             </div>
 
@@ -249,10 +249,10 @@
               <div class="d-flex align-center justify-space-between mb-3">
                 <div class="text-subtitle-2 font-weight-bold text-slate-800 d-flex align-center gap-1">
                   <v-icon size="18" color="primary">mdi-folder-multiple-outline</v-icon>
-                  <span>Used in {{ projectList.length }} {{ projectList.length === 1 ? 'Project' : 'Projects' }}</span>
+                  <span>{{ t('componentDetailsModal.usedInProjects', { count: projectList.length, projects: projectList.length === 1 ? t('componentDetailsModal.projectSingular') : t('componentDetailsModal.projectPlural') }) }}</span>
                 </div>
                 <v-chip size="small" color="primary" variant="tonal" class="font-mono font-weight-bold">
-                  Total Needed: {{ projectList.reduce((acc, p) => acc + (p.requiredQuantity || 0), 0) }} pcs
+                  {{ t('componentDetailsModal.totalNeeded', { count: projectList.reduce((acc, p) => acc + (p.requiredQuantity || 0), 0) }) }}
                 </v-chip>
               </div>
 
@@ -260,11 +260,11 @@
                 <v-table density="comfortable" class="bg-white">
                   <thead>
                     <tr class="bg-slate-50 text-caption font-weight-bold">
-                      <th class="text-left py-2" style="width: 50px;">Photo</th>
-                      <th class="text-left py-2 font-weight-bold">Project Name</th>
-                      <th class="text-center py-2 font-weight-bold" style="width: 110px;">Qty in BOM</th>
-                      <th class="text-left py-2 font-weight-bold">Designators / Notes</th>
-                      <th class="text-left py-2 font-weight-bold" style="width: 90px;">Action</th>
+                      <th class="text-left py-2" style="width: 50px;">{{ t('common.photo') }}</th>
+                      <th class="text-left py-2 font-weight-bold">{{ t('componentDetailsModal.colProjectName') }}</th>
+                      <th class="text-center py-2 font-weight-bold" style="width: 110px;">{{ t('componentDetailsModal.colQtyInBom') }}</th>
+                      <th class="text-left py-2 font-weight-bold">{{ t('componentDetailsModal.colDesignatorsNotes') }}</th>
+                      <th class="text-left py-2 font-weight-bold" style="width: 90px;">{{ t('common.actions') }}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -303,7 +303,7 @@
                           variant="tonal"
                           class="font-mono font-weight-bold px-2"
                         >
-                          {{ p.requiredQuantity }} pcs
+                          {{ p.requiredQuantity }} {{ t('componentDetailsModal.pcs') }}
                         </v-chip>
                       </td>
 
@@ -320,7 +320,7 @@
                           color="primary"
                           @click="openProject(p.id)"
                         >
-                          View
+                          {{ t('componentDetailsModal.btnView') }}
                         </v-btn>
                       </td>
                     </tr>
@@ -336,7 +336,7 @@
             <div class="d-flex align-center justify-space-between mb-3">
               <div class="text-subtitle-2 font-weight-bold text-slate-800 d-flex align-center gap-1">
                 <v-icon size="18" color="primary">mdi-cash-multiple</v-icon>
-                <span>Purchasing & Financial Insights</span>
+                <span>{{ t('componentDetailsModal.financialInsights') }}</span>
               </div>
             </div>
 
@@ -356,34 +356,34 @@
                 </v-col>
                 <v-col cols="6" sm="3">
                   <v-card variant="outlined" class="pa-2 bg-slate-50 rounded-lg">
-                    <div class="text-caption text-disabled text-truncate">Weighted Avg</div>
+                    <div class="text-caption text-disabled text-truncate">{{ t('componentDetailsModal.weightedAvg') }}</div>
                     <div class="text-subtitle-1 font-weight-bold text-slate-800 font-mono">
                       {{ formatCurrency(displayComponent.pricing.avgPrice) }}
                     </div>
                     <div class="text-caption text-disabled text-truncate font-mono">
-                      per unit
+                      {{ t('componentDetailsModal.perUnit') }}
                     </div>
                   </v-card>
                 </v-col>
                 <v-col cols="6" sm="3">
                   <v-card variant="outlined" class="pa-2 bg-slate-50 rounded-lg">
-                    <div class="text-caption text-disabled text-truncate">Total Ordered</div>
+                    <div class="text-caption text-disabled text-truncate">{{ t('componentDetailsModal.totalOrdered') }}</div>
                     <div class="text-subtitle-1 font-weight-bold text-slate-800 font-mono">
-                      {{ displayComponent.pricing.totalQuantityPurchased }} pcs
+                      {{ displayComponent.pricing.totalQuantityPurchased }} {{ t('componentDetailsModal.pcs') }}
                     </div>
                     <div class="text-caption text-disabled text-truncate font-mono">
-                      {{ displayComponent.pricing.orderCount }} {{ displayComponent.pricing.orderCount === 1 ? 'order' : 'orders' }}
+                      {{ displayComponent.pricing.orderCount }} {{ displayComponent.pricing.orderCount === 1 ? t('componentDetailsModal.orderSingular') : t('componentDetailsModal.orderPlural') }}
                     </div>
                   </v-card>
                 </v-col>
                 <v-col cols="6" sm="3">
                   <v-card variant="outlined" class="pa-2 bg-slate-50 rounded-lg">
-                    <div class="text-caption text-disabled text-truncate">Total Spent</div>
+                    <div class="text-caption text-disabled text-truncate">{{ t('componentDetailsModal.totalSpent') }}</div>
                     <div class="text-subtitle-1 font-weight-bold text-slate-900 font-mono">
                       {{ formatCurrency(displayComponent.pricing.totalSpent) }}
                     </div>
                     <div class="text-caption text-disabled text-truncate font-mono">
-                      all purchases
+                      {{ t('componentDetailsModal.allPurchases') }}
                     </div>
                   </v-card>
                 </v-col>
@@ -394,12 +394,12 @@
                 <v-table density="compact" class="bg-white orders-table">
                   <thead>
                     <tr class="bg-slate-50 text-caption font-weight-bold">
-                      <th class="text-left py-2 font-weight-bold">Date</th>
-                      <th class="text-right py-2 font-weight-bold">Unit Price</th>
-                      <th class="text-center py-2 font-weight-bold">Qty</th>
-                      <th class="text-right py-2 font-weight-bold">Total</th>
-                      <th class="text-left py-2 font-weight-bold">Supplier / Notes</th>
-                      <th class="text-center py-2 font-weight-bold" style="width: 50px;">Link</th>
+                      <th class="text-left py-2 font-weight-bold">{{ t('common.date') }}</th>
+                      <th class="text-right py-2 font-weight-bold">{{ t('componentDetailsModal.colUnitPrice') }}</th>
+                      <th class="text-center py-2 font-weight-bold">{{ t('componentDetailsModal.colQty') }}</th>
+                      <th class="text-right py-2 font-weight-bold">{{ t('componentDetailsModal.colTotal') }}</th>
+                      <th class="text-left py-2 font-weight-bold">{{ t('componentDetailsModal.colSupplierNotes') }}</th>
+                      <th class="text-center py-2 font-weight-bold" style="width: 50px;">{{ t('componentDetailsModal.colLink') }}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -424,7 +424,7 @@
                           size="x-small"
                           variant="text"
                           color="primary"
-                          title="Open supplier link"
+                          :title="t('dialogs.openSupplierLink')"
                         />
                         <span v-else class="text-disabled text-caption">—</span>
                       </td>
@@ -436,9 +436,9 @@
 
             <div v-else class="text-caption text-disabled italic py-8 text-center">
               <v-icon size="44" class="mb-2 text-disabled">mdi-cash-remove</v-icon>
-              <div class="text-body-2 font-weight-medium text-slate-700">No purchase order records found in database.</div>
+              <div class="text-body-2 font-weight-medium text-slate-700">{{ t('componentDetailsModal.noOrdersFound') }}</div>
               <div class="text-caption text-disabled mt-1 mb-3">
-                Record a purchase order to track pricing history, supplier links, and update inventory stock.
+                {{ t('componentDetailsModal.noOrdersHint') }}
               </div>
               <v-btn
                 color="primary"
@@ -448,7 +448,7 @@
                 class="font-weight-bold"
                 @click="openPurchaseDialog"
               >
-                Buy / Record Purchase
+                {{ t('componentDetailsModal.btnBuyRecord') }}
               </v-btn>
             </div>
           </v-window-item>
@@ -470,7 +470,7 @@
           :href="getDatasheetUrl(displayComponent.datasheetURL)"
           target="_blank"
         >
-          Open Datasheet
+          {{ t('componentDetailsModal.openDatasheet') }}
         </v-btn>
 
         <!-- Edit Component Button -->
@@ -482,7 +482,7 @@
           class="font-weight-medium me-1"
           @click="openEditDialog"
         >
-          Edit
+          {{ t('common.edit') }}
         </v-btn>
 
         <!-- Clone Component Button -->
@@ -494,7 +494,7 @@
           class="font-weight-medium me-1"
           @click="openCloneDialog"
         >
-          Clone
+          {{ t('componentDetailsModal.clone') }}
         </v-btn>
 
         <!-- Delete Component Button -->
@@ -506,7 +506,7 @@
           class="font-weight-medium"
           @click="showDeleteDialog = true"
         >
-          Delete
+          {{ t('common.delete') }}
         </v-btn>
 
         <v-spacer />
@@ -521,7 +521,7 @@
           :loading="addingToShoppingList"
           @click="addToShoppingList"
         >
-          Add to Shopping List
+          {{ t('components.quickAddToBasket') }}
         </v-btn>
 
         <!-- Buy Component -->
@@ -533,7 +533,7 @@
           class="font-weight-bold me-2"
           @click="openPurchaseDialog"
         >
-          Buy
+          {{ t('components.buyComponent') }}
         </v-btn>
 
         <!-- Optional Select Button (e.g. inside AddComponentDialog) -->
@@ -546,7 +546,7 @@
           class="font-weight-bold"
           @click="selectAndClose"
         >
-          {{ selectButtonText }}
+          {{ selectButtonText || t('componentDetailsModal.selectComponent') }}
         </v-btn>
       </v-card-actions>
     </v-card>
@@ -594,8 +594,11 @@
 
 <script setup>
 import { ref, computed, watch } from 'vue';
+import { useI18n } from 'vue-i18n';
 import { useRouter } from 'vue-router';
 import api, { resolveMediaUrl } from '../services/api';
+
+const { t } = useI18n();
 import MediaImage from './MediaImage.vue';
 import MediaLightboxDialog from './MediaLightboxDialog.vue';
 import PackageLink from './PackageLink.vue';
@@ -644,13 +647,13 @@ const openCloneDialog = async () => {
 };
 
 const handleComponentCreated = async (newComp) => {
-  notify(`Component "${newComp.component}" created successfully!`);
+  notify(t('componentDetailsModal.createdSuccess', { name: newComp.component }));
   emit('created', newComp);
   emit('updated', newComp);
 };
 
 const handleComponentUpdated = async (updatedComp) => {
-  notify(`Component "${updatedComp.component}" updated successfully!`);
+  notify(t('componentDetailsModal.updatedSuccess', { name: updatedComp.component }));
   await loadFullDetails();
   emit('updated', updatedComp);
 };
@@ -746,9 +749,9 @@ const saveStockQty = async (newVal) => {
     if (props.component) {
       props.component.qty = parsed;
     }
-    notify(`Updated stock quantity to ${parsed} pcs`);
+    notify(t('componentDetailsModal.updatedStockSuccess', { qty: parsed }));
   } catch (err) {
-    notify('Failed to update stock quantity: ' + err.message, 'error');
+    notify(t('componentDetailsModal.failedStockUpdate', { error: err.message }), 'error');
   }
 };
 
@@ -765,9 +768,9 @@ const saveMinQty = async (newVal) => {
     if (props.component) {
       props.component.minQty = parsed;
     }
-    notify(`Updated minimal acceptable quantity to ${parsed} pcs`);
+    notify(t('componentDetailsModal.updatedMinQtySuccess', { qty: parsed }));
   } catch (err) {
-    notify('Failed to update minimal quantity: ' + err.message, 'error');
+    notify(t('componentDetailsModal.failedMinQtyUpdate', { error: err.message }), 'error');
   }
 };
 
@@ -776,11 +779,11 @@ const addToShoppingList = async () => {
   addingToShoppingList.value = true;
   try {
     await api.addToShoppingList({ componentId: displayComponent.value.ID, qty: 5 });
-    notify(`Added 5 pcs of ${displayComponent.value.component} to shopping list!`);
+    notify(t('componentDetailsModal.addedToShoppingList', { qty: 5, name: displayComponent.value.component }));
     emit('add-to-shopping-list', displayComponent.value);
   } catch (err) {
     console.error('Failed to add to shopping list:', err);
-    notify('Failed to add to shopping list: ' + (err.response?.data?.error || err.message), 'error');
+    notify(t('componentDetailsModal.failedShoppingList', { error: (err.response?.data?.error || err.message) }), 'error');
   } finally {
     addingToShoppingList.value = false;
   }
@@ -826,7 +829,7 @@ const openPurchaseDialog = () => {
 };
 
 const handlePurchased = async (res) => {
-  notify(`Order #${res.orderId} created for ${res.qty} pcs! Stock updated to ${res.newStock} pcs.`, 'success');
+  notify(t('componentDetailsModal.orderSuccess', { orderId: res.orderId, qty: res.qty, newStock: res.newStock }), 'success');
   if (detailedComponent.value) {
     detailedComponent.value.qty = res.newStock;
   }

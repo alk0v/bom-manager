@@ -1,13 +1,17 @@
-# BOM Manager (Bill of Materials) - v0.2.4
+# BOM Manager (Bill of Materials) - v0.2.5
 
 A modern web application designed to manage electronic components, hardware project builds, Bill of Materials (BOM), warehouse inventory stocks, and procurement shopping lists.
 
-Built with **Vue 3**, **Vuetify 3**, **Node.js/Express**, with out-of-the-box dual database support: **SQLite 3** (for fully autonomous, zero-config self-hosting) and **MySQL / MariaDB** (for centralized/multi-user deployments).
+Built with **Vue 3**, **Vuetify 3**, **Node.js/Express**, with out-of-the-box dual database support (**SQLite 3** & **MySQL / MariaDB**) and internationalized interface (**English** & **Ukrainian**).
 
 ---
 
 ## Key Features
 
+- **Multi-Language Interface (English & Ukrainian)**:
+  - Full localization powered by `vue-i18n` using structured JSON translation files (`locales/en.json` and `locales/uk.json`).
+  - Seamless Vuetify 3 locale synchronization (data tables, pagination, dialogs, form validation).
+  - 1-click language switcher in the top App Bar (🇬🇧 / 🇺🇦) and dedicated Language settings section with `localStorage` persistence.
 - **Hardware Projects Catalog**:
   - Interactive grid view of hardware project cards with photos, metadata, and repository links.
   - Interactive **BOM Pop-up Window** and dedicated full-page BOM view (`/projects/:id`).
@@ -135,6 +139,87 @@ MEDIA_BASE_URL=/media
 # Concurrently start frontend (Vite :5173) and backend API (Express :3001)
 npm run dev
 ```
+
+---
+
+## 📖 Documentation & User Guides
+
+Comprehensive feature walkthroughs with UI screenshots:
+- 🇬🇧 **[English User Guide](GUIDE_EN.MD)**
+- 🇺🇦 **[Інструкція користувача українською](GUIDE_UA.MD)**
+
+---
+
+## 🔄 Upgrading to a New Version
+
+### Option A: Docker Deployments (`docker compose`)
+
+When running with Docker, your SQLite database (`./data/`) and uploaded media files (`./media/`) reside on persistent host volumes and are completely preserved across updates.
+
+1. **Pull the latest changes**:
+   ```bash
+   # Discard any local lockfile modifications if prompted, then pull
+   git restore package-lock.json
+   git pull
+   ```
+
+2. **Rebuild and restart the container**:
+   ```bash
+   docker compose down
+   docker compose build --no-cache
+   docker compose up -d
+   ```
+
+3. **Verify running status**:
+   ```bash
+   docker compose ps
+   docker compose logs -f --tail=50
+   ```
+
+---
+
+### Option B: Local Node.js Deployments
+
+For bare-metal or VM deployments running directly with Node.js:
+
+1. **Pull the latest changes**:
+   ```bash
+   git pull
+   ```
+   > [!NOTE]
+   > If `git pull` or `git checkout` warns that local changes to `package-lock.json` would be overwritten, discard the local npm changes before pulling:
+   > ```bash
+   > git restore package-lock.json
+   > git pull
+   > ```
+
+2. **Update dependencies**:
+   ```bash
+   npm install
+   ```
+   *(Or `npm ci` for a clean install strictly based on `package-lock.json`)*
+
+3. **Rebuild the production client bundle**:
+   ```bash
+   npm run build
+   ```
+
+4. **Restart the server process**:
+   - If running manually via npm:
+     ```bash
+     npm run start
+     ```
+   - If managed by **PM2**:
+     ```bash
+     pm2 restart bommanager
+     ```
+   - If managed by **systemd**:
+     ```bash
+     sudo systemctl restart bommanager
+     ```
+
+> [!TIP]
+> **Automatic Schema Migrations**: BOM Manager automatically checks and verifies all database tables and columns on startup (for both SQLite and MySQL). No manual SQL migration scripts are required when upgrading between versions.
 
 ---
 

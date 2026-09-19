@@ -12,7 +12,7 @@
         <div class="d-flex align-center gap-2">
           <v-icon color="primary" size="22">mdi-shape-plus</v-icon>
           <span class="text-subtitle-1 font-weight-bold text-slate-900">
-            Manage Categories & Packages
+            {{ t('manageCatalogModal.title') }}
           </span>
         </div>
         <v-btn icon="mdi-close" variant="text" size="small" @click="close" />
@@ -23,11 +23,11 @@
         <v-tabs v-model="activeTab" color="primary" density="comfortable">
           <v-tab value="categories" class="font-weight-bold text-body-2 text-none">
             <v-icon start size="18">mdi-shape-outline</v-icon>
-            Categories ({{ categoriesList.length }})
+            {{ t('manageCatalogModal.categoriesTab', { count: categoriesList.length }) }}
           </v-tab>
           <v-tab value="packages" class="font-weight-bold text-body-2 text-none">
             <v-icon start size="18">mdi-package-variant-closed</v-icon>
-            Packages & Footprints ({{ packagesList.length }})
+            {{ t('manageCatalogModal.packagesTab', { count: packagesList.length }) }}
           </v-tab>
         </v-tabs>
       </div>
@@ -45,7 +45,7 @@
                 v-model="categorySearch"
                 density="compact"
                 variant="outlined"
-                placeholder="Search categories..."
+                :placeholder="t('manageCatalogModal.searchCategories')"
                 prepend-inner-icon="mdi-magnify"
                 hide-details
                 clearable
@@ -61,7 +61,7 @@
                 class="font-weight-bold"
                 @click="openCategoryForm()"
               >
-                Add Category
+                {{ t('manageCatalogModal.addCategory') }}
               </v-btn>
             </div>
 
@@ -70,9 +70,9 @@
               <thead>
                 <tr class="bg-slate-50 text-caption font-weight-bold">
                   <th style="width: 70px;" class="text-center font-weight-bold">ID</th>
-                  <th class="text-left font-weight-bold">Category Name</th>
-                  <th class="text-center font-weight-bold" style="width: 160px;">Components</th>
-                  <th class="text-right font-weight-bold" style="width: 120px;">Actions</th>
+                  <th class="text-left font-weight-bold">{{ t('manageCatalogModal.categoryName') }}</th>
+                  <th class="text-center font-weight-bold" style="width: 160px;">{{ t('manageCatalogModal.componentsCount') }}</th>
+                  <th class="text-right font-weight-bold" style="width: 120px;">{{ t('common.actions') }}</th>
                 </tr>
               </thead>
               <tbody>
@@ -92,7 +92,7 @@
                       :variant="cat.componentCount > 0 ? 'tonal' : 'outlined'"
                       class="font-mono font-weight-medium"
                     >
-                      {{ cat.componentCount }} {{ cat.componentCount === 1 ? 'part' : 'parts' }}
+                      {{ cat.componentCount }} {{ cat.componentCount === 1 ? t('manageCatalogModal.part') : t('manageCatalogModal.parts') }}
                     </v-chip>
                   </td>
                   <td class="text-right">
@@ -101,7 +101,7 @@
                       size="small"
                       variant="text"
                       color="slate-600"
-                      title="Edit Category Name"
+                      :title="t('dialogs.editCategoryTooltip')"
                       @click="openCategoryForm(cat)"
                     />
                     <v-btn
@@ -109,7 +109,7 @@
                       size="small"
                       variant="text"
                       color="error"
-                      title="Delete Category"
+                      :title="t('dialogs.deleteCategoryTooltip')"
                       @click="confirmDeleteCategory(cat)"
                     />
                   </td>
@@ -118,7 +118,7 @@
                 <tr v-if="filteredCategories.length === 0 && !loading">
                   <td colspan="4" class="text-center py-8 text-disabled">
                     <v-icon size="40" class="mb-2">mdi-shape-outline</v-icon>
-                    <div>No categories found matching your search.</div>
+                    <div>{{ t('manageCatalogModal.noCategoriesFound') }}</div>
                   </td>
                 </tr>
 
@@ -142,7 +142,7 @@
                   v-model="packageSearch"
                   density="compact"
                   variant="outlined"
-                  placeholder="Search package footprint name..."
+                  :placeholder="t('manageCatalogModal.searchPackages')"
                   prepend-inner-icon="mdi-magnify"
                   hide-details
                   clearable
@@ -160,9 +160,9 @@
                   class="flex-shrink-0"
                   style="height: 40px;"
                 >
-                  <v-btn value="all" size="small" class="px-2 text-caption">All</v-btn>
+                  <v-btn value="all" size="small" class="px-2 text-caption">{{ t('manageCatalogModal.all') }}</v-btn>
                   <v-btn value="smd" size="small" class="px-2 text-caption">SMD</v-btn>
-                  <v-btn value="tht" size="small" class="px-2 text-caption">THT</v-btn>
+                  <v-btn value="tht" size="small" class="px-2 text-caption">{{ t('dialogs.throughHole') }}</v-btn>
                 </v-btn-toggle>
               </div>
 
@@ -174,7 +174,7 @@
                 class="font-weight-bold"
                 @click="openPackageForm()"
               >
-                Add Package
+                {{ t('manageCatalogModal.addPackage') }}
               </v-btn>
             </div>
 
@@ -182,12 +182,12 @@
             <v-table density="comfortable" hover class="border rounded bg-white data-table">
               <thead>
                 <tr class="bg-slate-50 text-caption font-weight-bold">
-                  <th style="width: 50px;">Drawing</th>
-                  <th class="text-left font-weight-bold">Package Name</th>
-                  <th class="text-center font-weight-bold" style="width: 110px;">Mount Type</th>
-                  <th class="text-center font-weight-bold" style="width: 90px;">Pins</th>
-                  <th class="text-center font-weight-bold" style="width: 140px;">Components</th>
-                  <th class="text-right font-weight-bold" style="width: 120px;">Actions</th>
+                  <th style="width: 50px;">{{ t('manageCatalogModal.drawing') }}</th>
+                  <th class="text-left font-weight-bold">{{ t('manageCatalogModal.packageFootprintName') }}</th>
+                  <th class="text-center font-weight-bold" style="width: 110px;">{{ t('manageCatalogModal.mountType') }}</th>
+                  <th class="text-center font-weight-bold" style="width: 90px;">{{ t('manageCatalogModal.pins') }}</th>
+                  <th class="text-center font-weight-bold" style="width: 140px;">{{ t('manageCatalogModal.componentsCount') }}</th>
+                  <th class="text-right font-weight-bold" style="width: 120px;">{{ t('common.actions') }}</th>
                 </tr>
               </thead>
               <tbody>
@@ -219,7 +219,7 @@
                       variant="flat"
                       class="font-weight-bold"
                     >
-                      {{ pkg.isSmd ? 'SMD' : 'Through-Hole' }}
+                      {{ pkg.isSmd ? 'SMD' : t('dialogs.throughHole') }}
                     </v-chip>
                   </td>
 
@@ -236,7 +236,7 @@
                       :variant="pkg.componentCount > 0 ? 'tonal' : 'outlined'"
                       class="font-mono font-weight-medium"
                     >
-                      {{ pkg.componentCount }} {{ pkg.componentCount === 1 ? 'part' : 'parts' }}
+                      {{ pkg.componentCount }} {{ pkg.componentCount === 1 ? t('manageCatalogModal.part') : t('manageCatalogModal.parts') }}
                     </v-chip>
                   </td>
 
@@ -247,7 +247,7 @@
                       size="small"
                       variant="text"
                       color="slate-600"
-                      title="Edit Package Footprint"
+                      :title="t('dialogs.editPackageTooltip')"
                       @click="openPackageForm(pkg)"
                     />
                     <v-btn
@@ -255,7 +255,7 @@
                       size="small"
                       variant="text"
                       color="error"
-                      title="Delete Package"
+                      :title="t('dialogs.deletePackageTooltip')"
                       @click="confirmDeletePackage(pkg)"
                     />
                   </td>
@@ -264,7 +264,7 @@
                 <tr v-if="filteredPackages.length === 0 && !loading">
                   <td colspan="6" class="text-center py-8 text-disabled">
                     <v-icon size="40" class="mb-2">mdi-package-variant-closed</v-icon>
-                    <div>No packages found matching your search.</div>
+                    <div>{{ t('manageCatalogModal.noPackagesFound') }}</div>
                   </td>
                 </tr>
 
@@ -284,10 +284,10 @@
       <!-- Dialog Footer -->
       <v-card-actions class="pa-3 px-5 bg-slate-50 d-flex align-center justify-space-between flex-shrink-0">
         <div class="text-caption text-disabled">
-          Categories and footprints are shared globally across all catalog components.
+          {{ t('manageCatalogModal.footerNote') }}
         </div>
         <v-btn variant="flat" color="slate-200" @click="close">
-          Close
+          {{ t('common.close') }}
         </v-btn>
       </v-card-actions>
     </v-card>
@@ -298,13 +298,13 @@
     <v-dialog v-model="showCategoryDialog" max-width="450px" persistent>
       <v-card class="rounded-0 border bg-white">
         <v-card-title class="bg-slate-50 py-3 px-4 border-b font-weight-bold text-subtitle-1">
-          {{ editingCategory ? 'Edit Category' : 'New Category' }}
+          {{ editingCategory ? t('manageCatalogModal.editCategory') : t('manageCatalogModal.newCategory') }}
         </v-card-title>
         <v-card-text class="pa-4">
           <v-text-field
             v-model="categoryForm.category"
-            label="Category Name *"
-            placeholder="e.g. Capacitors, Microcontrollers, Relays"
+            :label="t('manageCatalogModal.categoryNameRequired')"
+            :placeholder="t('manageCatalogModal.categoryPlaceholder')"
             variant="outlined"
             density="comfortable"
             autofocus
@@ -314,7 +314,7 @@
         </v-card-text>
         <v-divider />
         <v-card-actions class="pa-3 px-4 bg-slate-50 d-flex justify-end gap-2">
-          <v-btn variant="text" size="small" @click="showCategoryDialog = false">Cancel</v-btn>
+          <v-btn variant="text" size="small" @click="showCategoryDialog = false">{{ t('common.cancel') }}</v-btn>
           <v-btn
             color="primary"
             variant="flat"
@@ -323,7 +323,7 @@
             :loading="saving"
             @click="saveCategory"
           >
-            Save Category
+            {{ t('manageCatalogModal.saveCategory') }}
           </v-btn>
         </v-card-actions>
       </v-card>
@@ -335,13 +335,13 @@
     <v-dialog v-model="showPackageDialog" max-width="520px" persistent>
       <v-card class="rounded-0 border bg-white">
         <v-card-title class="bg-slate-50 py-3 px-4 border-b font-weight-bold text-subtitle-1">
-          {{ editingPackage ? 'Edit Package Footprint' : 'New Package Footprint' }}
+          {{ editingPackage ? t('manageCatalogModal.editPackage') : t('manageCatalogModal.newPackage') }}
         </v-card-title>
         <v-card-text class="pa-4">
           <v-text-field
             v-model="packageForm.package"
-            label="Package / Footprint Name *"
-            placeholder="e.g. SOIC-8, LQFP-48, 0805, TO-220"
+            :label="t('manageCatalogModal.packageFootprintName')"
+            :placeholder="t('manageCatalogModal.packagePlaceholder')"
             variant="outlined"
             density="comfortable"
             class="font-mono mb-3"
@@ -354,10 +354,10 @@
             <v-col cols="12" sm="5">
               <v-text-field
                 v-model.number="packageForm.pinQuantity"
-                label="Pin / Pad Count"
+                :label="t('manageCatalogModal.pinPadCount')"
                 type="number"
                 min="1"
-                placeholder="e.g. 8"
+                :placeholder="t('manageCatalogModal.pinPlaceholder')"
                 variant="outlined"
                 density="comfortable"
                 hide-details="auto"
@@ -366,7 +366,7 @@
             <v-col cols="12" sm="7">
               <div class="border rounded-lg d-flex align-center px-3 justify-space-between bg-slate-50" style="height: 48px;">
                 <span class="text-caption font-weight-medium text-slate-600 me-2 flex-shrink-0">
-                  Mount:
+                  {{ t('manageCatalogModal.mount') }}
                 </span>
                 <v-btn-toggle
                   v-model="packageForm.isSmd"
@@ -382,7 +382,7 @@
                     SMD
                   </v-btn>
                   <v-btn :value="0" size="small" class="flex-grow-1 text-caption font-weight-bold">
-                    Through-Hole
+                    {{ t('dialogs.throughHole') }}
                   </v-btn>
                 </v-btn-toggle>
               </div>
@@ -407,8 +407,8 @@
 
             <v-text-field
               v-model="packageForm.drawingURL"
-              label="Drawing / Pinout Image (Filename or URL)"
-              placeholder="e.g. soic8.png or https://..."
+              :label="t('manageCatalogModal.drawingOrPinout')"
+              :placeholder="t('manageCatalogModal.drawingPlaceholder')"
               variant="outlined"
               density="comfortable"
               prepend-inner-icon="mdi-image-outline"
@@ -425,9 +425,9 @@
                   prepend-icon="mdi-upload"
                   :loading="uploadingDrawing"
                   @click.stop="drawingInputRef?.click()"
-                  title="Upload drawing image to media/packages/"
+                  :title="t('common.upload')"
                 >
-                  Upload
+                  {{ t('common.upload') }}
                 </v-btn>
               </template>
             </v-text-field>
@@ -440,12 +440,12 @@
             />
           </div>
           <div class="text-caption text-slate-500 mt-1 ms-1">
-            Stored in <code>media/packages/</code> or specify an external image URL.
+            {{ t('manageCatalogModal.drawingStoredHint') }}
           </div>
         </v-card-text>
         <v-divider />
         <v-card-actions class="pa-3 px-4 bg-slate-50 d-flex justify-end gap-2">
-          <v-btn variant="text" size="small" @click="showPackageDialog = false">Cancel</v-btn>
+          <v-btn variant="text" size="small" @click="showPackageDialog = false">{{ t('common.cancel') }}</v-btn>
           <v-btn
             color="primary"
             variant="flat"
@@ -454,7 +454,7 @@
             :loading="saving"
             @click="savePackage"
           >
-            Save Package
+            {{ t('manageCatalogModal.savePackage') }}
           </v-btn>
         </v-card-actions>
       </v-card>
@@ -469,8 +469,11 @@
 
 <script setup>
 import { ref, computed, watch } from 'vue';
+import { useI18n } from 'vue-i18n';
 import api from '../services/api';
 import MediaImage from './MediaImage.vue';
+
+const { t } = useI18n();
 
 const props = defineProps({
   modelValue: {
@@ -533,7 +536,7 @@ const loadCatalogData = async () => {
     packagesList.value = pkgs || [];
   } catch (err) {
     console.error('Failed to load catalog data:', err);
-    notify('Failed to load catalog data: ' + err.message, 'error');
+    notify(t('manageCatalogModal.loadError') + ': ' + err.message, 'error');
   } finally {
     loading.value = false;
   }
@@ -582,7 +585,7 @@ const openCategoryForm = (cat = null) => {
 const saveCategory = async () => {
   const name = categoryForm.value.category.trim();
   if (!name) {
-    categoryError.value = 'Category name is required';
+    categoryError.value = t('manageCatalogModal.categoryRequiredErr');
     return;
   }
   saving.value = true;
@@ -590,10 +593,10 @@ const saveCategory = async () => {
   try {
     if (editingCategory.value) {
       await api.updateCategory(editingCategory.value.ID, { category: name });
-      notify(`Updated category "${name}"`);
+      notify(t('manageCatalogModal.categoryUpdated', { name }));
     } else {
       await api.createCategory({ category: name });
-      notify(`Created category "${name}"`);
+      notify(t('manageCatalogModal.categoryCreated', { name }));
     }
     showCategoryDialog.value = false;
     await loadCatalogData();
@@ -607,17 +610,17 @@ const saveCategory = async () => {
 
 const confirmDeleteCategory = async (cat) => {
   if (cat.componentCount > 0) {
-    alert(`Cannot delete category "${cat.category}".\n\nThere are currently ${cat.componentCount} component(s) assigned to this category. Please reassign those components to another category first.`);
+    alert(t('manageCatalogModal.categoryDeleteInUse', { name: cat.category, count: cat.componentCount }));
     return;
   }
-  if (confirm(`Are you sure you want to delete category "${cat.category}"?`)) {
+  if (confirm(t('manageCatalogModal.categoryDeleteConfirm', { name: cat.category }))) {
     try {
       await api.deleteCategory(cat.ID);
-      notify(`Category "${cat.category}" deleted`);
+      notify(t('manageCatalogModal.categoryDeleted', { name: cat.category }));
       await loadCatalogData();
       emit('updated');
     } catch (err) {
-      notify('Failed to delete category: ' + (err.response?.data?.error || err.message), 'error');
+      notify(t('manageCatalogModal.categoryDeleteError') + ': ' + (err.response?.data?.error || err.message), 'error');
     }
   }
 };
@@ -634,10 +637,10 @@ const handleDrawingUpload = async (event) => {
   try {
     const res = await api.uploadMedia('packages', file);
     packageForm.value.drawingURL = res.filename;
-    notify(`Drawing uploaded: ${res.filename}`);
+    notify(t('manageCatalogModal.drawingUploaded', { file: res.filename }));
   } catch (err) {
     console.error('Failed to upload package drawing:', err);
-    notify('Failed to upload drawing: ' + (err.response?.data?.error || err.message), 'error');
+    notify(t('manageCatalogModal.drawingUploadError') + ': ' + (err.response?.data?.error || err.message), 'error');
   } finally {
     uploadingDrawing.value = false;
     if (event.target) event.target.value = '';
@@ -659,7 +662,7 @@ const openPackageForm = (pkg = null) => {
 const savePackage = async () => {
   const name = packageForm.value.package.trim();
   if (!name) {
-    packageError.value = 'Package name is required';
+    packageError.value = t('manageCatalogModal.packageRequiredErr');
     return;
   }
   saving.value = true;
@@ -673,10 +676,10 @@ const savePackage = async () => {
     };
     if (editingPackage.value) {
       await api.updatePackage(editingPackage.value.ID, payload);
-      notify(`Updated package "${name}"`);
+      notify(t('manageCatalogModal.packageUpdated', { name }));
     } else {
       await api.createPackage(payload);
-      notify(`Created package "${name}"`);
+      notify(t('manageCatalogModal.packageCreated', { name }));
     }
     showPackageDialog.value = false;
     await loadCatalogData();
@@ -690,17 +693,17 @@ const savePackage = async () => {
 
 const confirmDeletePackage = async (pkg) => {
   if (pkg.componentCount > 0) {
-    alert(`Cannot delete package "${pkg.package}".\n\nThere are currently ${pkg.componentCount} component(s) using this package footprint. Please reassign those components to another package first.`);
+    alert(t('manageCatalogModal.packageDeleteInUse', { name: pkg.package, count: pkg.componentCount }));
     return;
   }
-  if (confirm(`Are you sure you want to delete package footprint "${pkg.package}"?`)) {
+  if (confirm(t('manageCatalogModal.packageDeleteConfirm', { name: pkg.package }))) {
     try {
       await api.deletePackage(pkg.ID);
-      notify(`Package "${pkg.package}" deleted`);
+      notify(t('manageCatalogModal.packageDeleted', { name: pkg.package }));
       await loadCatalogData();
       emit('updated');
     } catch (err) {
-      notify('Failed to delete package: ' + (err.response?.data?.error || err.message), 'error');
+      notify(t('manageCatalogModal.packageDeleteError') + ': ' + (err.response?.data?.error || err.message), 'error');
     }
   }
 };

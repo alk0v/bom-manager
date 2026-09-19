@@ -41,7 +41,7 @@
           variant="text"
           size="small"
           @click="packageStore.close"
-          title="Close dialog"
+          :title="t('common.close')"
         />
       </v-card-title>
 
@@ -68,7 +68,7 @@
                 prepend-icon="mdi-magnify-plus-outline"
                 @click="showDrawingLightbox = true"
               >
-                View Full Size
+                {{ t('dialogs.viewFullSize') }}
               </v-btn>
             </div>
 
@@ -76,7 +76,7 @@
             <div
               v-if="packageStore.packageData.drawingURL"
               class="border rounded bg-slate-50 overflow-hidden d-flex flex-column align-center justify-center p-3 position-relative cursor-pointer drawing-zoom-wrapper"
-              title="Click to view drawing in full size"
+              :title="t('dialogs.viewDrawingFullSize')"
               @click="showDrawingLightbox = true"
             >
               <div class="w-100 d-flex align-center justify-center py-2" style="min-height: 240px; max-height: 380px;">
@@ -177,7 +177,7 @@
           color="slate-700"
           @click="packageStore.close"
         >
-          Close
+          {{ t('common.close') }}
         </v-btn>
       </v-card-actions>
     </v-card>
@@ -194,11 +194,13 @@
 
 <script setup>
 import { ref, computed } from 'vue';
+import { useI18n } from 'vue-i18n';
 import { usePackageDetailsStore } from '../stores/packageDetails';
 import MediaImage from './MediaImage.vue';
 import MediaLightboxDialog from './MediaLightboxDialog.vue';
 import { resolveMediaUrl } from '../services/api';
 
+const { t } = useI18n();
 const packageStore = usePackageDetailsStore();
 const showDrawingLightbox = ref(false);
 

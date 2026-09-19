@@ -9,7 +9,7 @@
             <v-text-field
               v-model="search"
               prepend-inner-icon="mdi-magnify"
-              placeholder="Search part name, marking, description..."
+              :placeholder="t('components.searchPlaceholder')"
               density="compact"
               variant="outlined"
               hide-details
@@ -25,8 +25,8 @@
               :items="categories"
               item-title="category"
               item-value="ID"
-              label="Categories (multi-choice)"
-              placeholder="All categories"
+              :label="t('common.category')"
+              :placeholder="t('components.allCategories')"
               density="compact"
               variant="outlined"
               hide-details
@@ -46,8 +46,8 @@
                 :items="filteredPackagesList"
                 item-title="package"
                 item-value="ID"
-                :label="packageMountType === 'all' ? 'Packages (multi-choice)' : `Packages (${packageMountType.toUpperCase()})`"
-                placeholder="All packages"
+                :label="t('common.package')"
+                :placeholder="t('components.allPackages')"
                 density="compact"
                 variant="outlined"
                 hide-details
@@ -98,12 +98,12 @@
         <v-row dense align="center" class="mt-1">
           <v-col cols="12" sm="6" md="3">
             <v-autocomplete
-              v-model="selectedProject"
-              :items="projects"
+              v-model="selectedProjectId"
+              :items="projectsList"
               item-title="projectName"
               item-value="id"
-              label="Used in Project"
-              placeholder="Filter components in project BOM"
+              :label="t('nav.projects')"
+              :placeholder="t('common.all')"
               density="compact"
               variant="outlined"
               hide-details
@@ -115,16 +115,14 @@
 
           <v-col cols="12" sm="6" md="3">
             <v-select
-              v-model="stockStatus"
-              :items="stockStatusOptions"
+              v-model="stockFilter"
+              :items="stockFilterOptions"
               item-title="title"
               item-value="value"
-              label="Stock Status"
-              placeholder="All stock levels"
+              :label="t('components.stockFilter')"
               density="compact"
               variant="outlined"
               hide-details
-              clearable
               rounded="lg"
               @update:model-value="onFilterChange"
             >
@@ -193,7 +191,7 @@
               prepend-icon="mdi-filter-off-outline"
               @click="resetFilters"
             >
-              Reset Filters
+              {{ t('common.reset') }}
             </v-btn>
 
             <v-btn
@@ -202,7 +200,7 @@
               variant="outlined"
               :loading="loading"
               @click="fetchComponents"
-              title="Refresh components"
+              :title="t('components.refreshTooltip')"
             />
 
             <v-btn
@@ -213,7 +211,19 @@
               class="font-weight-bold"
               @click="showManageCatalogDialog = true"
             >
-              Categories & Packages
+              {{ t('components.manageCatalog') }}
+            </v-btn>
+
+            <v-btn
+              variant="outlined"
+              color="primary"
+              size="small"
+              prepend-icon="mdi-file-delimited-outline"
+              class="font-weight-bold"
+              @click="showImportDialog = true"
+              :title="t('components.importCsvTooltip')"
+            >
+              {{ t('components.importCsv') }}
             </v-btn>
 
             <v-btn
@@ -224,7 +234,7 @@
               class="font-weight-bold"
               @click="openCreateComponent"
             >
-              Add Component
+              {{ t('components.newComponent') }}
             </v-btn>
           </v-col>
         </v-row>
@@ -237,13 +247,13 @@
         <thead>
           <tr>
             <th class="text-left font-weight-bold" style="width: 50px;">Photo</th>
-            <th class="text-left font-weight-bold">Part Name / Marking</th>
-            <th class="text-left font-weight-bold">Category</th>
-            <th class="text-left font-weight-bold">Package</th>
-            <th class="text-left font-weight-bold">Description</th>
-            <th class="text-center font-weight-bold" style="width: 100px;">In Stock</th>
-            <th class="text-center font-weight-bold" style="width: 100px;">Min Qty</th>
-            <th class="text-left font-weight-bold" style="width: 175px;">Actions</th>
+            <th class="text-left font-weight-bold">{{ t('components.colPart') }}</th>
+            <th class="text-left font-weight-bold">{{ t('components.colCategory') }}</th>
+            <th class="text-left font-weight-bold">{{ t('components.colPackage') }}</th>
+            <th class="text-left font-weight-bold">{{ t('common.description') }}</th>
+            <th class="text-center font-weight-bold" style="width: 100px;">{{ t('components.colStock') }}</th>
+            <th class="text-center font-weight-bold" style="width: 100px;">Min</th>
+            <th class="text-left font-weight-bold" style="width: 175px;">{{ t('common.actions') }}</th>
           </tr>
         </thead>
 
@@ -364,7 +374,7 @@
                 size="small"
                 color="amber-darken-3"
                 variant="text"
-                title="Add to Shopping List"
+                :title="t('components.quickAddToBasket')"
                 @click="addToShoppingList(c)"
               />
 
@@ -374,7 +384,7 @@
                 size="small"
                 color="primary"
                 variant="text"
-                title="Buy Component"
+                :title="t('components.buyComponent')"
                 @click="openDirectPurchase(c)"
               />
 
@@ -384,7 +394,7 @@
                 size="small"
                 color="slate-700"
                 variant="text"
-                title="Edit Component"
+                :title="t('components.editComponent')"
                 @click="openEditComponent(c)"
               />
 
@@ -394,7 +404,7 @@
                 size="small"
                 color="slate-700"
                 variant="text"
-                title="Clone Component"
+                :title="t('components.cloneComponent')"
                 @click="openCloneComponent(c)"
               />
 
@@ -404,7 +414,7 @@
                 size="small"
                 color="error"
                 variant="text"
-                title="Delete Component"
+                :title="t('components.deleteComponent')"
                 @click="openDeleteDialog(c)"
               />
             </td>
@@ -413,7 +423,7 @@
           <tr v-if="components.length === 0 && !loading">
             <td colspan="8" class="text-center py-8 text-disabled">
               <v-icon size="40" class="mb-2">mdi-memory-off</v-icon>
-              <div>No components found matching your search.</div>
+              <div>{{ t('components.noComponentsMatching') }}</div>
             </td>
           </tr>
 
@@ -429,7 +439,7 @@
       <v-divider />
       <div class="pa-3 d-flex align-center justify-space-between bg-surface">
         <span class="text-caption text-disabled">
-          Showing {{ components.length }} of {{ totalComponents }} components
+          {{ t('common.showingOf', { count: components.length, total: totalComponents, item: t('nav.components').toLowerCase() }) }}
         </span>
         <div class="d-flex align-center gap-2">
           <v-btn
@@ -438,16 +448,16 @@
             :disabled="offset === 0 || loading"
             @click="prevPage"
           >
-            Previous
+            {{ t('common.prev') }}
           </v-btn>
-          <span class="text-caption font-mono px-2">Page {{ currentPage }}</span>
+          <span class="text-caption font-mono px-2">{{ t('common.page') }} {{ currentPage }}</span>
           <v-btn
             size="small"
             variant="outlined"
             :disabled="offset + limit >= totalComponents || loading"
             @click="nextPage"
           >
-            Next
+            {{ t('common.next') }}
           </v-btn>
         </div>
       </div>
@@ -496,6 +506,16 @@
       @deleted="onComponentDeleted"
     />
 
+    <!-- IMPORT COMPONENTS FROM CSV DIALOG -->
+    <ImportComponentsDialog
+      v-model="showImportDialog"
+      :categories="categories"
+      :packages="packages"
+      @imported="handleImportedComponents"
+      @catalog-updated="onCatalogUpdated"
+      @notify="notify"
+    />
+
     <v-snackbar v-model="snackbar.show" :color="snackbar.color" timeout="3000">
       {{ snackbar.text }}
     </v-snackbar>
@@ -504,7 +524,10 @@
 
 <script setup>
 import { ref, computed, onMounted } from 'vue';
+import { useI18n } from 'vue-i18n';
 import api, { resolveMediaUrl } from '../services/api';
+
+const { t } = useI18n();
 import MediaImage from '../components/MediaImage.vue';
 import PackageLink from '../components/PackageLink.vue';
 import CreateComponentDialog from '../components/CreateComponentDialog.vue';
@@ -512,6 +535,7 @@ import ComponentDetailsDialog from '../components/ComponentDetailsDialog.vue';
 import PurchaseConfirmDialog from '../components/PurchaseConfirmDialog.vue';
 import ManageCatalogDialog from '../components/ManageCatalogDialog.vue';
 import DeleteComponentDialog from '../components/DeleteComponentDialog.vue';
+import ImportComponentsDialog from '../components/ImportComponentsDialog.vue';
 import { useComponentsStore } from '../stores/components';
 
 const componentsStore = useComponentsStore();
@@ -528,6 +552,7 @@ const isCloneMode = ref(false);
 const selectedComponentForEdit = ref(null);
 const showManageCatalogDialog = ref(false);
 const showDeleteDialog = ref(false);
+const showImportDialog = ref(false);
 const componentToDelete = ref(null);
 const loading = ref(false);
 
@@ -573,7 +598,11 @@ const snackbar = ref({
 });
 
 const notify = (text, color = 'success') => {
-  snackbar.value = { show: true, text, color };
+  if (typeof text === 'object' && text !== null) {
+    snackbar.value = { show: true, text: text.text || '', color: text.color || 'success' };
+  } else {
+    snackbar.value = { show: true, text, color };
+  }
 };
 
 const currentPage = computed(() => Math.floor(offset.value / limit.value) + 1);
@@ -791,6 +820,11 @@ const loadMeta = async () => {
 };
 
 const onCatalogUpdated = async () => {
+  await loadMeta();
+  fetchComponents();
+};
+
+const handleImportedComponents = async () => {
   await loadMeta();
   fetchComponents();
 };

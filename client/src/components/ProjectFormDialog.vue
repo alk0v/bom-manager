@@ -14,7 +14,7 @@
             {{ isEdit ? 'mdi-folder-edit-outline' : 'mdi-folder-plus-outline' }}
           </v-icon>
           <span class="text-subtitle-1 font-weight-bold text-slate-900">
-            {{ isEdit ? 'Edit Project' : 'New Hardware Project' }}
+            {{ isEdit ? t('dialogs.editProject') : t('dialogs.newProject') }}
           </span>
         </div>
         <v-btn
@@ -32,14 +32,14 @@
           <!-- Project Name (Required) -->
           <div class="mb-4">
             <div class="text-caption font-weight-bold text-slate-700 text-uppercase mb-1">
-              Project Name <span class="text-error">*</span>
+              {{ t('dialogs.projectName') }} <span class="text-error">*</span>
             </div>
             <v-text-field
               v-model="form.projectName"
-              placeholder="e.g. MC-1502 RAM Module, BlueSCSI v2"
+              :placeholder="t('dialogs.projectNamePlaceholder')"
               density="comfortable"
               variant="outlined"
-              :rules="[v => !!v?.trim() || 'Project name is required']"
+              :rules="[v => !!v?.trim() || t('dialogs.projectNameRequired')]"
               rounded="lg"
               hide-details="auto"
               autofocus
@@ -49,11 +49,11 @@
           <!-- Description -->
           <div class="mb-4">
             <div class="text-caption font-weight-bold text-slate-700 text-uppercase mb-1">
-              Description / Notes
+              {{ t('dialogs.projectDescription') }}
             </div>
             <v-textarea
               v-model="form.description"
-              placeholder="Architecture summary, revisions, board features, or build notes..."
+              :placeholder="t('dialogs.projectDescriptionPlaceholder')"
               density="comfortable"
               variant="outlined"
               rows="3"
@@ -66,11 +66,11 @@
           <!-- Documentation / Repository Link -->
           <div class="mb-4">
             <div class="text-caption font-weight-bold text-slate-700 text-uppercase mb-1">
-              Project URL
+              {{ t('dialogs.projectUrl') }}
             </div>
             <v-text-field
               v-model="form.url"
-              placeholder="https://github.com/username/project"
+              :placeholder="t('dialogs.projectUrlPlaceholder')"
               density="comfortable"
               variant="outlined"
               prepend-inner-icon="mdi-link-variant"
@@ -85,7 +85,7 @@
                   color="primary"
                   :href="form.url"
                   target="_blank"
-                  title="Open link preview in new tab"
+                  :title="t('dialogs.testLinkNewTab')"
                   @click.stop
                 />
               </template>
@@ -96,10 +96,10 @@
           <div class="mb-4">
             <div class="d-flex align-center justify-space-between mb-1">
               <span class="text-caption font-weight-bold text-slate-700 text-uppercase">
-                Photo Filename or URL
+                {{ t('dialogs.photoFilenameOrUrl') }}
               </span>
               <span class="text-caption text-slate-400">
-                Folder: media/projects/
+                {{ t('dialogs.photoFolderHint', { folder: 'media/projects/' }) }}
               </span>
             </div>
             <div class="d-flex align-center gap-2">
@@ -121,9 +121,9 @@
                 prepend-icon="mdi-upload"
                 :loading="uploadingPhoto"
                 @click="fileInputRef?.click()"
-                title="Upload image to media/projects/"
+                :title="t('common.upload')"
               >
-                Upload
+                {{ t('common.upload') }}
               </v-btn>
               <input
                 ref="fileInputRef"
@@ -134,14 +134,14 @@
               />
             </div>
             <div class="text-caption text-disabled mt-1">
-              Upload an image or enter a relative filename in <code class="font-mono text-slate-600">media/projects/</code>.
+              {{ t('dialogs.photoUploadHint', { folder: 'media/projects/' }) }}
             </div>
           </div>
 
           <!-- Live Image Preview -->
           <div class="mb-2">
             <div class="text-caption font-weight-bold text-slate-700 text-uppercase mb-1">
-              Photo Preview
+              {{ t('dialogs.photoPreview') }}
             </div>
             <div class="photo-preview-box rounded border bg-slate-50 d-flex align-center justify-center overflow-hidden">
               <MediaImage
@@ -155,7 +155,7 @@
               <div v-else class="text-center py-8 text-disabled">
                 <v-icon size="40" class="mb-2 text-slate-300">mdi-image-outline</v-icon>
                 <div class="text-caption text-slate-400">
-                  Enter a filename or URL above to preview image
+                  {{ t('dialogs.photoPreviewPlaceholder') }}
                 </div>
               </div>
             </div>
@@ -175,7 +175,7 @@
             @click="close"
             :disabled="submitting"
           >
-            Cancel
+            {{ t('common.cancel') }}
           </v-btn>
           <v-btn
             v-if="isEdit"
@@ -183,10 +183,9 @@
             color="error"
             size="small"
             prepend-icon="mdi-delete-outline"
-            :disabled="submitting"
-            @click="handleDelete"
+            @click="emit('delete')"
           >
-            Delete
+            {{ t('common.delete') }}
           </v-btn>
         </div>
 
@@ -196,10 +195,9 @@
           size="small"
           class="font-weight-bold"
           :loading="submitting"
-          :prepend-icon="isEdit ? 'mdi-check' : 'mdi-plus'"
           @click="handleSubmit"
         >
-          {{ isEdit ? 'Save Changes' : 'Create Project' }}
+          {{ isEdit ? t('common.save') : t('dialogs.newProject') }}
         </v-btn>
       </v-card-actions>
     </v-card>
@@ -208,8 +206,11 @@
 
 <script setup>
 import { ref, reactive, computed, watch } from 'vue';
+import { useI18n } from 'vue-i18n';
 import api from '../services/api';
 import MediaImage from './MediaImage.vue';
+
+const { t } = useI18n();
 
 const props = defineProps({
   modelValue: {
@@ -239,7 +240,7 @@ const handlePhotoUpload = async (event) => {
     form.photoUrl = res.filename;
   } catch (err) {
     console.error('Failed to upload project photo:', err);
-    alert('Failed to upload photo: ' + (err.response?.data?.error || err.message));
+    alert(`${t('dialogs.failedUploadPhoto')}: ${err.response?.data?.error || err.message}`);
   } finally {
     uploadingPhoto.value = false;
     if (event.target) event.target.value = '';
@@ -325,7 +326,7 @@ const handleSubmit = async () => {
     close();
   } catch (err) {
     console.error('Error saving project:', err);
-    alert('Failed to save project: ' + (err.response?.data?.details || err.message));
+    alert(`${t('dialogs.failedSaveProject')}: ${err.response?.data?.details || err.message}`);
   } finally {
     submitting.value = false;
   }

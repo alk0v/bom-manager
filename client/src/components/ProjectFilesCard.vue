@@ -7,13 +7,13 @@
           <v-icon color="primary" class="me-2">mdi-paperclip</v-icon>
           <div>
             <div class="text-subtitle-1 font-weight-bold text-slate-900 d-flex align-center">
-              <span>Project Files & Attachments</span>
+              <span>{{ t('projectFiles.title') }}</span>
               <v-chip size="x-small" color="secondary" variant="tonal" class="ms-2 font-weight-bold">
-                {{ files.length }} {{ files.length === 1 ? 'file' : 'files' }}
+                {{ files.length }} {{ files.length === 1 ? t('projectFiles.fileOne') : t('projectFiles.fileMany') }}
               </v-chip>
             </div>
             <div class="text-caption text-disabled">
-              Attach KiCAD iBOM HTML, Gerber ZIPs, ROM firmware, schematics, and project documentation
+              {{ t('projectFiles.subtitle') }}
             </div>
           </div>
         </div>
@@ -26,14 +26,14 @@
             class="font-weight-bold"
             @click="openUploadDialog"
           >
-            Upload File
+            {{ t('projectFiles.uploadFile') }}
           </v-btn>
           <v-btn
             icon="mdi-refresh"
             size="small"
             variant="outlined"
             :loading="loading"
-            title="Refresh files"
+            :title="t('dialogs.refreshFiles')"
             @click="loadFiles"
           />
         </div>
@@ -46,10 +46,10 @@
         <v-icon size="28">mdi-folder-upload-outline</v-icon>
       </v-avatar>
       <div class="text-subtitle-1 font-weight-medium text-slate-800 mb-1">
-        No files attached yet
+        {{ t('projectFiles.emptyTitle') }}
       </div>
       <div class="text-caption text-slate-500 mb-4" style="max-width: 480px; margin: 0 auto;">
-        Keep your hardware project files together: attach KiCAD Interactive HTML BOMs, Gerber zip archives, ROM/firmware files, and schematics.
+        {{ t('projectFiles.emptySubtitle') }}
       </div>
       <v-btn
         color="primary"
@@ -59,7 +59,7 @@
         class="font-weight-bold"
         @click="openUploadDialog"
       >
-        Upload First File
+        {{ t('projectFiles.uploadFirstFile') }}
       </v-btn>
     </div>
 
@@ -72,12 +72,12 @@
     <v-table v-else density="comfortable" hover class="files-table">
       <thead>
         <tr class="bg-slate-50">
-          <th class="text-left font-weight-bold" style="width: 140px;">Type</th>
-          <th class="text-left font-weight-bold">File Name</th>
-          <th class="text-left font-weight-bold">Description</th>
-          <th class="text-center font-weight-bold" style="width: 110px;">Size</th>
-          <th class="text-center font-weight-bold" style="width: 140px;">Uploaded</th>
-          <th class="text-left font-weight-bold" style="width: 240px;">Actions</th>
+          <th class="text-left font-weight-bold" style="width: 140px;">{{ t('projectFiles.colType') }}</th>
+          <th class="text-left font-weight-bold">{{ t('projectFiles.colFileName') }}</th>
+          <th class="text-left font-weight-bold">{{ t('projectFiles.colDescription') }}</th>
+          <th class="text-center font-weight-bold" style="width: 110px;">{{ t('projectFiles.colSize') }}</th>
+          <th class="text-center font-weight-bold" style="width: 140px;">{{ t('projectFiles.colUploaded') }}</th>
+          <th class="text-left font-weight-bold" style="width: 240px;">{{ t('projectFiles.colActions') }}</th>
         </tr>
       </thead>
       <tbody>
@@ -146,9 +146,9 @@
                   color="success"
                   prepend-icon="mdi-open-in-new"
                   class="font-weight-bold me-1"
-                  title="Open KiCAD Interactive BOM in a new browser window"
+                  :title="t('dialogs.viewIbomTooltip')"
                 >
-                  View iBOM
+                  {{ t('projectFiles.viewIbom') }}
                 </v-btn>
 
                 <v-btn
@@ -157,10 +157,10 @@
                   color="primary"
                   prepend-icon="mdi-database-import-outline"
                   class="font-weight-bold me-1"
-                  title="Import parts from this iBOM into project BOM"
+                  :title="t('dialogs.importIbomTooltip')"
                   @click="$emit('import-ibom', file)"
                 >
-                  Import BOM
+                  {{ t('projectFiles.importBom') }}
                 </v-btn>
               </template>
 
@@ -172,7 +172,7 @@
                 size="small"
                 variant="text"
                 color="primary"
-                title="Download file"
+                :title="t('dialogs.downloadFile')"
               />
 
               <!-- Delete Button -->
@@ -181,7 +181,7 @@
                 size="small"
                 variant="text"
                 color="error"
-                title="Delete attachment"
+                :title="t('dialogs.deleteAttachment')"
                 @click="confirmDelete(file)"
               />
             </div>
@@ -197,7 +197,7 @@
           <div class="d-flex align-center justify-space-between">
             <div class="d-flex align-center">
               <v-icon color="primary" class="me-2">mdi-upload</v-icon>
-              <span class="text-subtitle-1 font-weight-bold text-slate-900">Attach File to Project</span>
+              <span class="text-subtitle-1 font-weight-bold text-slate-900">{{ t('projectFiles.attachModalTitle') }}</span>
             </div>
             <v-btn icon="mdi-close" variant="text" size="small" @click="closeUploadDialog" />
           </div>
@@ -207,13 +207,13 @@
           <!-- File Input -->
           <v-file-input
             v-model="uploadFile"
-            label="Select file *"
+            :label="t('projectFiles.selectFile')"
             variant="outlined"
             density="comfortable"
             prepend-icon="mdi-paperclip"
             show-size
             class="mb-3"
-            :rules="[v => !!v || 'Please select a file']"
+            :rules="[v => !!v || t('projectFiles.pleaseSelectFile')]"
             @update:model-value="onFileSelected"
           />
 
@@ -223,7 +223,7 @@
             :items="fileTypeOptions"
             item-title="label"
             item-value="value"
-            label="File Type / Category"
+            :label="t('projectFiles.fileTypeCategory')"
             variant="outlined"
             density="comfortable"
             class="mb-3"
@@ -239,8 +239,8 @@
           <!-- Description -->
           <v-text-field
             v-model="uploadDescription"
-            label="Description / Notes (optional)"
-            placeholder="e.g. KiCAD v8 interactive board BOM, Gerber v1.2..."
+            :label="t('projectFiles.descriptionNotesOptional')"
+            :placeholder="t('projectFiles.descriptionPlaceholder')"
             variant="outlined"
             density="comfortable"
             counter="500"
@@ -255,13 +255,13 @@
             class="mt-2 text-caption"
             icon="mdi-information-outline"
           >
-            KiCAD Interactive HTML BOMs allow interactive visual assembly in browser and can be imported directly into the project BOM.
+            {{ t('projectFiles.ibomHint') }}
           </v-alert>
         </v-card-text>
 
         <v-card-actions class="px-5 py-3 border-t bg-slate-50 d-flex justify-end gap-2">
           <v-btn variant="outlined" size="small" @click="closeUploadDialog">
-            Cancel
+            {{ t('common.cancel') }}
           </v-btn>
           <v-btn
             color="primary"
@@ -273,7 +273,7 @@
             :disabled="!uploadFile"
             @click="submitUpload"
           >
-            Upload File
+            {{ t('projectFiles.uploadFile') }}
           </v-btn>
         </v-card-actions>
       </v-card>
@@ -285,17 +285,16 @@
         <v-card-item class="bg-slate-50 py-3 px-5 border-b">
           <div class="d-flex align-center">
             <v-icon color="error" class="me-2">mdi-alert-circle-outline</v-icon>
-            <span class="text-subtitle-1 font-weight-bold text-slate-900">Confirm Deletion</span>
+            <span class="text-subtitle-1 font-weight-bold text-slate-900">{{ t('projectFiles.deleteConfirmTitle') }}</span>
           </div>
         </v-card-item>
         <v-card-text class="pa-5 text-body-2 text-slate-700">
-          Are you sure you want to delete <strong class="text-slate-900">{{ fileToDelete?.originalName }}</strong>?
-          This file will be permanently removed from disk.
+          {{ t('projectFiles.deleteConfirmMessage', { name: fileToDelete?.originalName }) }}
         </v-card-text>
         <v-card-actions class="px-5 py-3 border-t bg-slate-50 d-flex justify-end gap-2">
-          <v-btn variant="outlined" size="small" @click="deleteDialog = false">Cancel</v-btn>
+          <v-btn variant="outlined" size="small" @click="deleteDialog = false">{{ t('common.cancel') }}</v-btn>
           <v-btn color="error" variant="flat" size="small" class="font-weight-bold" :loading="deleting" @click="executeDelete">
-            Delete
+            {{ t('common.delete') }}
           </v-btn>
         </v-card-actions>
       </v-card>
@@ -305,7 +304,10 @@
 
 <script setup>
 import { ref, computed, onMounted } from 'vue';
+import { useI18n } from 'vue-i18n';
 import { api } from '../services/api';
+
+const { t } = useI18n();
 
 const props = defineProps({
   projectId: {
@@ -335,24 +337,24 @@ const deleteDialog = ref(false);
 const fileToDelete = ref(null);
 const deleting = ref(false);
 
-const fileTypeOptions = [
-  { value: 'ibom', label: 'KiCAD iBOM (Interactive BOM)', icon: 'mdi-chip', color: 'success' },
-  { value: 'archive', label: 'Gerbers / Archive (.zip, .7z)', icon: 'mdi-folder-zip-outline', color: 'amber-darken-3' },
-  { value: 'firmware', label: 'ROM / Firmware (.bin, .hex)', icon: 'mdi-memory', color: 'purple-darken-2' },
-  { value: 'document', label: 'Datasheet / Document (.pdf)', icon: 'mdi-file-document-outline', color: 'info' },
-  { value: 'schematic', label: 'CAD / Schematic (.sch, .pcb)', icon: 'mdi-drawing-box', color: 'teal-darken-2' },
-  { value: 'other', label: 'Other File', icon: 'mdi-file-outline', color: 'slate-600' }
-];
+const fileTypeOptions = computed(() => [
+  { value: 'ibom', label: t('projectFiles.typeIbom'), icon: 'mdi-chip', color: 'success' },
+  { value: 'archive', label: t('projectFiles.typeArchive'), icon: 'mdi-folder-zip-outline', color: 'amber-darken-3' },
+  { value: 'firmware', label: t('projectFiles.typeFirmware'), icon: 'mdi-memory', color: 'purple-darken-2' },
+  { value: 'document', label: t('projectFiles.typeDocument'), icon: 'mdi-file-document-outline', color: 'info' },
+  { value: 'schematic', label: t('projectFiles.typeSchematic'), icon: 'mdi-drawing-box', color: 'teal-darken-2' },
+  { value: 'other', label: t('projectFiles.typeOther'), icon: 'mdi-file-outline', color: 'slate-600' }
+]);
 
 const currentTypeIcon = computed(() => {
-  const opt = fileTypeOptions.find(o => o.value === selectedFileType.value);
+  const opt = fileTypeOptions.value.find(o => o.value === selectedFileType.value);
   return opt ? opt.icon : 'mdi-file-outline';
 });
 
 function getTypeMeta(type) {
-  const opt = fileTypeOptions.find(o => o.value === type);
+  const opt = fileTypeOptions.value.find(o => o.value === type);
   if (opt) return opt;
-  return { label: type || 'Other', icon: 'mdi-file-outline', color: 'slate-600' };
+  return { label: type || t('common.other'), icon: 'mdi-file-outline', color: 'slate-600' };
 }
 
 function formatFileSize(bytes) {

@@ -47,7 +47,7 @@ router.get('/', async (req, res) => {
     res.json({
       app: {
         name: 'BOM Manager',
-        version: '0.2.4',
+        version: '0.2.5',
         environment: process.env.NODE_ENV || 'development',
         nodeVersion: process.version,
         platform: process.platform,
