@@ -215,6 +215,18 @@
             </v-btn>
 
             <v-btn
+              variant="outlined"
+              color="primary"
+              size="small"
+              prepend-icon="mdi-file-delimited-outline"
+              class="font-weight-bold"
+              @click="showImportDialog = true"
+              :title="t('components.importCsvTooltip')"
+            >
+              {{ t('components.importCsv') }}
+            </v-btn>
+
+            <v-btn
               color="primary"
               variant="flat"
               size="small"
@@ -494,6 +506,16 @@
       @deleted="onComponentDeleted"
     />
 
+    <!-- IMPORT COMPONENTS FROM CSV DIALOG -->
+    <ImportComponentsDialog
+      v-model="showImportDialog"
+      :categories="categories"
+      :packages="packages"
+      @imported="handleImportedComponents"
+      @catalog-updated="onCatalogUpdated"
+      @notify="notify"
+    />
+
     <v-snackbar v-model="snackbar.show" :color="snackbar.color" timeout="3000">
       {{ snackbar.text }}
     </v-snackbar>
@@ -513,6 +535,7 @@ import ComponentDetailsDialog from '../components/ComponentDetailsDialog.vue';
 import PurchaseConfirmDialog from '../components/PurchaseConfirmDialog.vue';
 import ManageCatalogDialog from '../components/ManageCatalogDialog.vue';
 import DeleteComponentDialog from '../components/DeleteComponentDialog.vue';
+import ImportComponentsDialog from '../components/ImportComponentsDialog.vue';
 import { useComponentsStore } from '../stores/components';
 
 const componentsStore = useComponentsStore();
@@ -529,6 +552,7 @@ const isCloneMode = ref(false);
 const selectedComponentForEdit = ref(null);
 const showManageCatalogDialog = ref(false);
 const showDeleteDialog = ref(false);
+const showImportDialog = ref(false);
 const componentToDelete = ref(null);
 const loading = ref(false);
 
@@ -574,7 +598,11 @@ const snackbar = ref({
 });
 
 const notify = (text, color = 'success') => {
-  snackbar.value = { show: true, text, color };
+  if (typeof text === 'object' && text !== null) {
+    snackbar.value = { show: true, text: text.text || '', color: text.color || 'success' };
+  } else {
+    snackbar.value = { show: true, text, color };
+  }
 };
 
 const currentPage = computed(() => Math.floor(offset.value / limit.value) + 1);
@@ -792,6 +820,11 @@ const loadMeta = async () => {
 };
 
 const onCatalogUpdated = async () => {
+  await loadMeta();
+  fetchComponents();
+};
+
+const handleImportedComponents = async () => {
   await loadMeta();
   fetchComponents();
 };
