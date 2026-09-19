@@ -98,8 +98,8 @@
         <v-row dense align="center" class="mt-1">
           <v-col cols="12" sm="6" md="3">
             <v-autocomplete
-              v-model="selectedProjectId"
-              :items="projectsList"
+              v-model="selectedProject"
+              :items="projects"
               item-title="projectName"
               item-value="id"
               :label="t('nav.projects')"
@@ -115,19 +115,21 @@
 
           <v-col cols="12" sm="6" md="3">
             <v-select
-              v-model="stockFilter"
-              :items="stockFilterOptions"
+              v-model="stockStatus"
+              :items="stockStatusOptions"
               item-title="title"
               item-value="value"
               :label="t('components.stockFilter')"
+              :placeholder="t('common.all')"
               density="compact"
               variant="outlined"
               hide-details
+              clearable
               rounded="lg"
               @update:model-value="onFilterChange"
             >
               <template #selection="{ item }">
-                <div class="d-flex align-center gap-1">
+                <div class="d-flex align-center gap-1" v-if="item?.raw">
                   <v-icon size="14" :color="item.raw.color" class="me-1">{{ item.raw.icon }}</v-icon>
                   <span class="text-body-2">{{ item.raw.title }}</span>
                 </div>
@@ -321,7 +323,7 @@
             <!-- Description -->
             <td>
               <div class="text-body-2 text-truncate text-slate-700" style="max-width: 320px;" :title="c.description || c.shortDescription">
-                {{ c.description || c.shortDescription || '—' }}
+                {{ c.shortDescription?.trim() || '—' }}
               </div>
             </td>
 
@@ -566,12 +568,12 @@ const stockStatus = ref('');
 const minPins = ref(null);
 const maxPins = ref(null);
 
-const stockStatusOptions = [
-  { title: 'Absent (0)', value: 'absent', icon: 'mdi-alert-circle', color: 'error' },
-  { title: 'Absent or ≤ Min Qty', value: 'absent_or_low', icon: 'mdi-alert', color: 'deep-orange' },
-  { title: 'Near to End / Low', value: 'low', icon: 'mdi-alert-outline', color: 'orange-darken-2' },
-  { title: 'In Stock (> 0)', value: 'in_stock', icon: 'mdi-check-circle-outline', color: 'success' },
-];
+const stockStatusOptions = computed(() => [
+  { title: t('components.stockAbsent'), value: 'absent', icon: 'mdi-alert-circle', color: 'error' },
+  { title: t('components.stockAbsentOrLow'), value: 'absent_or_low', icon: 'mdi-alert', color: 'deep-orange' },
+  { title: t('components.stockLow'), value: 'low', icon: 'mdi-alert-outline', color: 'orange-darken-2' },
+  { title: t('components.stockInStock'), value: 'in_stock', icon: 'mdi-check-circle-outline', color: 'success' },
+]);
 
 const filteredPackagesList = computed(() => {
   if (packageMountType.value === 'smd') {
@@ -613,7 +615,7 @@ const activeFilterCount = computed(() => {
   if (selectedCategories.value && selectedCategories.value.length > 0) count++;
   if (selectedPackages.value && selectedPackages.value.length > 0) count++;
   if (packageMountType.value !== 'all') count++;
-  if (selectedProject.value !== null && selectedProject.value !== undefined) count++;
+  if (selectedProject.value !== null && selectedProject.value !== undefined && selectedProject.value !== '') count++;
   if (stockStatus.value) count++;
   if (minPins.value !== null && minPins.value !== undefined && minPins.value !== '') count++;
   if (maxPins.value !== null && maxPins.value !== undefined && maxPins.value !== '') count++;
@@ -663,7 +665,7 @@ const fetchComponents = async () => {
       search: search.value,
       categoryIds: selectedCategories.value,
       packageIds: selectedPackages.value,
-      projectId: selectedProject.value,
+      projectId: selectedProject.value || undefined,
       stockStatus: stockStatus.value || undefined,
       isSmd: packageMountType.value === 'smd' ? 1 : (packageMountType.value === 'tht' ? 0 : undefined),
       minPins: minPins.value,

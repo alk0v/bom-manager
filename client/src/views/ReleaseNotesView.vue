@@ -70,9 +70,25 @@ const { t } = useI18n();
 
 const releases = [
   {
+    version: '0.2.6',
+    date: '2026-09-19',
+    isCurrent: true,
+    summary: 'Version 0.2.6 brings bug fixes and UI refinements to the component catalog, ensuring short descriptions are consistently displayed across component lists.',
+    features: [
+      {
+        title: 'Component Catalog Description Display',
+        description: 'The Description column in the Components list now always prioritizes displaying the short description for concise identification, while detailed specifications remain accessible in tooltips and the component details view.'
+      },
+      {
+        title: 'Component Catalog Filters Fix',
+        description: 'Resolved template variable binding issues for the Project autocomplete and Stock status dropdowns, restoring full filtering functionality with interactive icons, clearable controls, and multi-language support.'
+      }
+    ]
+  },
+  {
     version: '0.2.5',
     date: '2026-09-18',
-    isCurrent: true,
+    isCurrent: false,
     summary: 'Version 0.2.5 introduces complete multi-language interface capabilities powered by JSON localization files, adding a full Ukrainian translation alongside existing English with persistent user language preferences.',
     features: [
       {
@@ -297,7 +313,7 @@ const releases = [
   }
 ];
 
-const currentVersion = computed(() => releases.find(r => r.isCurrent)?.version || '0.2.5');
+const currentVersion = computed(() => releases.find(r => r.isCurrent)?.version || '0.2.6');
 </script>
 
 <style scoped>

@@ -23,7 +23,7 @@
               variant="flat"
               class="ms-2 font-mono font-weight-bold"
             >
-              0.2.5
+              0.2.6
             </v-chip>
           </div>
         </template>
@@ -112,7 +112,7 @@
               variant="tonal"
               class="font-mono font-weight-bold"
             >
-              0.2.5
+              0.2.6
             </v-chip>
           </template>
         </v-list-item>
@@ -126,7 +126,7 @@
           >
             <span class="d-flex align-center font-mono">
               <v-icon size="14" color="primary" class="me-1">mdi-tag-outline</v-icon>
-              {{ t('common.version') }} 0.2.5
+              {{ t('common.version') }} 0.2.6
             </span>
             <span class="text-primary font-weight-medium">&rarr;</span>
           </router-link>
@@ -220,7 +220,7 @@ const currentTitle = computed(() => {
     case '/settings':
       return t('header.settingsTitle');
     case '/release-notes':
-      return `${t('header.releaseNotesTitle')} (v0.2.5)`;
+      return `${t('header.releaseNotesTitle')} (v0.2.6)`;
     default:
       return t('common.appName');
   }

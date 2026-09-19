@@ -1,4 +1,4 @@
-# BOM Manager (Bill of Materials) - v0.2.5
+# BOM Manager (Bill of Materials) - v0.2.6
 
 A modern web application designed to manage electronic components, hardware project builds, Bill of Materials (BOM), warehouse inventory stocks, and procurement shopping lists.
 
