@@ -142,6 +142,78 @@ npm run dev
 
 ---
 
+## 📖 Documentation & User Guides
+
+Comprehensive feature walkthroughs with UI screenshots:
+- 🇬🇧 **[English User Guide](GUIDE_EN.MD)**
+- 🇺🇦 **[Інструкція користувача українською](GUIDE_UA.MD)**
+
+---
+
+## 🔄 Upgrading to a New Version
+
+### Option A: Docker Deployments (`docker compose`)
+
+When running with Docker, your SQLite database (`./data/`) and uploaded media files (`./media/`) reside on persistent host volumes and are completely preserved across updates.
+
+1. **Pull the latest changes**:
+   ```bash
+   git pull
+   ```
+
+2. **Rebuild and restart the container**:
+   ```bash
+   docker compose down
+   docker compose build --no-cache
+   docker compose up -d
+   ```
+
+3. **Verify running status**:
+   ```bash
+   docker compose ps
+   docker compose logs -f --tail=50
+   ```
+
+---
+
+### Option B: Local Node.js Deployments
+
+For bare-metal or VM deployments running directly with Node.js:
+
+1. **Pull the latest changes**:
+   ```bash
+   git pull
+   ```
+
+2. **Update dependencies**:
+   ```bash
+   npm install
+   ```
+
+3. **Rebuild the production client bundle**:
+   ```bash
+   npm run build
+   ```
+
+4. **Restart the server process**:
+   - If running manually via npm:
+     ```bash
+     npm run start
+     ```
+   - If managed by **PM2**:
+     ```bash
+     pm2 restart bommanager
+     ```
+   - If managed by **systemd**:
+     ```bash
+     sudo systemctl restart bommanager
+     ```
+
+> [!TIP]
+> **Automatic Schema Migrations**: BOM Manager automatically checks and verifies all database tables and columns on startup (for both SQLite and MySQL). No manual SQL migration scripts are required when upgrading between versions.
+
+---
+
 ## License
 
 Private / MIT
