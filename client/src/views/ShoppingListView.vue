@@ -111,15 +111,228 @@
         <thead>
           <tr class="bg-slate-50">
             <th class="text-left font-weight-bold" style="width: 50px;">Photo</th>
-            <th class="text-left font-weight-bold">{{ t('shoppingList.colComponent') }}</th>
-            <th class="text-left font-weight-bold">{{ t('common.category') }}</th>
-            <th class="text-left font-weight-bold">{{ t('common.package') }}</th>
-            <th class="text-center font-weight-bold">{{ t('shoppingList.colCurrentStock') }}</th>
-            <th class="text-center font-weight-bold" style="width: 140px;">{{ t('shoppingList.colNeeded') }}</th>
-            <th class="text-right font-weight-bold">{{ t('dialogs.unitPrice') }}</th>
-            <th class="text-right font-weight-bold">{{ t('common.total') }}</th>
-            <th class="text-center font-weight-bold">{{ t('shoppingList.colDateAdded') }}</th>
-            <th class="text-left font-weight-bold" style="width: 100px;">{{ t('shoppingList.colActions') }}</th>
+
+            <!-- Component -->
+            <th
+              class="text-left font-weight-bold cursor-pointer user-select-none hover-header"
+              :title="getHeaderTitle('component', t('shoppingList.colComponent'))"
+              @click="toggleSort('component')"
+            >
+              <div class="d-inline-flex align-center gap-1">
+                <span :class="{ 'text-primary font-weight-black': sortBy === 'component' }">
+                  {{ t('shoppingList.colComponent') }}
+                </span>
+                <v-icon
+                  v-if="sortBy === 'component'"
+                  size="16"
+                  color="primary"
+                >
+                  {{ sortOrder === 'asc' ? 'mdi-arrow-up' : 'mdi-arrow-down' }}
+                </v-icon>
+                <v-icon
+                  v-else
+                  size="14"
+                  class="text-slate-300 sort-indicator"
+                >
+                  mdi-unfold-more-horizontal
+                </v-icon>
+              </div>
+            </th>
+
+            <!-- Category -->
+            <th
+              class="text-left font-weight-bold cursor-pointer user-select-none hover-header"
+              :title="getHeaderTitle('category', t('common.category'))"
+              @click="toggleSort('category')"
+            >
+              <div class="d-inline-flex align-center gap-1">
+                <span :class="{ 'text-primary font-weight-black': sortBy === 'category' }">
+                  {{ t('common.category') }}
+                </span>
+                <v-icon
+                  v-if="sortBy === 'category'"
+                  size="16"
+                  color="primary"
+                >
+                  {{ sortOrder === 'asc' ? 'mdi-arrow-up' : 'mdi-arrow-down' }}
+                </v-icon>
+                <v-icon
+                  v-else
+                  size="14"
+                  class="text-slate-300 sort-indicator"
+                >
+                  mdi-unfold-more-horizontal
+                </v-icon>
+              </div>
+            </th>
+
+            <!-- Package -->
+            <th
+              class="text-left font-weight-bold cursor-pointer user-select-none hover-header"
+              :title="getHeaderTitle('package', t('common.package'))"
+              @click="toggleSort('package')"
+            >
+              <div class="d-inline-flex align-center gap-1">
+                <span :class="{ 'text-primary font-weight-black': sortBy === 'package' }">
+                  {{ t('common.package') }}
+                </span>
+                <v-icon
+                  v-if="sortBy === 'package'"
+                  size="16"
+                  color="primary"
+                >
+                  {{ sortOrder === 'asc' ? 'mdi-arrow-up' : 'mdi-arrow-down' }}
+                </v-icon>
+                <v-icon
+                  v-else
+                  size="14"
+                  class="text-slate-300 sort-indicator"
+                >
+                  mdi-unfold-more-horizontal
+                </v-icon>
+              </div>
+            </th>
+
+            <!-- In Stock -->
+            <th
+              class="text-center font-weight-bold cursor-pointer user-select-none hover-header"
+              :title="getHeaderTitle('stockQuantity', t('shoppingList.colCurrentStock'))"
+              @click="toggleSort('stockQuantity')"
+            >
+              <div class="d-inline-flex align-center justify-center gap-1">
+                <span :class="{ 'text-primary font-weight-black': sortBy === 'stockQuantity' }">
+                  {{ t('shoppingList.colCurrentStock') }}
+                </span>
+                <v-icon
+                  v-if="sortBy === 'stockQuantity'"
+                  size="16"
+                  color="primary"
+                >
+                  {{ sortOrder === 'asc' ? 'mdi-arrow-up' : 'mdi-arrow-down' }}
+                </v-icon>
+                <v-icon
+                  v-else
+                  size="14"
+                  class="text-slate-300 sort-indicator"
+                >
+                  mdi-unfold-more-horizontal
+                </v-icon>
+              </div>
+            </th>
+
+            <!-- Needed -->
+            <th
+              class="text-center font-weight-bold cursor-pointer user-select-none hover-header"
+              style="width: 140px;"
+              :title="getHeaderTitle('qty', t('shoppingList.colNeeded'))"
+              @click="toggleSort('qty')"
+            >
+              <div class="d-inline-flex align-center justify-center gap-1">
+                <span :class="{ 'text-primary font-weight-black': sortBy === 'qty' }">
+                  {{ t('shoppingList.colNeeded') }}
+                </span>
+                <v-icon
+                  v-if="sortBy === 'qty'"
+                  size="16"
+                  color="primary"
+                >
+                  {{ sortOrder === 'asc' ? 'mdi-arrow-up' : 'mdi-arrow-down' }}
+                </v-icon>
+                <v-icon
+                  v-else
+                  size="14"
+                  class="text-slate-300 sort-indicator"
+                >
+                  mdi-unfold-more-horizontal
+                </v-icon>
+              </div>
+            </th>
+
+            <!-- Unit Price -->
+            <th
+              class="text-right font-weight-bold cursor-pointer user-select-none hover-header"
+              :title="getHeaderTitle('latestPrice', t('dialogs.unitPrice'))"
+              @click="toggleSort('latestPrice')"
+            >
+              <div class="d-inline-flex align-center justify-end gap-1">
+                <span :class="{ 'text-primary font-weight-black': sortBy === 'latestPrice' }">
+                  {{ t('dialogs.unitPrice') }}
+                </span>
+                <v-icon
+                  v-if="sortBy === 'latestPrice'"
+                  size="16"
+                  color="primary"
+                >
+                  {{ sortOrder === 'asc' ? 'mdi-arrow-up' : 'mdi-arrow-down' }}
+                </v-icon>
+                <v-icon
+                  v-else
+                  size="14"
+                  class="text-slate-300 sort-indicator"
+                >
+                  mdi-unfold-more-horizontal
+                </v-icon>
+              </div>
+            </th>
+
+            <!-- Total -->
+            <th
+              class="text-right font-weight-bold cursor-pointer user-select-none hover-header"
+              :title="getHeaderTitle('total', t('common.total'))"
+              @click="toggleSort('total')"
+            >
+              <div class="d-inline-flex align-center justify-end gap-1">
+                <span :class="{ 'text-primary font-weight-black': sortBy === 'total' }">
+                  {{ t('common.total') }}
+                </span>
+                <v-icon
+                  v-if="sortBy === 'total'"
+                  size="16"
+                  color="primary"
+                >
+                  {{ sortOrder === 'asc' ? 'mdi-arrow-up' : 'mdi-arrow-down' }}
+                </v-icon>
+                <v-icon
+                  v-else
+                  size="14"
+                  class="text-slate-300 sort-indicator"
+                >
+                  mdi-unfold-more-horizontal
+                </v-icon>
+              </div>
+            </th>
+
+            <!-- Date Added -->
+            <th
+              class="text-center font-weight-bold cursor-pointer user-select-none hover-header"
+              :title="getHeaderTitle('date', t('shoppingList.colDateAdded'))"
+              @click="toggleSort('date')"
+            >
+              <div class="d-inline-flex align-center justify-center gap-1">
+                <span :class="{ 'text-primary font-weight-black': sortBy === 'date' }">
+                  {{ t('shoppingList.colDateAdded') }}
+                </span>
+                <v-icon
+                  v-if="sortBy === 'date'"
+                  size="16"
+                  color="primary"
+                >
+                  {{ sortOrder === 'asc' ? 'mdi-arrow-up' : 'mdi-arrow-down' }}
+                </v-icon>
+                <v-icon
+                  v-else
+                  size="14"
+                  class="text-slate-300 sort-indicator"
+                >
+                  mdi-unfold-more-horizontal
+                </v-icon>
+              </div>
+            </th>
+
+            <!-- Actions -->
+            <th class="text-left font-weight-bold" style="width: 100px;">
+              {{ t('shoppingList.colActions') }}
+            </th>
           </tr>
         </thead>
 
@@ -398,18 +611,106 @@ const estimatedTotalCost = computed(() => {
   return cost;
 });
 
+// Sorting state
+const sortBy = ref('date');
+const sortOrder = ref('desc');
+
+const getHeaderTitle = (key, label) => {
+  if (sortBy.value === key) {
+    return `${label}: ${sortOrder.value === 'asc' ? t('shoppingList.sortedAsc') : t('shoppingList.sortedDesc')}`;
+  }
+  return `${label} (${t('shoppingList.clickToSort')})`;
+};
+
+const toggleSort = (key) => {
+  if (sortBy.value === key) {
+    sortOrder.value = sortOrder.value === 'asc' ? 'desc' : 'asc';
+  } else {
+    sortBy.value = key;
+    if (['stockQuantity', 'qty', 'latestPrice', 'total', 'date'].includes(key)) {
+      sortOrder.value = 'desc';
+    } else {
+      sortOrder.value = 'asc';
+    }
+  }
+};
+
 const filteredItems = computed(() => {
-  if (!searchQuery.value.trim()) return items.value;
-  const q = searchQuery.value.toLowerCase().trim();
-  return items.value.filter(item =>
-    (item.component && item.component.toLowerCase().includes(q)) ||
-    (item.marking && item.marking.toLowerCase().includes(q)) ||
-    (item.description && item.description.toLowerCase().includes(q)) ||
-    (item.shortDescription && item.shortDescription.toLowerCase().includes(q)) ||
-    (item.category && item.category.toLowerCase().includes(q)) ||
-    (item.package && item.package.toLowerCase().includes(q)) ||
-    (item.latestOrderDetails && item.latestOrderDetails.toLowerCase().includes(q))
-  );
+  let list = items.value;
+
+  if (searchQuery.value.trim()) {
+    const q = searchQuery.value.toLowerCase().trim();
+    list = list.filter(item =>
+      (item.component && item.component.toLowerCase().includes(q)) ||
+      (item.marking && item.marking.toLowerCase().includes(q)) ||
+      (item.description && item.description.toLowerCase().includes(q)) ||
+      (item.shortDescription && item.shortDescription.toLowerCase().includes(q)) ||
+      (item.category && item.category.toLowerCase().includes(q)) ||
+      (item.package && item.package.toLowerCase().includes(q)) ||
+      (item.latestOrderDetails && item.latestOrderDetails.toLowerCase().includes(q))
+    );
+  }
+
+  if (!sortBy.value) return list;
+
+  const key = sortBy.value;
+  const orderMultiplier = sortOrder.value === 'desc' ? -1 : 1;
+
+  return [...list].sort((a, b) => {
+    let valA, valB;
+
+    switch (key) {
+      case 'component':
+        valA = (a.component || '').toLowerCase();
+        valB = (b.component || '').toLowerCase();
+        return valA.localeCompare(valB) * orderMultiplier;
+
+      case 'category':
+        valA = (a.category || '').toLowerCase();
+        valB = (b.category || '').toLowerCase();
+        if (!valA && valB) return 1;
+        if (valA && !valB) return -1;
+        return valA.localeCompare(valB) * orderMultiplier;
+
+      case 'package':
+        valA = (a.package || '').toLowerCase();
+        valB = (b.package || '').toLowerCase();
+        if (!valA && valB) return 1;
+        if (valA && !valB) return -1;
+        return valA.localeCompare(valB) * orderMultiplier;
+
+      case 'stockQuantity':
+        valA = a.stockQuantity == null ? -999999999 : Number(a.stockQuantity);
+        valB = b.stockQuantity == null ? -999999999 : Number(b.stockQuantity);
+        return (valA - valB) * orderMultiplier;
+
+      case 'qty':
+        valA = Number(a.qty) || 0;
+        valB = Number(b.qty) || 0;
+        return (valA - valB) * orderMultiplier;
+
+      case 'latestPrice':
+        valA = a.latestPrice != null ? Number(a.latestPrice) : -1;
+        valB = b.latestPrice != null ? Number(b.latestPrice) : -1;
+        return (valA - valB) * orderMultiplier;
+
+      case 'total':
+        valA = a.latestPrice != null ? (Number(a.qty) || 0) * Number(a.latestPrice) : -1;
+        valB = b.latestPrice != null ? (Number(b.qty) || 0) * Number(b.latestPrice) : -1;
+        return (valA - valB) * orderMultiplier;
+
+      case 'date':
+        valA = a.date ? new Date(a.date).getTime() : 0;
+        valB = b.date ? new Date(b.date).getTime() : 0;
+        if (valA === valB) {
+          return ((Number(a.id) || 0) - (Number(b.id) || 0)) * orderMultiplier;
+        }
+        return (valA - valB) * orderMultiplier;
+
+      default:
+        return 0;
+    }
+  });
 });
 
 const totalFilteredUnits = computed(() => {
@@ -560,5 +861,22 @@ onMounted(() => {
 .quantity-input,
 .quantity-stepper input[type=number] {
   -moz-appearance: textfield !important;
+}
+.hover-header {
+  transition: background-color 0.15s ease-in-out, color 0.15s ease-in-out;
+}
+.hover-header:hover {
+  background-color: #f1f5f9 !important;
+}
+.hover-header:hover .sort-indicator {
+  color: #64748b !important;
+  opacity: 1 !important;
+}
+.sort-indicator {
+  opacity: 0.35;
+  transition: opacity 0.15s, color 0.15s;
+}
+.user-select-none {
+  user-select: none;
 }
 </style>

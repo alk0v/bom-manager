@@ -198,7 +198,11 @@
     "totalRequirements": "Total Shopping List Requirements",
     "componentsListed": "{count} components listed",
     "noMatch": "No shopping list items match your filter",
-    "adjustSearch": "Try adjusting your search terms"
+    "adjustSearch": "Try adjusting your search terms",
+    "clickToSort": "Click to sort",
+    "sortedAsc": "Sorted ascending",
+    "sortedDesc": "Sorted descending",
+    "resetSort": "Reset sort"
   },
   "reports": {
     "refreshTooltip": "Refresh report data",
