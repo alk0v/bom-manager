@@ -158,6 +158,8 @@ When running with Docker, your SQLite database (`./data/`) and uploaded media fi
 
 1. **Pull the latest changes**:
    ```bash
+   # Discard any local lockfile modifications if prompted, then pull
+   git restore package-lock.json
    git pull
    ```
 
@@ -184,11 +186,18 @@ For bare-metal or VM deployments running directly with Node.js:
    ```bash
    git pull
    ```
+   > [!NOTE]
+   > If `git pull` or `git checkout` warns that local changes to `package-lock.json` would be overwritten, discard the local npm changes before pulling:
+   > ```bash
+   > git restore package-lock.json
+   > git pull
+   > ```
 
 2. **Update dependencies**:
    ```bash
    npm install
    ```
+   *(Or `npm ci` for a clean install strictly based on `package-lock.json`)*
 
 3. **Rebuild the production client bundle**:
    ```bash
