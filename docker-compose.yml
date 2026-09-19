@@ -6,27 +6,27 @@ services:
     container_name: bommanager
     restart: unless-stopped
     ports:
-      - "3001:3001"
+      - "${PORT:-3001}:${PORT:-3001}"
+    env_file:
+      - path: .env
+        required: false
     environment:
-      - PORT=3001
-      - MEDIA_BASE_URL=/media
+      - PORT=${PORT:-3001}
+      - MEDIA_BASE_URL=${MEDIA_BASE_URL:-/media}
       - MEDIA_DIR=/app/media
       - DATA_DIR=/app/data
       # -------------------------------------------------------------------------
-      # Option 1: Autonomous SQLite (Default - Zero configuration required)
+      # Database Configuration (inherited from .env, with SQLite as fallback)
       # -------------------------------------------------------------------------
-      - DB_TYPE=sqlite
+      - DB_TYPE=${DB_TYPE:-sqlite}
       - SQLITE_FILE=/app/data/bommanager.sqlite
-      - DEMO_DATA=true
-      # -------------------------------------------------------------------------
-      # Option 2: External MySQL / MariaDB (Uncomment to use external database)
-      # -------------------------------------------------------------------------
-      # - DB_TYPE=mysql
-      # - DB_HOST=192.168.1.100
-      # - DB_PORT=3306
-      # - DB_USER=bommanager_user
-      # - DB_PASSWORD=your_mysql_password
-      # - DB_NAME=bommanager
+      - DEMO_DATA=${DEMO_DATA:-true}
+      # External MySQL / MariaDB (used when DB_TYPE=mysql in .env)
+      - DB_HOST=${DB_HOST:-}
+      - DB_PORT=${DB_PORT:-3306}
+      - DB_USER=${DB_USER:-}
+      - DB_PASSWORD=${DB_PASSWORD:-}
+      - DB_NAME=${DB_NAME:-}
     volumes:
       - ./data:/app/data
       - ./media:/app/media
