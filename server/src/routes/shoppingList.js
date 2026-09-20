@@ -5,6 +5,30 @@ const pool = require('../db');
 // GET /api/shopping-list - list all basket items joined with component data and latest price
 router.get('/', async (req, res) => {
   try {
+    const { projectId } = req.query;
+    let whereClause = '';
+    const params = [];
+
+    if (projectId) {
+      const parsedProjectId = parseInt(projectId, 10);
+      if (!isNaN(parsedProjectId)) {
+        whereClause = `
+          WHERE EXISTS (
+            SELECT 1 FROM t_bom b_proj 
+            WHERE b_proj.projectId = ? 
+              AND (
+                b_proj.componentId = b.componentId 
+                OR EXISTS (
+                  SELECT 1 FROM t_bom_substitutes s_proj 
+                  WHERE s_proj.bomId = b_proj.id AND s_proj.componentId = b.componentId
+                )
+              )
+          )
+        `;
+        params.push(parsedProjectId);
+      }
+    }
+
     const query = `
       SELECT 
         b.id,
@@ -41,9 +65,10 @@ router.get('/', async (req, res) => {
           WHERE componentId IS NOT NULL
         ) r WHERE rn = 1
       ) lo ON lo.componentId = b.componentId
+      ${whereClause}
       ORDER BY b.date DESC, b.id DESC
     `;
-    const [rows] = await pool.query(query);
+    const [rows] = await pool.query(query, params);
     res.json(rows);
   } catch (error) {
     console.error('Error fetching shopping list:', error);

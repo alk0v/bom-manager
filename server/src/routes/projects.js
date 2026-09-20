@@ -35,6 +35,21 @@ router.get('/', async (req, res) => {
         COALESCE(SUM(CASE WHEN b.id IS NOT NULL THEN GREATEST(0, b.quantity - COALESCE(c.qty, 0)) ELSE 0 END), 0) AS totalShortageQty,
         (SELECT COUNT(*) FROM t_project_files pf WHERE pf.projectId = p.id) AS filesCount,
         (SELECT COUNT(*) FROM t_project_files pf WHERE pf.projectId = p.id AND pf.fileType = 'ibom') AS ibomFilesCount,
+        (
+          SELECT COUNT(DISTINCT b_cnt.componentId)
+          FROM t_busket b_cnt
+          WHERE EXISTS (
+            SELECT 1 FROM t_bom bom_cnt
+            WHERE bom_cnt.projectId = p.id
+              AND (
+                bom_cnt.componentId = b_cnt.componentId
+                OR EXISTS (
+                  SELECT 1 FROM t_bom_substitutes sub_cnt
+                  WHERE sub_cnt.bomId = bom_cnt.id AND sub_cnt.componentId = b_cnt.componentId
+                )
+              )
+          )
+        ) AS shoppingItemCount,
         COALESCE(ROUND(SUM(b.quantity * lo.latestPrice), 2), 0) AS estimatedCost,
         COUNT(DISTINCT CASE WHEN lo.latestPrice IS NOT NULL THEN b.id END) AS pricedItemsCount
       FROM i_projects p

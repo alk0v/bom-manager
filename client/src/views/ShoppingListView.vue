@@ -63,17 +63,51 @@
 
       <!-- Filter / Search & Actions Toolbar -->
       <div class="px-5 py-3 bg-white d-flex align-center justify-space-between flex-wrap gap-3">
-        <v-text-field
-          v-model="searchQuery"
-          :placeholder="t('shoppingList.searchPlaceholder')"
-          prepend-inner-icon="mdi-magnify"
-          density="compact"
-          variant="outlined"
-          hide-details
-          clearable
-          rounded="lg"
-          style="max-width: 420px; width: 100%;"
-        />
+        <div class="d-flex align-center flex-wrap gap-3" style="flex: 1 1 600px; max-width: 840px;">
+          <v-text-field
+            v-model="searchQuery"
+            :placeholder="t('shoppingList.searchPlaceholder')"
+            prepend-inner-icon="mdi-magnify"
+            density="compact"
+            variant="outlined"
+            hide-details
+            clearable
+            rounded="lg"
+            style="min-width: 260px; flex: 1;"
+          />
+
+          <v-autocomplete
+            v-model="selectedProject"
+            :items="availableProjectsWithShoppingItems"
+            item-title="projectName"
+            item-value="id"
+            :label="t('nav.projects')"
+            :placeholder="t('common.all')"
+            prepend-inner-icon="mdi-folder-outline"
+            density="compact"
+            variant="outlined"
+            hide-details
+            clearable
+            rounded="lg"
+            style="min-width: 260px; flex: 1;"
+            @update:model-value="onProjectFilterChange"
+          >
+            <template #item="{ props, item }">
+              <v-list-item v-bind="props" :title="item.raw.projectName">
+                <template #append>
+                  <v-chip
+                    size="x-small"
+                    color="primary"
+                    variant="flat"
+                    class="font-weight-bold"
+                  >
+                    {{ item.raw.shoppingItemCount }}
+                  </v-chip>
+                </template>
+              </v-list-item>
+            </template>
+          </v-autocomplete>
+        </div>
 
         <div class="d-flex align-center gap-2">
           <div class="text-caption text-disabled font-mono me-2">
@@ -571,6 +605,8 @@ import { formatCurrency, formatDate } from '../utils/formatters';
 const shoppingListStore = useShoppingListStore();
 
 const items = ref([]);
+const projects = ref([]);
+const selectedProject = ref(null);
 const loading = ref(false);
 const searchQuery = ref('');
 
@@ -731,14 +767,39 @@ const totalFilteredCost = computed(() => {
 const loadShoppingList = async () => {
   loading.value = true;
   try {
-    items.value = await api.getShoppingList();
-    shoppingListStore.setItems(items.value);
+    const params = {};
+    if (selectedProject.value) {
+      params.projectId = selectedProject.value;
+    }
+    items.value = await api.getShoppingList(params);
+    // Only update the global navbar badge store when fetching full unfiltered list
+    if (!selectedProject.value) {
+      shoppingListStore.setItems(items.value);
+    }
   } catch (err) {
     notify('Failed to load shopping list: ' + err.message, 'error');
   } finally {
     loading.value = false;
   }
 };
+
+const onProjectFilterChange = () => {
+  loadShoppingList();
+};
+
+const loadProjects = async () => {
+  try {
+    const projs = await api.getProjects();
+    // Only include projects that have components currently in the shopping list
+    projects.value = (projs || []).filter(p => Number(p.shoppingItemCount) > 0);
+  } catch (err) {
+    console.error('Failed to load projects for filter:', err);
+  }
+};
+
+const availableProjectsWithShoppingItems = computed(() => {
+  return projects.value.filter(p => Number(p.shoppingItemCount) > 0);
+});
 
 // Quantity stepper handlers
 const updateQuantity = async (item, newQty) => {
@@ -797,7 +858,7 @@ const onItemPurchased = async (result) => {
     }
   }
   // Refresh shopping list to ensure stock levels and order data are synchronized
-  await loadShoppingList();
+  await Promise.all([loadShoppingList(), loadProjects()]);
 };
 
 const removeItem = async (item) => {
@@ -805,6 +866,7 @@ const removeItem = async (item) => {
     await api.deleteShoppingListItem(item.id);
     items.value = items.value.filter(i => i.id !== item.id);
     notify(`Removed ${item.component} from shopping list`);
+    loadProjects();
   } catch (err) {
     notify('Failed to remove item: ' + err.message, 'error');
   }
@@ -819,6 +881,7 @@ const copyShoppingList = () => {
 };
 
 onMounted(() => {
+  loadProjects();
   loadShoppingList();
 });
 </script>

@@ -133,7 +133,7 @@ export const api = {
   getStorages: () => client.get('/storages').then(res => res.data),
 
   // Shopping List
-  getShoppingList: () => client.get('/shopping-list').then(res => res.data),
+  getShoppingList: (params = {}) => client.get('/shopping-list', { params }).then(res => res.data),
   addToShoppingList: (data) => client.post('/shopping-list', data).then(res => {
     if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('shopping-list-updated'));
     return res.data;

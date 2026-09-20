@@ -202,7 +202,8 @@
     "clickToSort": "Click to sort",
     "sortedAsc": "Sorted ascending",
     "sortedDesc": "Sorted descending",
-    "resetSort": "Reset sort"
+    "resetSort": "Reset sort",
+    "filterByProject": "Filter by project"
   },
   "reports": {
     "refreshTooltip": "Refresh report data",
@@ -396,7 +397,8 @@
     "viewDrawingFullSize": "Click to view drawing in full size",
     "openOriginal": "Open Original",
     "editStockQty": "Current stock quantity (click to edit)",
-    "editMinQty": "Minimal acceptable quantity (click to edit)"
+    "editMinQty": "Minimal acceptable quantity (click to edit)",
+    "editPackage": "Edit Package"
   },
   "releaseNotes": {
     "current": "Current",
