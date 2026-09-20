@@ -176,6 +176,12 @@ Locations and stock quantity per storage bin/box.
   - Organize keys into clean component or dialog namespaces (e.g. `importComponentsModal`, `componentDetailsModal`, `produceModal`) or common shared namespaces (`common`, `dialogs`).
   - Use interpolation placeholders (e.g. `{name}`, `{count}`) rather than manual string concatenation so word order and grammatical inflection remain natural in all target languages.
 
+### STRICT DIRECTIVE: Component Extraction & Re-usability (Avoid Code Duplication)
+- **Always Extract Reusable Components**:
+  - Whenever a modal window, dialog, card, table, or complex UI section is used (or could be used) in more than one place, extract it into a dedicated component in `client/src/components/` (e.g. `ProjectBomDialog.vue`, `ProduceProjectDialog.vue`, `MediaLightboxDialog.vue`).
+  - **Never duplicate modal templates or large blocks of script logic** across different views.
+  - Keep views (`*View.vue`) focused on page layout, routing, and top-level data orchestration. Delegate modal dialogues, complex forms, and tables to reusable components.
+
 ### Core UI Layout
 - Persistent `v-navigation-drawer` with brand logo and navigation items:
   1. **Projects** (`/projects`)

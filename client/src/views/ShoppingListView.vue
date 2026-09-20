@@ -107,6 +107,19 @@
               </v-list-item>
             </template>
           </v-autocomplete>
+
+          <!-- View BOM button when project is selected -->
+          <v-btn
+            v-if="selectedProject"
+            color="primary"
+            variant="tonal"
+            class="font-weight-medium text-none"
+            prepend-icon="mdi-format-list-bulleted-square"
+            style="height: 40px;"
+            @click="openSelectedProjectBom"
+          >
+            {{ t('projects.viewBom') }}
+          </v-btn>
         </div>
 
         <div class="d-flex align-center gap-2">
@@ -576,9 +589,17 @@
     <!-- Modal: Photo Lightbox -->
     <MediaLightboxDialog
       v-model="lightbox.show"
-      type="component"
+      :type="lightbox.type || 'component'"
       :src="lightbox.src"
       :title="lightbox.title"
+    />
+
+    <!-- Reusable Project BOM Preview Modal -->
+    <ProjectBomDialog
+      v-model="showBomDialog"
+      :project="activeProject"
+      @updated="onBomUpdated"
+      @notify="notify"
     />
 
     <!-- Notification Snackbar -->
@@ -599,6 +620,7 @@ import MediaLightboxDialog from '../components/MediaLightboxDialog.vue';
 import PackageLink from '../components/PackageLink.vue';
 import PurchaseConfirmDialog from '../components/PurchaseConfirmDialog.vue';
 import ComponentDetailsDialog from '../components/ComponentDetailsDialog.vue';
+import ProjectBomDialog from '../components/ProjectBomDialog.vue';
 import { useShoppingListStore } from '../stores/shoppingList';
 import { formatCurrency, formatDate } from '../utils/formatters';
 
@@ -610,6 +632,10 @@ const selectedProject = ref(null);
 const loading = ref(false);
 const searchQuery = ref('');
 
+// Project BOM Modal State
+const activeProject = ref(null);
+const showBomDialog = ref(false);
+
 const showPurchaseDialog = ref(false);
 const selectedItemForPurchase = ref(null);
 
@@ -618,6 +644,7 @@ const selectedItemForDetails = ref(null);
 
 const lightbox = ref({
   show: false,
+  type: 'component',
   src: null,
   title: ''
 });
@@ -839,11 +866,32 @@ const openComponentDetails = (item) => {
 };
 
 const openImageLightbox = (item) => {
+  if (!item?.photoURL) return;
   lightbox.value = {
     show: true,
+    type: 'component',
     src: item.photoURL,
     title: item.component
   };
+};
+
+const openSelectedProjectBom = async () => {
+  if (!selectedProject.value) return;
+  let proj = projects.value.find(p => p.id === selectedProject.value);
+  if (!proj) {
+    try {
+      proj = await api.getProject(selectedProject.value);
+    } catch (err) {
+      notify('Failed to load project details: ' + err.message, 'error');
+      return;
+    }
+  }
+  activeProject.value = proj;
+  showBomDialog.value = true;
+};
+
+const onBomUpdated = async () => {
+  await Promise.all([loadShoppingList(), loadProjects()]);
 };
 
 // Purchase completion callback
