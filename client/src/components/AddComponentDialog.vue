@@ -21,7 +21,20 @@
             </span>
           </span>
         </div>
-        <v-btn icon="mdi-close" variant="text" size="small" @click="close" />
+        <div class="d-flex align-center gap-2">
+          <v-btn
+            v-if="!cloneModeOnly"
+            color="primary"
+            variant="flat"
+            size="small"
+            class="font-weight-medium"
+            prepend-icon="mdi-plus"
+            @click="openCreateComponentDialog"
+          >
+            {{ t('dialogs.createComponent') }}
+          </v-btn>
+          <v-btn icon="mdi-close" variant="text" size="small" @click="close" />
+        </div>
       </v-card-title>
 
       <!-- Filter Controls Bar -->
@@ -320,6 +333,17 @@
               <td :colspan="pickerMode ? 8 : 7" class="text-center py-8 text-disabled">
                 <v-icon size="36" class="mb-2">mdi-memory-off</v-icon>
                 <div>{{ t('dialogs.noComponentsMatch') }}</div>
+                <div v-if="!cloneModeOnly" class="mt-3">
+                  <v-btn
+                    color="primary"
+                    variant="tonal"
+                    size="small"
+                    prepend-icon="mdi-plus"
+                    @click="openCreateComponentDialog"
+                  >
+                    {{ t('dialogs.createComponent') }}
+                  </v-btn>
+                </div>
               </td>
             </tr>
 
@@ -496,6 +520,17 @@
       :select-button-text="selectButtonText || (pickerMode ? t('dialogs.pickThisComponent') : t('dialogs.selectForBom'))"
       @select="onDetailComponentSelected"
     />
+
+    <!-- Re-used Create Component Dialog Modal -->
+    <CreateComponentDialog
+      v-model="showCreateDialog"
+      :categories="categories"
+      :packages="packages"
+      :initial-data="initialCreateData"
+      @created="onComponentCreated"
+      @saved="onComponentCreated"
+      @catalog-updated="onCatalogUpdated"
+    />
   </v-dialog>
 </template>
 
@@ -506,6 +541,7 @@ import api from '../services/api';
 import MediaImage from './MediaImage.vue';
 import PackageLink from './PackageLink.vue';
 import ComponentDetailsDialog from './ComponentDetailsDialog.vue';
+import CreateComponentDialog from './CreateComponentDialog.vue';
 
 const { t } = useI18n();
 
@@ -767,6 +803,37 @@ const onRowDblClick = (c) => {
   } else if (props.pickerMode) {
     selectedComponent.value = c;
     confirmPick();
+  }
+};
+
+const showCreateDialog = ref(false);
+const initialCreateData = ref(null);
+
+const openCreateComponentDialog = () => {
+  initialCreateData.value = search.value?.trim() ? { component: search.value.trim() } : null;
+  showCreateDialog.value = true;
+};
+
+const onComponentCreated = async (newComp) => {
+  showCreateDialog.value = false;
+  await fetchComponents();
+  if (newComp && (newComp.ID || newComp.id)) {
+    const compId = Number(newComp.ID || newComp.id);
+    const found = components.value.find(c => c.ID === compId) || newComp;
+    selectComponent(found);
+  }
+};
+
+const onCatalogUpdated = async () => {
+  try {
+    const [cats, pkgs] = await Promise.all([
+      api.getCategories(),
+      api.getPackages()
+    ]);
+    categories.value = cats || [];
+    packages.value = pkgs || [];
+  } catch (err) {
+    console.error('Failed to reload categories/packages in AddComponentDialog:', err);
   }
 };
 
