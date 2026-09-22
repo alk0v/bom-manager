@@ -150,11 +150,28 @@ export const api = {
     if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('shopping-list-updated'));
     return res.data;
   }),
+  confirmDelivery: (id, data) => client.post(`/shopping-list/${id}/confirm-delivery`, data).then(res => {
+    if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('shopping-list-updated'));
+    return res.data;
+  }),
+  confirmOrderDelivery: (orderId, data) => client.post(`/components/orders/${orderId}/deliver`, data).then(res => {
+    if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('shopping-list-updated'));
+    return res.data;
+  }),
 
   // Reports
   getProductionReport: (params = {}) => client.get('/reports/production', { params }).then(res => res.data),
   getProductionReportDetails: (id) => client.get(`/reports/production/${id}`).then(res => res.data),
   cancelProductionRun: (id) => client.post(`/reports/production/${id}/cancel`).then(res => res.data),
+  getPurchasesReport: (params = {}) => client.get('/reports/purchases', { params }).then(res => res.data),
+  updateOrder: (orderId, data) => client.put(`/components/orders/${orderId}`, data).then(res => {
+    if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('shopping-list-updated'));
+    return res.data;
+  }),
+  deleteOrder: (orderId, params = {}) => client.delete(`/components/orders/${orderId}`, { params }).then(res => {
+    if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('shopping-list-updated'));
+    return res.data;
+  }),
 
   // Media upload
   uploadMedia: (folder, file, filename) => {

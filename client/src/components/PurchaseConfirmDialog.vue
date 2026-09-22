@@ -11,7 +11,7 @@
         <div class="d-flex align-center gap-2">
           <v-icon color="primary" size="22">mdi-cash-check</v-icon>
           <span class="text-h6 font-weight-bold text-slate-900">
-            Confirm Purchase & Create Order
+            {{ t('purchaseModal.title') }}
           </span>
         </div>
         <v-btn icon="mdi-close" variant="text" size="small" @click="close" />
@@ -48,7 +48,7 @@
             <div class="d-flex align-center gap-2 text-caption text-slate-600 mt-1 flex-wrap">
               <span v-if="item.category">{{ item.category }}</span>
               <span v-if="item.package">• {{ item.package }}</span>
-              <span>• Current stock: <strong class="font-mono">{{ item.stockQuantity ?? 0 }} pcs</strong></span>
+              <span>• {{ t('shoppingList.colCurrentStock') }}: <strong class="font-mono">{{ item.stockQuantity ?? 0 }} {{ t('shoppingList.pcs') }}</strong></span>
             </div>
           </div>
         </div>
@@ -63,7 +63,7 @@
           icon="mdi-history"
         >
           <div class="d-flex align-center justify-space-between w-100">
-            <span>Pre-filled from previous order (Kit mode)</span>
+            <span>{{ t('purchaseModal.prefilledKit') }}</span>
             <v-btn
               size="x-small"
               variant="text"
@@ -72,7 +72,7 @@
               class="ms-2 font-weight-bold"
               @click="clearForm"
             >
-              Clear
+              {{ t('purchaseModal.clear') }}
             </v-btn>
           </div>
         </v-alert>
@@ -82,7 +82,7 @@
             <!-- Quantity Purchased -->
             <v-col cols="12" sm="4">
               <label class="text-caption text-slate-700 font-weight-bold text-uppercase d-block mb-1">
-                Quantity (pcs) *
+                {{ t('purchaseModal.quantityPcs') }}
               </label>
               <div class="d-flex align-center border rounded-lg bg-white px-1" style="height: 40px;">
                 <v-btn
@@ -112,17 +112,17 @@
                 />
               </div>
               <div class="text-caption text-slate-500 mt-1" v-if="!item.isComponentDirect && item.qty">
-                Shopping list: <strong class="font-mono">{{ item.qty }} pcs</strong>
+                {{ t('purchaseModal.shoppingListQty', { qty: item.qty }) }}
               </div>
               <div class="text-caption text-slate-400 mt-1" v-else>
-                Units to purchase
+                {{ t('purchaseModal.unitsToPurchase') }}
               </div>
             </v-col>
 
             <!-- Unit Price -->
             <v-col cols="12" sm="4">
               <label class="text-caption text-slate-700 font-weight-bold text-uppercase d-block mb-1">
-                Unit Price ($)
+                {{ t('purchaseModal.unitPrice') }}
               </label>
               <v-text-field
                 v-model.number="form.price"
@@ -139,17 +139,17 @@
                 @input="onUnitPriceInput"
               />
               <div class="text-caption text-slate-500 mt-1" v-if="item.latestPrice != null">
-                Last: <strong class="font-mono text-primary">${{ item.latestPrice }}</strong>
+                {{ t('purchaseModal.lastPrice', { price: item.latestPrice }) }}
               </div>
               <div class="text-caption text-slate-400 mt-1" v-else>
-                Per 1 pc
+                {{ t('purchaseModal.per1pc') }}
               </div>
             </v-col>
 
             <!-- Order Sum / Total -->
             <v-col cols="12" sm="4">
               <label class="text-caption text-slate-700 font-weight-bold text-uppercase d-block mb-1">
-                Order Sum ($)
+                {{ t('purchaseModal.orderSum') }}
               </label>
               <v-text-field
                 v-model.number="form.totalSum"
@@ -166,7 +166,7 @@
                 @input="onOrderSumInput"
               />
               <div class="text-caption text-slate-500 mt-1">
-                Total for batch
+                {{ t('purchaseModal.totalForBatch') }}
               </div>
             </v-col>
 
@@ -177,15 +177,15 @@
                   <v-icon color="primary" size="22">mdi-calculator</v-icon>
                   <div>
                     <span class="text-subtitle-2 font-weight-bold text-slate-800 d-block">
-                      Order Pricing Breakdown
+                      {{ t('purchaseModal.pricingBreakdown') }}
                     </span>
                     <span class="text-caption text-slate-600 font-mono">
-                      {{ form.qty || 1 }} pcs × {{ formatCurrency(form.price || 0) }} / pc
+                      {{ form.qty || 1 }} {{ t('shoppingList.pcs') }} × {{ formatCurrency(form.price || 0) }} / {{ t('shoppingList.pcs') }}
                     </span>
                   </div>
                 </div>
                 <div class="text-right">
-                  <div class="text-caption text-disabled text-uppercase font-weight-bold">Order Total</div>
+                  <div class="text-caption text-disabled text-uppercase font-weight-bold">{{ t('purchaseModal.orderTotal') }}</div>
                   <div class="text-h6 font-mono font-weight-bold text-primary">
                     {{ formatCurrency(form.totalSum || 0) }}
                   </div>
@@ -196,7 +196,7 @@
             <!-- Purchase Date -->
             <v-col cols="12" sm="6">
               <label class="text-caption text-slate-700 font-weight-bold text-uppercase d-block mb-1">
-                Purchase Date *
+                {{ t('purchaseModal.purchaseDate') }}
               </label>
               <v-text-field
                 v-model="form.date"
@@ -212,11 +212,11 @@
             <!-- Supplier / Store Notes -->
             <v-col cols="12" sm="6">
               <label class="text-caption text-slate-700 font-weight-bold text-uppercase d-block mb-1">
-                Supplier / Store
+                {{ t('purchaseModal.supplierStore') }}
               </label>
               <v-text-field
                 v-model="form.details"
-                placeholder="e.g. AliExpress, Mouser, LCSC"
+                :placeholder="t('purchaseModal.supplierPlaceholder')"
                 density="compact"
                 variant="outlined"
                 rounded="lg"
@@ -240,11 +240,11 @@
             <!-- Supplier Product URL -->
             <v-col cols="12" class="mt-2">
               <label class="text-caption text-slate-700 font-weight-bold text-uppercase d-block mb-1">
-                Supplier Link / Product URL
+                {{ t('purchaseModal.supplierUrl') }}
               </label>
               <v-text-field
                 v-model="form.url"
-                placeholder="https://..."
+                :placeholder="t('purchaseModal.urlPlaceholder')"
                 density="compact"
                 variant="outlined"
                 rounded="lg"
@@ -266,12 +266,36 @@
               </v-text-field>
             </v-col>
 
+            <!-- Delivery Status Option -->
+            <v-col cols="12" class="mt-2 pt-3 border-t">
+              <label class="text-caption text-slate-700 font-weight-bold text-uppercase d-block mb-1">
+                {{ t('purchaseModal.deliveryStatus') }}
+              </label>
+              <v-radio-group v-model="form.deliveryStatus" inline hide-details density="compact" class="mb-1">
+                <v-radio
+                  value="pending"
+                  :label="t('purchaseModal.statusPending')"
+                  color="warning"
+                  class="me-4"
+                />
+                <v-radio
+                  value="delivered"
+                  :label="t('purchaseModal.statusDelivered')"
+                  color="success"
+                />
+              </v-radio-group>
+              <div class="text-caption text-amber-800 bg-amber-50 pa-2 rounded border border-amber-200 mt-1 d-flex align-center gap-2" v-if="form.deliveryStatus === 'pending'">
+                <v-icon size="16" color="warning">mdi-truck-delivery-outline</v-icon>
+                <span>{{ t('purchaseModal.stockPendingHint') }}</span>
+              </div>
+            </v-col>
+
             <!-- Inventory Stock Options -->
             <v-col cols="12" class="mt-2 pt-2 border-t">
               <div class="d-flex align-center justify-space-between">
                 <v-checkbox
                   v-model="form.addToStock"
-                  label="Add purchased quantity to catalog inventory stock"
+                  :label="t('purchaseModal.addToStock')"
                   color="primary"
                   hide-details
                   density="compact"
@@ -288,8 +312,8 @@
                   density="compact"
                   variant="outlined"
                   rounded="lg"
-                  label="Assign to Warehouse Storage Box (Optional)"
-                  placeholder="Select storage box..."
+                  :label="t('purchaseModal.assignStorage')"
+                  :placeholder="t('purchaseModal.selectStorage')"
                   clearable
                   hide-details
                   prepend-inner-icon="mdi-archive-outline"
@@ -311,7 +335,7 @@
             @click="close"
             :disabled="submitting"
           >
-            Cancel
+            {{ t('purchaseModal.cancel') }}
           </v-btn>
 
           <v-btn
@@ -322,7 +346,7 @@
             :disabled="submitting"
             :title="t('dialogs.clearFormTooltip')"
           >
-            Clear
+            {{ t('purchaseModal.clear') }}
           </v-btn>
         </div>
 
@@ -334,7 +358,7 @@
           :loading="submitting"
           @click="submitPurchase"
         >
-          Confirm Purchase & Create Order
+          {{ t('purchaseModal.confirmButton') }}
         </v-btn>
       </v-card-actions>
     </v-card>
@@ -373,6 +397,7 @@ const form = ref({
   date: new Date().toISOString().slice(0, 10),
   details: '',
   url: '',
+  deliveryStatus: 'pending',
   addToStock: true,
   storageId: null
 });
@@ -490,11 +515,12 @@ const clearForm = () => {
     date: new Date().toISOString().slice(0, 10),
     details: '',
     url: '',
+    deliveryStatus: 'pending',
     addToStock: true,
     storageId: null
   };
   lastEdited.value = 'price';
-  emit('notify', 'Remembered kit values cleared', 'info');
+  emit('notify', t('purchaseModal.kitValuesCleared'), 'info');
 };
 
 const initForm = () => {
@@ -520,6 +546,7 @@ const initForm = () => {
       date: last.date || new Date().toISOString().slice(0, 10),
       details: last.details || '',
       url: last.url || '',
+      deliveryStatus: last.deliveryStatus || 'pending',
       addToStock: last.addToStock !== undefined ? last.addToStock : true,
       storageId: last.storageId !== undefined ? last.storageId : null
     };
@@ -538,6 +565,7 @@ const initForm = () => {
       date: new Date().toISOString().slice(0, 10),
       details: props.item.latestOrderDetails || '',
       url: props.item.latestOrderUrl || '',
+      deliveryStatus: 'pending',
       addToStock: true,
       storageId: null
     };
@@ -564,7 +592,7 @@ const submitPurchase = async () => {
   const compId = props.item?.componentId || props.item?.ID || props.item?.id;
   if (!compId) return;
   if (!form.value.qty || form.value.qty < 1) {
-    emit('notify', 'Please enter a valid quantity of at least 1', 'error');
+    emit('notify', t('purchaseModal.invalidQty'), 'error');
     return;
   }
 
@@ -587,6 +615,7 @@ const submitPurchase = async () => {
         date: form.value.date,
         url: form.value.url,
         details: form.value.details,
+        deliveryStatus: form.value.deliveryStatus,
         addToStock: form.value.addToStock,
         storageId: form.value.storageId
       });
@@ -598,6 +627,7 @@ const submitPurchase = async () => {
         date: form.value.date,
         url: form.value.url,
         details: form.value.details,
+        deliveryStatus: form.value.deliveryStatus,
         addToStock: form.value.addToStock,
         storageId: form.value.storageId
       });
@@ -611,12 +641,27 @@ const submitPurchase = async () => {
       date: form.value.date,
       details: form.value.details,
       url: form.value.url,
+      deliveryStatus: form.value.deliveryStatus,
       addToStock: form.value.addToStock,
       storageId: form.value.storageId,
       lastEdited: lastEdited.value
     });
 
-    emit('notify', `Order #${res.orderId} created for ${res.qty} pcs of ${res.component}! Stock updated to ${res.newStock}.`, 'success');
+    if (form.value.deliveryStatus === 'pending') {
+      emit('notify', t('purchaseModal.orderSuccess', {
+        orderId: res.orderId,
+        qty: res.qty,
+        component: res.component
+      }), 'success');
+    } else {
+      emit('notify', t('purchaseModal.orderSuccessStock', {
+        orderId: res.orderId,
+        qty: res.qty,
+        component: res.component,
+        newStock: res.newStock
+      }), 'success');
+    }
+
     emit('purchased', res);
     close();
   } catch (err) {

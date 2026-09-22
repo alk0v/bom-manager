@@ -35,6 +35,15 @@ router.get('/', async (req, res) => {
         b.componentId,
         b.qty,
         b.date,
+        b.orderId,
+        ord.status AS activeOrderStatus,
+        ord.date AS activeOrderDate,
+        ord.price AS activeOrderPrice,
+        ord.qty AS activeOrderQty,
+        ord.url AS activeOrderUrl,
+        ord.details AS activeOrderDetails,
+        ord.storageId AS activeOrderStorageId,
+        ord.deliveredDate AS activeOrderDeliveredDate,
         c.component,
         c.description,
         c.shortDescription,
@@ -48,11 +57,12 @@ router.get('/', async (req, res) => {
         pkg.pinQuantity,
         pkg.isSmd,
         pkg.drawingURL,
-        lo.latestPrice,
-        lo.latestOrderDate,
-        lo.latestOrderUrl,
-        lo.latestOrderDetails
+        COALESCE(ord.price, lo.latestPrice) AS latestPrice,
+        COALESCE(ord.date, lo.latestOrderDate) AS latestOrderDate,
+        COALESCE(ord.url, lo.latestOrderUrl) AS latestOrderUrl,
+        COALESCE(ord.details, lo.latestOrderDetails) AS latestOrderDetails
       FROM t_busket b
+      LEFT JOIN t_orders ord ON b.orderId = ord.id
       LEFT JOIN i_components c ON b.componentId = c.ID
       LEFT JOIN i_categories cat ON c.category_id = cat.ID
       LEFT JOIN i_packages pkg ON c.package_id = pkg.ID
@@ -84,8 +94,11 @@ router.post('/', async (req, res) => {
   }
 
   try {
-    // Check if component already in basket
-    const [existing] = await pool.query('SELECT * FROM t_busket WHERE componentId = ?', [componentId]);
+    // Check if unpurchased component already in basket
+    const [existing] = await pool.query(
+      'SELECT * FROM t_busket WHERE componentId = ? AND orderId IS NULL',
+      [componentId]
+    );
     if (existing.length > 0) {
       const newQty = existing[0].qty + parseInt(qty, 10);
       await pool.query('UPDATE t_busket SET qty = ? WHERE id = ?', [newQty, existing[0].id]);
@@ -103,7 +116,7 @@ router.post('/', async (req, res) => {
   }
 });
 
-// POST /api/shopping-list/:id/purchase - Confirm purchase, insert into t_orders, update inventory stock, and clear/decrement basket
+// POST /api/shopping-list/:id/purchase - Confirm purchase, insert into t_orders, update delivery status/stock, and update basket
 router.post('/:id/purchase', async (req, res) => {
   const basketId = req.params.id;
   const {
@@ -113,7 +126,8 @@ router.post('/:id/purchase', async (req, res) => {
     url = '',
     details = '',
     addToStock = true,
-    storageId = null
+    storageId = null,
+    deliveryStatus = 'pending'
   } = req.body;
 
   const conn = await pool.getConnection();
@@ -140,35 +154,59 @@ router.post('/:id/purchase', async (req, res) => {
       ? parseInt(qty, 10) 
       : basketItem.qty;
     const unitPrice = parseFloat(price) || 0;
+    const isPending = deliveryStatus !== 'delivered';
+    const parsedStorageId = (storageId !== null && storageId !== undefined && !isNaN(parseInt(storageId, 10)))
+      ? parseInt(storageId, 10)
+      : null;
+
+    const formattedDate = date ? String(date).split('T')[0] : new Date().toISOString().slice(0, 10);
 
     // 2. Insert into t_orders
     const [orderResult] = await conn.query(
-      `INSERT INTO t_orders (componentId, price, qty, date, url, details) 
-       VALUES (?, ?, ?, ?, ?, ?)`,
+      `INSERT INTO t_orders (componentId, price, qty, date, url, details, status, deliveredDate, storageId) 
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         componentId,
         unitPrice,
         purchaseQty,
-        date,
+        formattedDate,
         url ? url.trim() : '',
-        details ? details.trim() : ''
+        details ? details.trim() : '',
+        isPending ? 'pending' : 'delivered',
+        isPending ? null : formattedDate,
+        parsedStorageId
       ]
     );
     const orderId = orderResult.insertId;
 
-    // 3. Update stock in i_components (if requested)
-    let newStock = basketItem.currentStock;
-    if (addToStock) {
-      await conn.query(
-        'UPDATE i_components SET qty = COALESCE(qty, 0) + ? WHERE ID = ?',
-        [purchaseQty, componentId]
-      );
-      newStock = (basketItem.currentStock || 0) + purchaseQty;
+    let newStock = basketItem.currentStock || 0;
+    let remainingInBasket = 0;
 
-      // Handle warehouse allocation if storageId provided
-      if (storageId !== null && storageId !== undefined) {
-        const parsedStorageId = parseInt(storageId, 10);
-        if (!isNaN(parsedStorageId)) {
+    if (isPending) {
+      // Pending delivery: stock is NOT incremented yet (will be added when delivery is confirmed)
+      if (purchaseQty >= basketItem.qty) {
+        // Link this basket item to the order
+        await conn.query('UPDATE t_busket SET orderId = ?, qty = ? WHERE id = ?', [orderId, purchaseQty, basketId]);
+        remainingInBasket = 0;
+      } else {
+        // Partial purchase: decrement current unpurchased basket item, and insert new basket item linked to the order
+        remainingInBasket = basketItem.qty - purchaseQty;
+        await conn.query('UPDATE t_busket SET qty = ? WHERE id = ?', [remainingInBasket, basketId]);
+        await conn.query(
+          'INSERT INTO t_busket (componentId, qty, date, orderId) VALUES (?, ?, ?, ?)',
+          [componentId, purchaseQty, date, orderId]
+        );
+      }
+    } else {
+      // Immediate delivery: update stock now
+      if (addToStock) {
+        await conn.query(
+          'UPDATE i_components SET qty = COALESCE(qty, 0) + ? WHERE ID = ?',
+          [purchaseQty, componentId]
+        );
+        newStock += purchaseQty;
+
+        if (parsedStorageId !== null) {
           const [whRows] = await conn.query(
             'SELECT id, quantity FROM t_warehouse WHERE componentId = ? AND storageId = ?',
             [componentId, parsedStorageId]
@@ -186,16 +224,15 @@ router.post('/:id/purchase', async (req, res) => {
           }
         }
       }
-    }
 
-    // 4. Clear or decrement from t_busket
-    let remainingInBasket = 0;
-    if (purchaseQty >= basketItem.qty) {
-      await conn.query('DELETE FROM t_busket WHERE id = ?', [basketId]);
-      remainingInBasket = 0;
-    } else {
-      remainingInBasket = basketItem.qty - purchaseQty;
-      await conn.query('UPDATE t_busket SET qty = ? WHERE id = ?', [remainingInBasket, basketId]);
+      // Clear or decrement from t_busket
+      if (purchaseQty >= basketItem.qty) {
+        await conn.query('DELETE FROM t_busket WHERE id = ?', [basketId]);
+        remainingInBasket = 0;
+      } else {
+        remainingInBasket = basketItem.qty - purchaseQty;
+        await conn.query('UPDATE t_busket SET qty = ? WHERE id = ?', [remainingInBasket, basketId]);
+      }
     }
 
     await conn.commit();
@@ -211,6 +248,7 @@ router.post('/:id/purchase', async (req, res) => {
       date,
       url,
       details,
+      status: isPending ? 'pending' : 'delivered',
       addToStock,
       newStock,
       remainingInBasket
@@ -219,6 +257,105 @@ router.post('/:id/purchase', async (req, res) => {
     await conn.rollback();
     console.error('Error confirming purchase for shopping list item:', error);
     res.status(500).json({ error: 'Failed to confirm purchase and create order', details: error.message });
+  } finally {
+    conn.release();
+  }
+});
+
+// POST /api/shopping-list/:id/confirm-delivery - Confirm physical delivery of awaiting item, add to stock, and remove from basket
+router.post('/:id/confirm-delivery', async (req, res) => {
+  const basketId = req.params.id;
+  const {
+    deliveryDate = new Date().toISOString().slice(0, 10),
+    qty,
+    storageId = null,
+    addToStock = true
+  } = req.body;
+
+  const conn = await pool.getConnection();
+  try {
+    await conn.beginTransaction();
+
+    const [basketRows] = await conn.query(
+      `SELECT b.*, c.component, c.qty AS currentStock, ord.id AS linkedOrderId, ord.qty AS orderQty, ord.price AS orderPrice, ord.storageId AS initialStorageId
+       FROM t_busket b
+       JOIN i_components c ON b.componentId = c.ID
+       LEFT JOIN t_orders ord ON b.orderId = ord.id
+       WHERE b.id = ?`,
+      [basketId]
+    );
+
+    if (basketRows.length === 0) {
+      await conn.rollback();
+      return res.status(404).json({ error: 'Shopping list item not found' });
+    }
+
+    const item = basketRows[0];
+    const componentId = item.componentId;
+    const deliveredQty = qty !== undefined && parseInt(qty, 10) > 0
+      ? parseInt(qty, 10)
+      : (item.orderQty || item.qty);
+    const targetStorageId = (storageId !== null && storageId !== undefined && !isNaN(parseInt(storageId, 10)))
+      ? parseInt(storageId, 10)
+      : item.initialStorageId;
+
+    const finalDeliveryDate = deliveryDate ? String(deliveryDate).split('T')[0] : new Date().toISOString().split('T')[0];
+
+    // 1. Update t_orders if orderId exists
+    if (item.orderId) {
+      await conn.query(
+        'UPDATE t_orders SET status = ?, deliveredDate = ?, storageId = ? WHERE id = ?',
+        ['delivered', finalDeliveryDate, targetStorageId || null, item.orderId]
+      );
+    }
+
+    // 2. Update stock in i_components (if requested)
+    let newStock = item.currentStock || 0;
+    if (addToStock) {
+      await conn.query(
+        'UPDATE i_components SET qty = COALESCE(qty, 0) + ? WHERE ID = ?',
+        [deliveredQty, componentId]
+      );
+      newStock += deliveredQty;
+
+      if (targetStorageId && !isNaN(targetStorageId)) {
+        const [whRows] = await conn.query(
+          'SELECT id, quantity FROM t_warehouse WHERE componentId = ? AND storageId = ?',
+          [componentId, targetStorageId]
+        );
+        if (whRows.length > 0) {
+          await conn.query(
+            'UPDATE t_warehouse SET quantity = quantity + ? WHERE id = ?',
+            [deliveredQty, whRows[0].id]
+          );
+        } else {
+          await conn.query(
+            'INSERT INTO t_warehouse (componentId, storageId, quantity) VALUES (?, ?, ?)',
+            [componentId, targetStorageId, deliveredQty]
+          );
+        }
+      }
+    }
+
+    // 3. Remove from t_busket
+    await conn.query('DELETE FROM t_busket WHERE id = ?', [basketId]);
+
+    await conn.commit();
+
+    res.json({
+      success: true,
+      componentId,
+      component: item.component,
+      orderId: item.orderId,
+      deliveredQty,
+      deliveryDate,
+      addToStock,
+      newStock
+    });
+  } catch (err) {
+    await conn.rollback();
+    console.error('Error confirming delivery for shopping list item:', err);
+    res.status(500).json({ error: 'Failed to confirm delivery', details: err.message });
   } finally {
     conn.release();
   }

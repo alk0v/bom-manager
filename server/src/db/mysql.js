@@ -87,6 +87,33 @@ async function ensureTables() {
     } else {
       console.log('[Database:MySQL] Verified column "minQty" exists in i_components.');
     }
+
+    // Ensure status, deliveredDate, storageId columns in t_orders
+    const [statusCols] = await pool.query("SHOW COLUMNS FROM t_orders LIKE 'status'");
+    if (statusCols.length === 0) {
+      await pool.query("ALTER TABLE t_orders ADD COLUMN status VARCHAR(20) NOT NULL DEFAULT 'delivered'");
+      await pool.query("UPDATE t_orders SET status = 'delivered' WHERE status IS NULL OR status = ''");
+      console.log('[Database:MySQL] Added "status" column to t_orders.');
+    }
+
+    const [delivCols] = await pool.query("SHOW COLUMNS FROM t_orders LIKE 'deliveredDate'");
+    if (delivCols.length === 0) {
+      await pool.query("ALTER TABLE t_orders ADD COLUMN deliveredDate DATE NULL");
+      console.log('[Database:MySQL] Added "deliveredDate" column to t_orders.');
+    }
+
+    const [storageCols] = await pool.query("SHOW COLUMNS FROM t_orders LIKE 'storageId'");
+    if (storageCols.length === 0) {
+      await pool.query("ALTER TABLE t_orders ADD COLUMN storageId INT NULL");
+      console.log('[Database:MySQL] Added "storageId" column to t_orders.');
+    }
+
+    // Ensure orderId column in t_busket
+    const [busketOrderCols] = await pool.query("SHOW COLUMNS FROM t_busket LIKE 'orderId'");
+    if (busketOrderCols.length === 0) {
+      await pool.query("ALTER TABLE t_busket ADD COLUMN orderId INT NULL");
+      console.log('[Database:MySQL] Added "orderId" column to t_busket.');
+    }
   } catch (err) {
     console.warn('[Database:MySQL] Table verification note:', err.message);
   }

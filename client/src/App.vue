@@ -84,6 +84,7 @@
           :title="t('nav.reports')"
           value="reports"
           to="/reports"
+          :active="route.path.startsWith('/reports')"
           active-class="bg-primary text-white"
           rounded="lg"
         />
@@ -124,11 +125,8 @@
             to="/release-notes"
             class="text-decoration-none d-flex align-center justify-space-between text-caption text-slate-600"
           >
-            <span class="d-flex align-center font-mono">
-              <v-icon size="14" color="primary" class="me-1">mdi-tag-outline</v-icon>
-              {{ t('common.version') }} 0.2.7
-            </span>
-            <span class="text-primary font-weight-medium">&rarr;</span>
+            <span>BOM Manager</span>
+            <span class="font-mono font-weight-bold">v0.2.7</span>
           </router-link>
         </div>
       </template>
@@ -144,10 +142,28 @@
 
       <v-app-bar-title class="font-weight-bold text-subtitle-1 text-md-h6 text-slate-800">
         <div class="d-flex align-center">
+          <v-btn
+            v-if="isReportDetail"
+            icon="mdi-arrow-left"
+            variant="text"
+            size="small"
+            class="me-1 text-slate-600"
+            to="/reports"
+            :title="t('reports.availableReports')"
+          />
           <v-icon start color="primary" size="22">
             {{ currentIcon }}
           </v-icon>
-          <span>{{ currentTitle }}</span>
+          <template v-if="isReportDetail">
+            <router-link to="/reports" class="text-decoration-none text-slate-500 hover-underline me-2">
+              {{ t('header.reportsTitle') }}
+            </router-link>
+            <span class="text-slate-400 me-2">/</span>
+            <span class="text-slate-900">{{ reportDetailTitle }}</span>
+          </template>
+          <template v-else>
+            <span>{{ currentTitle }}</span>
+          </template>
           <v-chip
             v-if="route.path === '/components'"
             size="small"
@@ -206,9 +222,29 @@ const drawer = ref(true);
 const rail = ref(false);
 const showUploadDialog = ref(false);
 
+const isReportDetail = computed(() => {
+  return route.path === '/reports/production' || route.path === '/reports/purchases';
+});
+
+const reportDetailTitle = computed(() => {
+  if (route.path === '/reports/production') {
+    return t('reports.productionReport');
+  }
+  if (route.path === '/reports/purchases') {
+    return t('reports.purchasesReport');
+  }
+  return '';
+});
+
 const currentTitle = computed(() => {
   if (route.path.startsWith('/projects')) {
     return t('header.projectsTitle');
+  }
+  if (route.path === '/reports/production') {
+    return t('reports.productionReport');
+  }
+  if (route.path === '/reports/purchases') {
+    return t('reports.purchasesReport');
   }
   switch (route.path) {
     case '/components':
@@ -229,6 +265,12 @@ const currentTitle = computed(() => {
 const currentIcon = computed(() => {
   if (route.path.startsWith('/projects')) {
     return 'mdi-folder-cog-outline';
+  }
+  if (route.path === '/reports/production') {
+    return 'mdi-factory';
+  }
+  if (route.path === '/reports/purchases') {
+    return 'mdi-cart-arrow-down';
   }
   switch (route.path) {
     case '/components':

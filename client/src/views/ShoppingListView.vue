@@ -63,7 +63,7 @@
 
       <!-- Filter / Search & Actions Toolbar -->
       <div class="px-5 py-3 bg-white d-flex align-center justify-space-between flex-wrap gap-3">
-        <div class="d-flex align-center flex-wrap gap-3" style="flex: 1 1 600px; max-width: 840px;">
+        <div class="d-flex align-center flex-wrap gap-3" style="flex: 1 1 auto; min-width: 0;">
           <v-text-field
             v-model="searchQuery"
             :placeholder="t('shoppingList.searchPlaceholder')"
@@ -73,7 +73,7 @@
             hide-details
             clearable
             rounded="lg"
-            style="min-width: 260px; flex: 1;"
+            style="min-width: 240px; max-width: 440px; flex: 1 1 280px;"
           />
 
           <v-autocomplete
@@ -89,7 +89,7 @@
             hide-details
             clearable
             rounded="lg"
-            style="min-width: 260px; flex: 1;"
+            style="min-width: 240px; max-width: 380px; flex: 1 1 260px;"
             @update:model-value="onProjectFilterChange"
           >
             <template #item="{ props, item }">
@@ -108,12 +108,36 @@
             </template>
           </v-autocomplete>
 
+          <!-- Status Filter Toggle (All, cart icon, delivery icon) -->
+          <v-btn-toggle
+            v-model="statusFilter"
+            mandatory
+            density="compact"
+            color="primary"
+            variant="outlined"
+            rounded="lg"
+            class="flex-shrink-0"
+            style="height: 40px;"
+          >
+            <v-btn value="all" size="small" class="text-none px-3 font-weight-medium">
+              {{ t('shoppingList.statusFilterAll') }}
+            </v-btn>
+            <v-btn value="to_buy" size="small" class="px-2" :title="t('shoppingList.statusToBuy')">
+              <v-icon size="18">mdi-cart-outline</v-icon>
+              <v-tooltip activator="parent" location="top">{{ t('shoppingList.statusToBuy') }}</v-tooltip>
+            </v-btn>
+            <v-btn value="pending" size="small" class="px-2" :title="t('shoppingList.totalAwaitingDelivery')">
+              <v-icon size="18">mdi-truck-delivery-outline</v-icon>
+              <v-tooltip activator="parent" location="top">{{ t('shoppingList.totalAwaitingDelivery') }}</v-tooltip>
+            </v-btn>
+          </v-btn-toggle>
+
           <!-- View BOM button when project is selected -->
           <v-btn
             v-if="selectedProject"
             color="primary"
             variant="tonal"
-            class="font-weight-medium text-none"
+            class="font-weight-medium text-none flex-shrink-0"
             prepend-icon="mdi-format-list-bulleted-square"
             style="height: 40px;"
             @click="openSelectedProjectBom"
@@ -122,11 +146,7 @@
           </v-btn>
         </div>
 
-        <div class="d-flex align-center gap-2">
-          <div class="text-caption text-disabled font-mono me-2">
-            {{ t('common.showingOf', { count: filteredItems.length, total: items.length, item: t('common.items') }) }}
-          </div>
-
+        <div class="d-flex align-center gap-2 flex-shrink-0 ms-auto">
           <v-btn
             prepend-icon="mdi-content-copy"
             size="small"
@@ -406,17 +426,22 @@
 
             <!-- Component Name & Marking (clickable link) -->
             <td>
-              <div
-                class="font-mono font-weight-bold text-body-2 text-primary comp-name-link d-inline-flex align-center gap-1 cursor-pointer"
-                @click="openComponentDetails(item)"
-                :title="t('shoppingList.viewDetailsAndHistory')"
-              >
-                <span class="hover-underline">{{ item.component }}</span>
-                <v-icon size="13" class="opacity-60 info-icon">mdi-information-outline</v-icon>
+              <div class="d-flex align-center gap-1 flex-wrap">
+                <div
+                  class="font-mono font-weight-bold text-body-2 text-primary comp-name-link d-inline-flex align-center gap-1 cursor-pointer"
+                  @click="openComponentDetails(item)"
+                  :title="t('shoppingList.viewDetailsAndHistory')"
+                >
+                  <span class="hover-underline">{{ item.component }}</span>
+                  <v-icon size="13" class="opacity-60 info-icon">mdi-information-outline</v-icon>
+                </div>
               </div>
-              <div class="text-caption text-disabled" v-if="item.marking || item.shortDescription">
+              <div class="text-caption text-disabled" v-if="item.marking || item.shortDescription || ((item.activeOrderStatus === 'pending' || item.orderId) && item.activeOrderDate)">
                 <span v-if="item.marking" class="font-mono me-2">Mark: {{ item.marking }}</span>
-                <span v-if="item.shortDescription">{{ item.shortDescription }}</span>
+                <span v-if="item.shortDescription" class="me-2">{{ item.shortDescription }}</span>
+                <span v-if="(item.activeOrderStatus === 'pending' || item.orderId) && item.activeOrderDate" class="text-amber-800 font-mono">
+                  • {{ t('shoppingList.orderedOn', { date: formatDate(item.activeOrderDate) }) }}
+                </span>
               </div>
             </td>
 
@@ -448,7 +473,25 @@
 
             <!-- Aligned Quantity Selector (standard fixed width) -->
             <td class="text-center">
-              <div class="d-inline-flex align-center border bg-white rounded-lg px-1 justify-space-between quantity-stepper" style="height: 32px; width: 116px;">
+              <!-- When awaiting delivery: show ordered qty with truck badge -->
+              <div
+                v-if="item.activeOrderStatus === 'pending' || item.orderId"
+                class="d-inline-flex align-center justify-center border bg-amber-50 rounded-lg px-2"
+                style="height: 32px; min-width: 90px;"
+                :title="t('shoppingList.orderedQty', { qty: item.qty })"
+              >
+                <v-icon size="14" color="amber-darken-3" class="me-1">mdi-truck-outline</v-icon>
+                <span class="font-mono font-weight-bold text-amber-900" style="font-size: 0.9rem;">
+                  {{ item.qty }}
+                </span>
+              </div>
+
+              <!-- Standard Quantity Stepper when not yet ordered -->
+              <div
+                v-else
+                class="d-inline-flex align-center border bg-white rounded-lg px-1 justify-space-between quantity-stepper"
+                style="height: 32px; width: 116px;"
+              >
                 <v-btn
                   icon="mdi-minus"
                   size="x-small"
@@ -504,8 +547,20 @@
 
             <!-- Actions -->
             <td class="text-left text-no-wrap">
-              <!-- Buy Component -->
+              <!-- Confirm Delivery (Replaces Buy Component when purchased but awaiting delivery) -->
               <v-btn
+                v-if="item.activeOrderStatus === 'pending' || item.orderId"
+                icon="mdi-package-variant-closed-check"
+                size="small"
+                color="success"
+                variant="text"
+                :title="t('shoppingList.confirmDelivery')"
+                @click="openConfirmDeliveryDialog(item)"
+              />
+
+              <!-- Buy Component (when item is not yet ordered) -->
+              <v-btn
+                v-else
                 icon="mdi-cash-check"
                 size="small"
                 color="primary"
@@ -514,7 +569,7 @@
                 @click="openPurchaseDialog(item)"
               />
 
-              <!-- Remove without buying -->
+              <!-- Remove from list -->
               <v-btn
                 icon="mdi-delete-outline"
                 size="small"
@@ -569,6 +624,14 @@
       </v-table>
     </v-card>
 
+    <!-- Modal: Confirm Delivery -->
+    <ConfirmDeliveryDialog
+      v-model="showConfirmDeliveryDialog"
+      :item="selectedItemForDelivery"
+      @delivered="onItemDelivered"
+      @notify="notify"
+    />
+
     <!-- Modal: Purchase Confirmation & Order Creation -->
     <PurchaseConfirmDialog
       v-model="showPurchaseDialog"
@@ -619,6 +682,7 @@ import MediaImage from '../components/MediaImage.vue';
 import MediaLightboxDialog from '../components/MediaLightboxDialog.vue';
 import PackageLink from '../components/PackageLink.vue';
 import PurchaseConfirmDialog from '../components/PurchaseConfirmDialog.vue';
+import ConfirmDeliveryDialog from '../components/ConfirmDeliveryDialog.vue';
 import ComponentDetailsDialog from '../components/ComponentDetailsDialog.vue';
 import ProjectBomDialog from '../components/ProjectBomDialog.vue';
 import { useShoppingListStore } from '../stores/shoppingList';
@@ -631,6 +695,7 @@ const projects = ref([]);
 const selectedProject = ref(null);
 const loading = ref(false);
 const searchQuery = ref('');
+const statusFilter = ref('all');
 
 // Project BOM Modal State
 const activeProject = ref(null);
@@ -638,6 +703,9 @@ const showBomDialog = ref(false);
 
 const showPurchaseDialog = ref(false);
 const selectedItemForPurchase = ref(null);
+
+const showConfirmDeliveryDialog = ref(false);
+const selectedItemForDelivery = ref(null);
 
 const showDetailsDialog = ref(false);
 const selectedItemForDetails = ref(null);
@@ -662,6 +730,14 @@ const notify = (text, color = 'success') => {
 // Computed statistics
 const totalUnitsNeeded = computed(() => {
   return items.value.reduce((acc, i) => acc + (Number(i.qty) || 0), 0);
+});
+
+const toBuyCount = computed(() => {
+  return items.value.filter(i => !i.orderId && i.activeOrderStatus !== 'pending').length;
+});
+
+const awaitingDeliveryCount = computed(() => {
+  return items.value.filter(i => !!i.orderId || i.activeOrderStatus === 'pending').length;
 });
 
 const estimatedTotalCost = computed(() => {
@@ -700,6 +776,12 @@ const toggleSort = (key) => {
 
 const filteredItems = computed(() => {
   let list = items.value;
+
+  if (statusFilter.value === 'to_buy') {
+    list = list.filter(item => !item.orderId && item.activeOrderStatus !== 'pending');
+  } else if (statusFilter.value === 'pending') {
+    list = list.filter(item => !!item.orderId || item.activeOrderStatus === 'pending');
+  }
 
   if (searchQuery.value.trim()) {
     const q = searchQuery.value.toLowerCase().trim();
@@ -856,6 +938,15 @@ const openPurchaseDialog = (item) => {
   showPurchaseDialog.value = true;
 };
 
+const openConfirmDeliveryDialog = (item) => {
+  selectedItemForDelivery.value = { ...item };
+  showConfirmDeliveryDialog.value = true;
+};
+
+const onItemDelivered = async () => {
+  await Promise.all([loadShoppingList(), loadProjects()]);
+};
+
 const openComponentDetails = (item) => {
   selectedItemForDetails.value = {
     ...item,
@@ -895,17 +986,8 @@ const onBomUpdated = async () => {
 };
 
 // Purchase completion callback
-const onItemPurchased = async (result) => {
-  // If remaining in basket is 0, remove locally; otherwise update qty
-  if (result.remainingInBasket === 0) {
-    items.value = items.value.filter(i => i.id !== selectedItemForPurchase.value?.id);
-  } else {
-    const found = items.value.find(i => i.id === selectedItemForPurchase.value?.id);
-    if (found) {
-      found.qty = result.remainingInBasket;
-    }
-  }
-  // Refresh shopping list to ensure stock levels and order data are synchronized
+const onItemPurchased = async () => {
+  // Refresh shopping list to ensure pending/delivered order statuses, quantities, and stock levels are synchronized
   await Promise.all([loadShoppingList(), loadProjects()]);
 };
 
