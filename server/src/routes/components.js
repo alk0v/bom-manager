@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const pool = require('../db');
+const currencyService = require('../services/currencyService');
 
 // GET /api/components - list components with optional search & filtering
 router.get('/', async (req, res) => {
@@ -550,6 +551,8 @@ router.get('/:id', async (req, res) => {
         id,
         componentId,
         price,
+        convertedPrice,
+        currency,
         qty,
         date,
         url,
@@ -562,22 +565,29 @@ router.get('/:id', async (req, res) => {
       ORDER BY date DESC, id DESC
     `, [req.params.id]);
 
+    const defaultCurrency = await currencyService.getDefaultCurrency();
+    const allRates = await currencyService.getAllRates();
+
     let totalQtyPurchased = 0;
     let totalSpent = 0;
     const orders = orderRows.map(o => {
-      const unitPrice = o.price != null ? Number(o.price) : 0;
       const orderQty = o.qty != null ? Number(o.qty) : 0;
-      const orderTotal = Math.round(unitPrice * orderQty * 10000) / 10000;
+      const conv = currencyService.convertOrderPrice(o, allRates, defaultCurrency);
       if (o.status !== 'cancelled') {
         totalQtyPurchased += orderQty;
-        totalSpent += (unitPrice * orderQty);
+        totalSpent += conv.totalCost;
       }
       return {
         id: o.id,
         componentId: o.componentId,
-        price: unitPrice,
+        currency: conv.currency,
+        originalPrice: conv.originalPrice,
+        originalTotalCost: conv.originalTotalCost,
+        price: conv.price, // in defaultCurrency
+        totalCost: conv.totalCost, // in defaultCurrency
+        exchangeRate: conv.exchangeRate,
+        exchangeRateDate: conv.exchangeRateDate,
         qty: orderQty,
-        totalCost: Math.round(orderTotal * 100) / 100,
         date: o.date,
         url: o.url || '',
         details: o.details || '',
@@ -595,8 +605,12 @@ router.get('/:id', async (req, res) => {
       : (latestPrice ?? null);
 
     component.latestPrice = latestPrice;
+    component.defaultCurrency = defaultCurrency;
     component.pricing = {
+      defaultCurrency,
       latestPrice,
+      latestOrderCurrency: latestOrder?.currency || defaultCurrency,
+      latestOrderOriginalPrice: latestOrder?.originalPrice ?? latestPrice,
       latestOrderDate: latestOrder?.date || null,
       latestOrderUrl: latestOrder?.url || null,
       latestOrderDetails: latestOrder?.details || null,
@@ -1036,7 +1050,8 @@ router.put('/orders/:orderId', async (req, res) => {
     status = 'delivered',
     deliveredDate = null,
     storageId = null,
-    adjustStock = true
+    adjustStock = true,
+    currency = null
   } = req.body;
 
   const newQty = parseInt(qty, 10);
@@ -1076,10 +1091,19 @@ router.put('/orders/:orderId', async (req, res) => {
     const oldStatus = order.status || 'delivered';
     const oldStorageId = order.storageId ? parseInt(order.storageId, 10) : null;
 
+    // Currency calculation
+    const defaultCurrency = await currencyService.getDefaultCurrency(conn);
+    const orderCurrency = (currency && currencyService.SUPPORTED_CURRENCIES.includes(String(currency).toUpperCase().trim()))
+      ? String(currency).toUpperCase().trim()
+      : (order.currency || defaultCurrency);
+    const allRates = await currencyService.getAllRates(conn);
+    const rateInfo = currencyService.findNearestRate(allRates, orderCurrency, defaultCurrency, formattedOrderDate);
+    const convertedPrice = Math.round(newPrice * rateInfo.rate * 10000) / 10000;
+
     // 1. Update t_orders
     await conn.query(
       `UPDATE t_orders 
-       SET price = ?, qty = ?, date = ?, url = ?, details = ?, status = ?, deliveredDate = ?, storageId = ? 
+       SET price = ?, qty = ?, date = ?, url = ?, details = ?, status = ?, deliveredDate = ?, storageId = ?, currency = ?, convertedPrice = ? 
        WHERE id = ?`,
       [
         newPrice,
@@ -1090,6 +1114,8 @@ router.put('/orders/:orderId', async (req, res) => {
         status,
         formattedDeliveredDate,
         targetStorageId,
+        orderCurrency,
+        convertedPrice,
         orderId
       ]
     );
@@ -1277,7 +1303,8 @@ router.post('/:id/purchase', async (req, res) => {
     details = '',
     addToStock = true,
     storageId = null,
-    deliveryStatus = 'pending'
+    deliveryStatus = 'pending',
+    currency = null
   } = req.body;
 
   const purchaseQty = parseInt(qty, 10);
@@ -1310,10 +1337,19 @@ router.post('/:id/purchase', async (req, res) => {
 
     const formattedDate = date ? String(date).split('T')[0] : new Date().toISOString().slice(0, 10);
 
+    // Currency calculation
+    const defaultCurrency = await currencyService.getDefaultCurrency(conn);
+    const orderCurrency = (currency && currencyService.SUPPORTED_CURRENCIES.includes(String(currency).toUpperCase().trim()))
+      ? String(currency).toUpperCase().trim()
+      : defaultCurrency;
+    const allRates = await currencyService.getAllRates(conn);
+    const rateInfo = currencyService.findNearestRate(allRates, orderCurrency, defaultCurrency, formattedDate);
+    const convertedPrice = Math.round(unitPrice * rateInfo.rate * 10000) / 10000;
+
     // 2. Insert into t_orders
     const [orderResult] = await conn.query(
-      `INSERT INTO t_orders (componentId, price, qty, date, url, details, status, deliveredDate, storageId) 
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      `INSERT INTO t_orders (componentId, price, qty, date, url, details, status, deliveredDate, storageId, currency, convertedPrice) 
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         componentId,
         unitPrice,
@@ -1323,7 +1359,9 @@ router.post('/:id/purchase', async (req, res) => {
         details ? details.trim() : '',
         isPending ? 'pending' : 'delivered',
         isPending ? null : formattedDate,
-        parsedStorageId
+        parsedStorageId,
+        orderCurrency,
+        convertedPrice
       ]
     );
     const orderId = orderResult.insertId;

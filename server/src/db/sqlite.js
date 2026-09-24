@@ -195,8 +195,47 @@ function initSchema() {
       db.prepare("ALTER TABLE t_orders ADD COLUMN storageId INTEGER DEFAULT NULL").run();
       console.log('[Database:SQLite] Added "storageId" column to t_orders.');
     }
+    if (!orderCols.some(c => c.name === 'currency')) {
+      db.prepare("ALTER TABLE t_orders ADD COLUMN currency TEXT DEFAULT 'USD'").run();
+      db.prepare("UPDATE t_orders SET currency = 'USD' WHERE currency IS NULL").run();
+      console.log('[Database:SQLite] Added "currency" column to t_orders.');
+    }
+    if (!orderCols.some(c => c.name === 'convertedPrice')) {
+      db.prepare("ALTER TABLE t_orders ADD COLUMN convertedPrice REAL DEFAULT NULL").run();
+      db.prepare("UPDATE t_orders SET convertedPrice = price WHERE convertedPrice IS NULL").run();
+      console.log('[Database:SQLite] Added "convertedPrice" column to t_orders.');
+    }
   } catch (err) {
     console.warn('[Database:SQLite] Migration notice on t_orders:', err.message);
+  }
+
+  // Ensure t_exchange_rates table exists
+  try {
+    db.prepare(`
+      CREATE TABLE IF NOT EXISTS t_exchange_rates (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        fromCurrency TEXT NOT NULL,
+        toCurrency TEXT NOT NULL,
+        rate REAL NOT NULL,
+        rateDate TEXT NOT NULL,
+        createdAt TEXT DEFAULT CURRENT_TIMESTAMP
+      )
+    `).run();
+    db.prepare(`
+      CREATE INDEX IF NOT EXISTS idx_rates_pair_date ON t_exchange_rates (fromCurrency, toCurrency, rateDate)
+    `).run();
+
+    const rateCount = db.prepare('SELECT COUNT(*) as count FROM t_exchange_rates').get()?.count || 0;
+    if (rateCount === 0) {
+      const today = new Date().toISOString().slice(0, 10);
+      const ins = db.prepare('INSERT INTO t_exchange_rates (fromCurrency, toCurrency, rate, rateDate) VALUES (?, ?, ?, ?)');
+      ins.run('EUR', 'USD', 1.085, today);
+      ins.run('UAH', 'USD', 0.0241, today);
+      ins.run('PLN', 'USD', 0.25, today);
+      console.log('[Database:SQLite] Seeded initial exchange rates into t_exchange_rates.');
+    }
+  } catch (err) {
+    console.warn('[Database:SQLite] Migration notice on t_exchange_rates:', err.message);
   }
 
   // Ensure migration column for t_busket

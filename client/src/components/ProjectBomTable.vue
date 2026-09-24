@@ -38,7 +38,7 @@
             <th class="text-right font-weight-bold">{{ t('dialogs.unitPrice') }}</th>
             <th class="text-right font-weight-bold">{{ t('common.total') }}</th>
             <th class="text-left font-weight-bold">{{ t('projectDetail.colDesignators') }}</th>
-            <th class="text-left font-weight-bold" style="width: 130px;">{{ t('projectDetail.colActions') }}</th>
+            <th class="text-left font-weight-bold" :style="{ width: hasAnyShortage ? '130px' : '100px', minWidth: hasAnyShortage ? '130px' : '100px' }">{{ t('projectDetail.colActions') }}</th>
           </tr>
         </thead>
 
@@ -136,25 +136,42 @@
             </td>
 
             <!-- Actions -->
-            <td class="text-left">
+            <td
+              class="text-left text-no-wrap"
+              :style="{
+                width: hasAnyShortage ? '130px' : '100px',
+                minWidth: hasAnyShortage ? '130px' : '100px'
+              }"
+            >
               <div class="d-inline-flex align-center" style="gap: 2px;">
-                <!-- Add Shortage to Basket / Already in Basket -->
-                <v-btn
-                  :icon="shoppingListStore.isInShoppingList(item.componentId) ? 'mdi-cart-check' : 'mdi-cart-plus'"
-                  size="x-small"
-                  :color="shoppingListStore.isInShoppingList(item.componentId) ? 'success' : 'amber-darken-3'"
-                  variant="text"
-                  :title="shoppingListStore.isInShoppingList(item.componentId) ? t('projectDetail.alreadyInBasket') : t('projectDetail.addToBasket')"
-                  :style="{
-                    visibility: isShortage(item) ? 'visible' : 'hidden',
-                    pointerEvents: isShortage(item) ? 'auto' : 'none'
-                  }"
-                  :tabindex="isShortage(item) ? 0 : -1"
-                  :aria-hidden="!isShortage(item)"
-                  @click="isShortage(item) && $emit('add-to-cart', item)"
-                />
+                <!-- Slot 1: Add Shortage to Basket / Already in Basket (rendered ONLY when at least one item has shortage) -->
+                <template v-if="hasAnyShortage">
+                  <!-- Active Add to Basket button if shortage -->
+                  <v-btn
+                    v-if="isShortage(item)"
+                    :icon="shoppingListStore.isInShoppingList(item.componentId) ? 'mdi-cart-check' : 'mdi-cart-plus'"
+                    size="x-small"
+                    :color="shoppingListStore.isInShoppingList(item.componentId) ? 'success' : 'amber-darken-3'"
+                    variant="text"
+                    :title="shoppingListStore.isInShoppingList(item.componentId) ? t('projectDetail.alreadyInBasket') : t('projectDetail.addToBasket')"
+                    @click="$emit('add-to-cart', item)"
+                  />
+                  <!-- Inactive (light grey) button to preserve slot alignment without an awkward empty gap -->
+                  <v-btn
+                    v-else
+                    icon="mdi-cart-plus"
+                    size="x-small"
+                    variant="text"
+                    disabled
+                    color="slate-300"
+                    class="opacity-25"
+                    tabindex="-1"
+                    aria-hidden="true"
+                    style="pointer-events: none;"
+                  />
+                </template>
 
-                <!-- Manage Analogs / Substitutes -->
+                <!-- Slot 2: Manage Analogs / Substitutes -->
                 <v-btn
                   icon="mdi-swap-horizontal"
                   size="x-small"
@@ -164,7 +181,7 @@
                   @click="$emit('manage-analogs', item)"
                 />
 
-                <!-- Edit Quantity -->
+                <!-- Slot 3: Edit Quantity -->
                 <v-btn
                   icon="mdi-pencil-outline"
                   size="x-small"
@@ -173,7 +190,7 @@
                   @click="$emit('edit-item', item)"
                 />
 
-                <!-- Remove Component -->
+                <!-- Slot 4: Remove Component -->
                 <v-btn
                   icon="mdi-delete-outline"
                   size="x-small"
@@ -352,6 +369,10 @@ const getDisplayStock = (item) => Math.max(0, item.stockQuantity ?? 0);
 const getShortage = (item) => Math.max(0, item.requiredQuantity - getDisplayStock(item));
 
 const isShortage = (item) => getDisplayStock(item) < item.requiredQuantity;
+
+const hasAnyShortage = computed(() => {
+  return filteredBomItems.value.some(item => isShortage(item));
+});
 
 const hasInStockAnalog = (item) => {
   if (!item.substitutes || item.substitutes.length === 0) return false;

@@ -11,10 +11,10 @@
           <div>
             <div class="text-caption text-slate-500 font-weight-bold text-uppercase">{{ t('reports.totalPurchases') }}</div>
             <div class="text-h5 font-weight-bold text-slate-900 font-mono">
-              {{ formatCurrency(purchasesStats.totalSpent || 0) }}
+              {{ formatCurrency(purchasesStats.totalSpent || 0, defaultCurrency) }}
             </div>
             <div class="text-caption text-slate-500 font-weight-medium">
-              {{ t('reports.deliveredOrders') }}: {{ formatCurrency(purchasesStats.deliveredSpent || 0) }}
+              {{ t('reports.deliveredOrders') }}: {{ formatCurrency(purchasesStats.deliveredSpent || 0, defaultCurrency) }}
             </div>
           </div>
         </v-card>
@@ -64,7 +64,7 @@
               {{ purchasesStats.pendingOrdersCount || 0 }}
             </div>
             <div class="text-caption text-slate-500">
-              {{ purchasesStats.pendingUnits || 0 }} {{ t('reports.units') }} • {{ formatCurrency(purchasesStats.pendingSpent || 0) }}
+              {{ purchasesStats.pendingUnits || 0 }} {{ t('reports.units') }} • {{ formatCurrency(purchasesStats.pendingSpent || 0, defaultCurrency) }}
             </div>
           </div>
         </v-card>
@@ -190,7 +190,7 @@
             <th class="text-right font-weight-bold" style="width: 110px;">{{ t('reports.colUnitPrice') }}</th>
             <th class="text-right font-weight-bold" style="width: 120px;">{{ t('reports.colTotalCost') }}</th>
             <th class="text-left font-weight-bold" style="width: 160px;">{{ t('reports.colSupplier') }}</th>
-            <th class="text-left font-weight-bold" style="width: 140px; min-width: 140px;">{{ t('common.actions') }}</th>
+            <th class="text-left font-weight-bold" :style="{ width: hasAnyPendingOrders ? '140px' : '80px', minWidth: hasAnyPendingOrders ? '140px' : '80px' }">{{ t('common.actions') }}</th>
           </tr>
         </thead>
 
@@ -274,12 +274,21 @@
 
             <!-- Unit Price -->
             <td class="text-right font-mono text-body-2">
-              {{ formatCurrency(order.price) }}
+              <div v-if="order.currency && order.currency !== defaultCurrency">
+                <span class="font-weight-medium">{{ formatCurrency(order.originalPrice, order.currency) }}</span>
+                <div class="text-caption text-slate-500 font-mono">
+                  ≈ {{ formatCurrency(order.price, defaultCurrency) }}
+                </div>
+              </div>
+              <span v-else>{{ formatCurrency(order.price, defaultCurrency) }}</span>
             </td>
 
             <!-- Total Cost -->
             <td class="text-right font-mono font-weight-bold text-body-2 text-primary">
-              {{ formatCurrency(order.totalCost) }}
+              <div>{{ formatCurrency(order.totalCost, defaultCurrency) }}</div>
+              <div v-if="order.currency && order.currency !== defaultCurrency" class="text-caption text-slate-500 font-mono font-weight-regular">
+                {{ formatCurrency(order.originalTotalCost, order.currency) }}
+              </div>
             </td>
 
             <!-- Supplier Link -->
@@ -299,9 +308,15 @@
             </td>
 
             <!-- Actions -->
-            <td class="text-left text-no-wrap" style="width: 140px; min-width: 140px;">
+            <td
+              class="text-left text-no-wrap"
+              :style="{
+                width: hasAnyPendingOrders ? '140px' : '80px',
+                minWidth: hasAnyPendingOrders ? '140px' : '80px'
+              }"
+            >
               <div class="d-inline-flex align-center" style="gap: 2px;">
-                <!-- Edit Order Button -->
+                <!-- Slot 1: Edit Order Button (always present) -->
                 <v-btn
                   icon="mdi-pencil-outline"
                   size="x-small"
@@ -311,39 +326,58 @@
                   @click="openEditOrderDialog(order)"
                 />
 
-                <!-- Confirm Delivery Button (visible only when pending, space preserved) -->
-                <v-btn
-                  icon="mdi-package-variant-closed-check"
-                  size="x-small"
-                  variant="text"
-                  color="success"
-                  :title="t('confirmDeliveryModal.title')"
-                  :style="{
-                    visibility: order.status === 'pending' ? 'visible' : 'hidden',
-                    pointerEvents: order.status === 'pending' ? 'auto' : 'none'
-                  }"
-                  :tabindex="order.status === 'pending' ? 0 : -1"
-                  :aria-hidden="order.status !== 'pending'"
-                  @click="order.status === 'pending' && openConfirmDeliveryForOrder(order)"
-                />
+                <!-- Slots 2 & 3: Confirm Delivery and Cancel Order (rendered ONLY when at least one order in the list is pending) -->
+                <template v-if="hasAnyPendingOrders">
+                  <!-- Active Confirm Delivery Button if pending -->
+                  <v-btn
+                    v-if="order.status === 'pending'"
+                    icon="mdi-package-variant-closed-check"
+                    size="x-small"
+                    variant="text"
+                    color="success"
+                    :title="t('confirmDeliveryModal.title')"
+                    @click="openConfirmDeliveryForOrder(order)"
+                  />
+                  <!-- Inactive (light grey) button to preserve slot alignment without an awkward empty gap -->
+                  <v-btn
+                    v-else
+                    icon="mdi-package-variant-closed-check"
+                    size="x-small"
+                    variant="text"
+                    disabled
+                    color="slate-300"
+                    class="opacity-25"
+                    tabindex="-1"
+                    aria-hidden="true"
+                    style="pointer-events: none;"
+                  />
 
-                <!-- Cancel Order Button (visible only when pending, space preserved) -->
-                <v-btn
-                  icon="mdi-cancel"
-                  size="x-small"
-                  variant="text"
-                  color="warning"
-                  :title="t('reports.cancelOrder')"
-                  :style="{
-                    visibility: order.status === 'pending' ? 'visible' : 'hidden',
-                    pointerEvents: order.status === 'pending' ? 'auto' : 'none'
-                  }"
-                  :tabindex="order.status === 'pending' ? 0 : -1"
-                  :aria-hidden="order.status !== 'pending'"
-                  @click="order.status === 'pending' && openCancelOrderForOrder(order)"
-                />
+                  <!-- Active Cancel Order Button if pending -->
+                  <v-btn
+                    v-if="order.status === 'pending'"
+                    icon="mdi-cancel"
+                    size="x-small"
+                    variant="text"
+                    color="warning"
+                    :title="t('reports.cancelOrder')"
+                    @click="openCancelOrderForOrder(order)"
+                  />
+                  <!-- Inactive (light grey) button to preserve slot alignment without an awkward empty gap -->
+                  <v-btn
+                    v-else
+                    icon="mdi-cancel"
+                    size="x-small"
+                    variant="text"
+                    disabled
+                    color="slate-300"
+                    class="opacity-25"
+                    tabindex="-1"
+                    aria-hidden="true"
+                    style="pointer-events: none;"
+                  />
+                </template>
 
-                <!-- Delete Order Button -->
+                <!-- Slot 4: Delete Order Button (always aligned) -->
                 <v-btn
                   icon="mdi-delete-outline"
                   size="x-small"
@@ -414,8 +448,8 @@
 
           <div class="text-caption text-slate-600 mb-4 bg-slate-50 pa-3 border rounded-lg">
             <div><strong>{{ t('shoppingList.colQty') }}:</strong> {{ orderToDelete.qty }} {{ t('shoppingList.pcs') }}</div>
-            <div><strong>{{ t('reports.colUnitPrice') }}:</strong> {{ formatCurrency(orderToDelete.price) }}</div>
-            <div><strong>{{ t('reports.colTotalCost') }}:</strong> {{ formatCurrency(orderToDelete.totalCost) }}</div>
+            <div><strong>{{ t('reports.colUnitPrice') }}:</strong> {{ formatCurrency(orderToDelete.originalPrice ?? orderToDelete.price, orderToDelete.currency || defaultCurrency) }}</div>
+            <div><strong>{{ t('reports.colTotalCost') }}:</strong> {{ formatCurrency(orderToDelete.totalCost, defaultCurrency) }}</div>
             <div><strong>{{ t('common.status') }}:</strong> {{ orderToDelete.status }}</div>
           </div>
 
@@ -479,7 +513,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import { useI18n } from 'vue-i18n';
 import api from '../../services/api';
 import MediaImage from '../../components/MediaImage.vue';
@@ -488,11 +522,18 @@ import EditOrderDialog from '../../components/EditOrderDialog.vue';
 import ConfirmDeliveryDialog from '../../components/ConfirmDeliveryDialog.vue';
 import CancelOrderDialog from '../../components/CancelOrderDialog.vue';
 import { formatCurrency } from '../../utils/formatters';
+import { useCurrencyStore } from '../../stores/currency';
 
 const { t } = useI18n();
+const currencyStore = useCurrencyStore();
 
+const defaultCurrency = ref('USD');
 const purchasesOrders = ref([]);
 const purchasesStats = ref({});
+
+const hasAnyPendingOrders = computed(() => {
+  return purchasesOrders.value.some(o => o.status === 'pending');
+});
 const purchasesLoading = ref(false);
 const purchasesSearch = ref('');
 const purchasesStatus = ref('all');
@@ -546,6 +587,11 @@ const loadPurchasesReport = async () => {
       offset: 0
     };
     const res = await api.getPurchasesReport(params);
+    if (res.defaultCurrency) {
+      defaultCurrency.value = res.defaultCurrency;
+    } else if (currencyStore.defaultCurrency) {
+      defaultCurrency.value = currencyStore.defaultCurrency;
+    }
     purchasesOrders.value = res.orders || [];
     purchasesStats.value = res.stats || {};
   } catch (err) {

@@ -299,7 +299,7 @@
 
           <v-row dense class="mb-2">
             <!-- Initial Stock Quantity -->
-            <v-col cols="12" md="4">
+            <v-col cols="12" sm="6">
               <v-text-field
                 v-model.number="form.qty"
                 :label="t('dialogs.initialStock')"
@@ -315,7 +315,7 @@
             </v-col>
 
             <!-- Minimal Acceptable Quantity -->
-            <v-col cols="12" md="4">
+            <v-col cols="12" sm="6">
               <v-text-field
                 v-model.number="form.minQty"
                 :label="t('dialogs.minQty')"
@@ -327,25 +327,6 @@
                 class="font-mono"
                 prepend-inner-icon="mdi-alert-circle-check-outline"
                 :hint="t('dialogs.minQtyHint')"
-                persistent-hint
-              />
-            </v-col>
-
-            <!-- Storage Location -->
-            <v-col cols="12" md="4">
-              <v-autocomplete
-                v-model="form.storageId"
-                :items="storages"
-                item-title="storage"
-                item-value="ID"
-                :label="t('dialogs.storageLocation')"
-                :placeholder="t('dialogs.storageLocationPlaceholder')"
-                density="compact"
-                variant="outlined"
-                rounded="lg"
-                prepend-inner-icon="mdi-map-marker-outline"
-                clearable
-                :hint="form.qty > 0 ? t('dialogs.allocatesStockHint') : t('dialogs.optionalStorageHint')"
                 persistent-hint
               />
             </v-col>
