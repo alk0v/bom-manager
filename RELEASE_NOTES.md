@@ -13,6 +13,7 @@ Version 0.2.7 introduces flexible Bill of Materials (BOM) component substitution
 - **Production Run Substitute Allocation**: In the "Produce Project" workflow, any item experiencing a shortage can be built using an available analog. Inventory is accurately deducted from the chosen substitute and tracked in production history.
 - **Dual-Database Parity & Cascade Deletions**: Schema migrations and lifecycle cascade deletions are implemented for both MySQL and SQLite database backends.
 - **Full Localization**: Complete 1:1 English and Ukrainian translations for all new dialogs, actions, tooltips, and badges.
+- **Order Cancellation for Awaiting Delivery Orders**: Easily cancel orders that are in "Waiting for delivery" status (e.g. when a supplier cancels after payment or parts are out of stock). Includes options to automatically restore component shortages back to the Shopping List for reordering, records custom cancellation reasons, updates order statuses to `cancelled`, and provides new filter and statistics metrics in the Purchases Report.
 
 ---
 

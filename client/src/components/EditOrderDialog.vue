@@ -323,6 +323,12 @@ const statusOptions = computed(() => [
     title: t('editOrderModal.statusPending'),
     icon: 'mdi-clock-outline',
     color: 'amber-darken-3'
+  },
+  {
+    value: 'cancelled',
+    title: t('editOrderModal.statusCancelled'),
+    icon: 'mdi-close-circle-outline',
+    color: 'error'
   }
 ]);
 

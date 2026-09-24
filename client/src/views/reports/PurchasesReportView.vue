@@ -116,6 +116,10 @@
                 <v-icon size="18">mdi-truck-delivery-outline</v-icon>
                 <v-tooltip activator="parent" location="top">{{ t('reports.pendingDeliveries') }}</v-tooltip>
               </v-btn>
+              <v-btn value="cancelled" size="small" class="px-2" :title="t('reports.cancelledOrders')">
+                <v-icon size="18" color="error">mdi-close-circle-outline</v-icon>
+                <v-tooltip activator="parent" location="top">{{ t('reports.cancelledOrders') }}</v-tooltip>
+              </v-btn>
             </v-btn-toggle>
 
             <!-- Start Date -->
@@ -186,7 +190,7 @@
             <th class="text-right font-weight-bold" style="width: 110px;">{{ t('reports.colUnitPrice') }}</th>
             <th class="text-right font-weight-bold" style="width: 120px;">{{ t('reports.colTotalCost') }}</th>
             <th class="text-left font-weight-bold" style="width: 160px;">{{ t('reports.colSupplier') }}</th>
-            <th class="text-left font-weight-bold" style="width: 130px;">{{ t('common.actions') }}</th>
+            <th class="text-left font-weight-bold" style="width: 140px; min-width: 140px;">{{ t('common.actions') }}</th>
           </tr>
         </thead>
 
@@ -242,6 +246,16 @@
                 {{ t('editOrderModal.statusDelivered') }}
               </v-chip>
               <v-chip
+                v-else-if="order.status === 'cancelled'"
+                size="x-small"
+                color="error"
+                variant="tonal"
+                class="font-weight-bold"
+              >
+                <v-icon start size="12">mdi-close-circle-outline</v-icon>
+                {{ t('editOrderModal.statusCancelled') }}
+              </v-chip>
+              <v-chip
                 v-else
                 size="x-small"
                 color="amber-darken-3"
@@ -285,7 +299,7 @@
             </td>
 
             <!-- Actions -->
-            <td class="text-left">
+            <td class="text-left text-no-wrap" style="width: 140px; min-width: 140px;">
               <div class="d-inline-flex align-center" style="gap: 2px;">
                 <!-- Edit Order Button -->
                 <v-btn
@@ -297,7 +311,7 @@
                   @click="openEditOrderDialog(order)"
                 />
 
-                <!-- Confirm Delivery Button (if pending) -->
+                <!-- Confirm Delivery Button (visible only when pending, space preserved) -->
                 <v-btn
                   icon="mdi-package-variant-closed-check"
                   size="x-small"
@@ -311,6 +325,22 @@
                   :tabindex="order.status === 'pending' ? 0 : -1"
                   :aria-hidden="order.status !== 'pending'"
                   @click="order.status === 'pending' && openConfirmDeliveryForOrder(order)"
+                />
+
+                <!-- Cancel Order Button (visible only when pending, space preserved) -->
+                <v-btn
+                  icon="mdi-cancel"
+                  size="x-small"
+                  variant="text"
+                  color="warning"
+                  :title="t('reports.cancelOrder')"
+                  :style="{
+                    visibility: order.status === 'pending' ? 'visible' : 'hidden',
+                    pointerEvents: order.status === 'pending' ? 'auto' : 'none'
+                  }"
+                  :tabindex="order.status === 'pending' ? 0 : -1"
+                  :aria-hidden="order.status !== 'pending'"
+                  @click="order.status === 'pending' && openCancelOrderForOrder(order)"
                 />
 
                 <!-- Delete Order Button -->
@@ -433,6 +463,14 @@
       @deleted="loadPurchasesReport"
     />
 
+    <!-- Cancel Order Dialog -->
+    <CancelOrderDialog
+      v-model="showCancelOrderDialog"
+      :item="selectedOrderForCancel"
+      @cancelled="onOrderCancelled"
+      @notify="notify"
+    />
+
     <!-- Notification Snackbar -->
     <v-snackbar v-model="snackbar.show" :color="snackbar.color" timeout="3000" location="bottom right">
       {{ snackbar.text }}
@@ -448,6 +486,7 @@ import MediaImage from '../../components/MediaImage.vue';
 import ComponentDetailsDialog from '../../components/ComponentDetailsDialog.vue';
 import EditOrderDialog from '../../components/EditOrderDialog.vue';
 import ConfirmDeliveryDialog from '../../components/ConfirmDeliveryDialog.vue';
+import CancelOrderDialog from '../../components/CancelOrderDialog.vue';
 import { formatCurrency } from '../../utils/formatters';
 
 const { t } = useI18n();
@@ -465,6 +504,9 @@ const selectedOrderForEdit = ref(null);
 
 const showConfirmDeliveryDialog = ref(false);
 const selectedOrderForDelivery = ref(null);
+
+const showCancelOrderDialog = ref(false);
+const selectedOrderForCancel = ref(null);
 
 const showDeleteOrderDialog = ref(false);
 const orderToDelete = ref(null);
@@ -541,6 +583,18 @@ const openConfirmDeliveryForOrder = (order) => {
 };
 
 const onDeliveryConfirmed = () => {
+  loadPurchasesReport();
+};
+
+const openCancelOrderForOrder = (order) => {
+  selectedOrderForCancel.value = {
+    ...order,
+    isComponentOrder: true
+  };
+  showCancelOrderDialog.value = true;
+};
+
+const onOrderCancelled = () => {
   loadPurchasesReport();
 };
 

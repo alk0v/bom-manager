@@ -72,7 +72,7 @@ router.get('/', async (req, res) => {
           SELECT componentId, price, date, url, details,
                  ROW_NUMBER() OVER (PARTITION BY componentId ORDER BY date DESC, id DESC) as rn
           FROM t_orders
-          WHERE componentId IS NOT NULL
+          WHERE componentId IS NOT NULL AND (status IS NULL OR status != 'cancelled')
         ) r WHERE rn = 1
       ) lo ON lo.componentId = b.componentId
       ${whereClause}
@@ -356,6 +356,98 @@ router.post('/:id/confirm-delivery', async (req, res) => {
     await conn.rollback();
     console.error('Error confirming delivery for shopping list item:', err);
     res.status(500).json({ error: 'Failed to confirm delivery', details: err.message });
+  } finally {
+    conn.release();
+  }
+});
+
+// POST /api/shopping-list/:id/cancel-order - Cancel awaiting order linked to basket item
+router.post('/:id/cancel-order', async (req, res) => {
+  const basketId = req.params.id;
+  const { returnToShoppingList = true, reason = '' } = req.body;
+
+  const conn = await pool.getConnection();
+  try {
+    await conn.beginTransaction();
+
+    const [basketRows] = await conn.query(
+      `SELECT b.*, c.component, c.qty AS currentStock 
+       FROM t_busket b
+       JOIN i_components c ON b.componentId = c.ID
+       WHERE b.id = ?`,
+      [basketId]
+    );
+
+    if (basketRows.length === 0) {
+      await conn.rollback();
+      return res.status(404).json({ error: 'Shopping list item not found' });
+    }
+
+    const basketItem = basketRows[0];
+    const orderId = basketItem.orderId;
+    const componentId = basketItem.componentId;
+    const basketQty = basketItem.qty || 1;
+
+    if (orderId) {
+      // Order exists in t_orders: update status and details
+      const [orderRows] = await conn.query(
+        'SELECT * FROM t_orders WHERE id = ?',
+        [orderId]
+      );
+      if (orderRows.length > 0) {
+        const order = orderRows[0];
+        let updatedDetails = order.details || '';
+        if (reason && String(reason).trim()) {
+          const trimmedReason = String(reason).trim();
+          updatedDetails = updatedDetails 
+            ? `${updatedDetails} [Cancelled: ${trimmedReason}]`
+            : `[Cancelled: ${trimmedReason}]`;
+        }
+        await conn.query(
+          'UPDATE t_orders SET status = ?, details = ? WHERE id = ?',
+          ['cancelled', updatedDetails, orderId]
+        );
+      }
+    }
+
+    if (returnToShoppingList) {
+      // Check if there is already another unpurchased item for this component
+      const [unpurchasedRows] = await conn.query(
+        'SELECT id, qty FROM t_busket WHERE componentId = ? AND orderId IS NULL AND id != ?',
+        [componentId, basketId]
+      );
+
+      if (unpurchasedRows.length > 0) {
+        await conn.query(
+          'UPDATE t_busket SET qty = qty + ? WHERE id = ?',
+          [basketQty, unpurchasedRows[0].id]
+        );
+        await conn.query('DELETE FROM t_busket WHERE id = ?', [basketId]);
+      } else {
+        await conn.query(
+          'UPDATE t_busket SET orderId = NULL WHERE id = ?',
+          [basketId]
+        );
+      }
+    } else {
+      await conn.query('DELETE FROM t_busket WHERE id = ?', [basketId]);
+    }
+
+    await conn.commit();
+
+    res.json({
+      success: true,
+      basketId: parseInt(basketId, 10),
+      orderId: orderId ? parseInt(orderId, 10) : null,
+      componentId,
+      component: basketItem.component,
+      status: 'cancelled',
+      returnToShoppingList
+    });
+  } catch (err) {
+    await conn.rollback();
+    console.error('Error cancelling order from shopping list item:', err);
+    res.status(500).json({ error: 'Failed to cancel order', details: err.message });
   } finally {
     conn.release();
   }

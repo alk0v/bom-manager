@@ -61,7 +61,7 @@ router.get('/', async (req, res) => {
           SELECT componentId, price,
                  ROW_NUMBER() OVER (PARTITION BY componentId ORDER BY date DESC, id DESC) as rn
           FROM t_orders
-          WHERE componentId IS NOT NULL
+          WHERE componentId IS NOT NULL AND (status IS NULL OR status != 'cancelled')
         ) r WHERE rn = 1
       ) lo ON lo.componentId = b.componentId
       GROUP BY p.id, p.projectName, p.description, p.url, p.photoUrl
@@ -99,7 +99,7 @@ router.get('/:id', async (req, res) => {
           SELECT componentId, price,
                  ROW_NUMBER() OVER (PARTITION BY componentId ORDER BY date DESC, id DESC) as rn
           FROM t_orders
-          WHERE componentId IS NOT NULL
+          WHERE componentId IS NOT NULL AND (status IS NULL OR status != 'cancelled')
         ) r WHERE rn = 1
       ) lo ON lo.componentId = b.componentId
       WHERE p.id = ?
@@ -160,7 +160,7 @@ router.get('/:id/bom', async (req, res) => {
           SELECT componentId, price, date, url, details,
                  ROW_NUMBER() OVER (PARTITION BY componentId ORDER BY date DESC, id DESC) as rn
           FROM t_orders
-          WHERE componentId IS NOT NULL
+          WHERE componentId IS NOT NULL AND (status IS NULL OR status != 'cancelled')
         ) r WHERE rn = 1
       ) lo ON lo.componentId = b.componentId
       WHERE b.projectId = ?
@@ -200,7 +200,7 @@ router.get('/:id/bom', async (req, res) => {
             SELECT componentId, price,
                    ROW_NUMBER() OVER (PARTITION BY componentId ORDER BY date DESC, id DESC) as rn
             FROM t_orders
-            WHERE componentId IS NOT NULL
+            WHERE componentId IS NOT NULL AND (status IS NULL OR status != 'cancelled')
           ) r WHERE rn = 1
         ) lo ON lo.componentId = s.componentId
         WHERE s.bomId IN (${placeholders})

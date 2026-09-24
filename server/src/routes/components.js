@@ -568,8 +568,10 @@ router.get('/:id', async (req, res) => {
       const unitPrice = o.price != null ? Number(o.price) : 0;
       const orderQty = o.qty != null ? Number(o.qty) : 0;
       const orderTotal = Math.round(unitPrice * orderQty * 10000) / 10000;
-      totalQtyPurchased += orderQty;
-      totalSpent += (unitPrice * orderQty);
+      if (o.status !== 'cancelled') {
+        totalQtyPurchased += orderQty;
+        totalSpent += (unitPrice * orderQty);
+      }
       return {
         id: o.id,
         componentId: o.componentId,
@@ -585,7 +587,8 @@ router.get('/:id', async (req, res) => {
       };
     });
 
-    const latestOrder = orders.length > 0 ? orders[0] : null;
+    const activeOrders = orders.filter(o => o.status !== 'cancelled');
+    const latestOrder = activeOrders.length > 0 ? activeOrders[0] : (orders.length > 0 ? orders[0] : null);
     const latestPrice = latestOrder ? latestOrder.price : null;
     const avgPrice = totalQtyPurchased > 0 
       ? Math.round((totalSpent / totalQtyPurchased) * 10000) / 10000 
@@ -900,6 +903,127 @@ router.post('/orders/:orderId/deliver', async (req, res) => {
   }
 });
 
+// POST /api/components/orders/:orderId/cancel - Cancel awaiting order
+router.post('/orders/:orderId/cancel', async (req, res) => {
+  const orderId = req.params.orderId;
+  const { returnToShoppingList = true, reason = '' } = req.body;
+
+  const conn = await pool.getConnection();
+  try {
+    await conn.beginTransaction();
+
+    const [orderRows] = await conn.query(
+      `SELECT o.*, c.component, c.qty AS currentStock 
+       FROM t_orders o 
+       JOIN i_components c ON o.componentId = c.ID 
+       WHERE o.id = ?`,
+      [orderId]
+    );
+
+    if (orderRows.length === 0) {
+      await conn.rollback();
+      return res.status(404).json({ error: 'Order not found' });
+    }
+
+    const order = orderRows[0];
+    const componentId = order.componentId;
+    const orderQty = parseInt(order.qty, 10) || 0;
+    const oldStatus = order.status || 'delivered';
+
+    // If order was delivered (rare edge case), revert stock
+    if (oldStatus === 'delivered' && orderQty > 0) {
+      await conn.query(
+        'UPDATE i_components SET qty = COALESCE(qty, 0) - ? WHERE ID = ?',
+        [orderQty, componentId]
+      );
+      if (order.storageId) {
+        await conn.query(
+          'UPDATE t_warehouse SET quantity = quantity - ? WHERE componentId = ? AND storageId = ?',
+          [orderQty, componentId, order.storageId]
+        );
+      }
+    }
+
+    // Format details with cancellation reason if provided
+    let updatedDetails = order.details || '';
+    if (reason && String(reason).trim()) {
+      const trimmedReason = String(reason).trim();
+      updatedDetails = updatedDetails 
+        ? `${updatedDetails} [Cancelled: ${trimmedReason}]`
+        : `[Cancelled: ${trimmedReason}]`;
+    }
+
+    // Update order status to 'cancelled'
+    await conn.query(
+      'UPDATE t_orders SET status = ?, details = ? WHERE id = ?',
+      ['cancelled', updatedDetails, orderId]
+    );
+
+    // Handle shopping list (t_busket)
+    if (returnToShoppingList) {
+      const [linkedBasketRows] = await conn.query(
+        'SELECT id, qty FROM t_busket WHERE orderId = ?',
+        [orderId]
+      );
+
+      const [unpurchasedRows] = await conn.query(
+        'SELECT id, qty FROM t_busket WHERE componentId = ? AND orderId IS NULL',
+        [componentId]
+      );
+
+      if (linkedBasketRows.length > 0) {
+        const basketItemId = linkedBasketRows[0].id;
+        const basketQty = linkedBasketRows[0].qty;
+
+        if (unpurchasedRows.length > 0) {
+          await conn.query(
+            'UPDATE t_busket SET qty = qty + ? WHERE id = ?',
+            [basketQty, unpurchasedRows[0].id]
+          );
+          await conn.query('DELETE FROM t_busket WHERE id = ?', [basketItemId]);
+        } else {
+          await conn.query(
+            'UPDATE t_busket SET orderId = NULL WHERE id = ?',
+            [basketItemId]
+          );
+        }
+      } else {
+        if (unpurchasedRows.length > 0) {
+          await conn.query(
+            'UPDATE t_busket SET qty = qty + ? WHERE id = ?',
+            [orderQty, unpurchasedRows[0].id]
+          );
+        } else {
+          const today = new Date().toISOString().slice(0, 10);
+          await conn.query(
+            'INSERT INTO t_busket (componentId, qty, date) VALUES (?, ?, ?)',
+            [componentId, orderQty, today]
+          );
+        }
+      }
+    } else {
+      await conn.query('DELETE FROM t_busket WHERE orderId = ?', [orderId]);
+    }
+
+    await conn.commit();
+
+    res.json({
+      success: true,
+      orderId: parseInt(orderId, 10),
+      componentId,
+      component: order.component,
+      status: 'cancelled',
+      returnToShoppingList
+    });
+  } catch (err) {
+    await conn.rollback();
+    console.error('Error cancelling order:', err);
+    res.status(500).json({ error: 'Failed to cancel order', details: err.message });
+  } finally {
+    conn.release();
+  }
+});
+
 // PUT /api/components/orders/:orderId - Update order details with stock adjustment
 router.put('/orders/:orderId', async (req, res) => {
   const orderId = req.params.orderId;
@@ -976,9 +1100,9 @@ router.put('/orders/:orderId', async (req, res) => {
       let stockDelta = 0;
       if (oldStatus === 'delivered' && status === 'delivered') {
         stockDelta = newQty - oldQty;
-      } else if (oldStatus === 'pending' && status === 'delivered') {
+      } else if ((oldStatus === 'pending' || oldStatus === 'cancelled') && status === 'delivered') {
         stockDelta = newQty;
-      } else if (oldStatus === 'delivered' && status === 'pending') {
+      } else if (oldStatus === 'delivered' && (status === 'pending' || status === 'cancelled')) {
         stockDelta = -oldQty;
       }
 
@@ -1033,8 +1157,8 @@ router.put('/orders/:orderId', async (req, res) => {
             }
           }
         }
-      } else if (status === 'pending' && oldStatus === 'delivered' && oldStorageId) {
-        // Reverted to pending -> deduct from old storage
+      } else if ((status === 'pending' || status === 'cancelled') && oldStatus === 'delivered' && oldStorageId) {
+        // Reverted to pending or cancelled -> deduct from old storage
         await conn.query(
           'UPDATE t_warehouse SET quantity = quantity - ? WHERE componentId = ? AND storageId = ?',
           [oldQty, componentId, oldStorageId]
@@ -1043,7 +1167,7 @@ router.put('/orders/:orderId', async (req, res) => {
     }
 
     // 3. Synchronize t_busket if linked
-    if (status === 'delivered') {
+    if (status === 'delivered' || status === 'cancelled') {
       await conn.query('DELETE FROM t_busket WHERE orderId = ?', [orderId]);
     } else {
       await conn.query('UPDATE t_busket SET qty = ? WHERE orderId = ?', [newQty, orderId]);

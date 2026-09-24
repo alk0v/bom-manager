@@ -372,13 +372,16 @@ router.get('/purchases', async (req, res) => {
       SELECT 
         COUNT(*) AS totalOrders,
         COALESCE(SUM(o.qty), 0) AS totalUnits,
-        COALESCE(SUM(o.price * o.qty), 0) AS totalSpent,
+        COALESCE(SUM(CASE WHEN o.status != 'cancelled' THEN o.price * o.qty ELSE 0 END), 0) AS totalSpent,
         COUNT(CASE WHEN o.status = 'pending' THEN 1 END) AS pendingOrdersCount,
         COALESCE(SUM(CASE WHEN o.status = 'pending' THEN o.qty ELSE 0 END), 0) AS pendingUnits,
         COALESCE(SUM(CASE WHEN o.status = 'pending' THEN o.price * o.qty ELSE 0 END), 0) AS pendingSpent,
         COUNT(CASE WHEN o.status = 'delivered' OR o.status IS NULL THEN 1 END) AS deliveredOrdersCount,
         COALESCE(SUM(CASE WHEN o.status = 'delivered' OR o.status IS NULL THEN o.qty ELSE 0 END), 0) AS deliveredUnits,
         COALESCE(SUM(CASE WHEN o.status = 'delivered' OR o.status IS NULL THEN o.price * o.qty ELSE 0 END), 0) AS deliveredSpent,
+        COUNT(CASE WHEN o.status = 'cancelled' THEN 1 END) AS cancelledOrdersCount,
+        COALESCE(SUM(CASE WHEN o.status = 'cancelled' THEN o.qty ELSE 0 END), 0) AS cancelledUnits,
+        COALESCE(SUM(CASE WHEN o.status = 'cancelled' THEN o.price * o.qty ELSE 0 END), 0) AS cancelledSpent,
         COUNT(DISTINCT o.componentId) AS uniqueComponentsCount
       FROM t_orders o
       LEFT JOIN i_components c ON o.componentId = c.ID
@@ -445,6 +448,9 @@ router.get('/purchases', async (req, res) => {
         deliveredOrdersCount: Number(stats.deliveredOrdersCount) || 0,
         deliveredUnits: Number(stats.deliveredUnits) || 0,
         deliveredSpent: Math.round((Number(stats.deliveredSpent) || 0) * 100) / 100,
+        cancelledOrdersCount: Number(stats.cancelledOrdersCount) || 0,
+        cancelledUnits: Number(stats.cancelledUnits) || 0,
+        cancelledSpent: Math.round((Number(stats.cancelledSpent) || 0) * 100) / 100,
         uniqueComponentsCount: Number(stats.uniqueComponentsCount) || 0
       }
     });

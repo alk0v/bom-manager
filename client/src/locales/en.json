@@ -42,7 +42,8 @@
     "next": "Next",
     "page": "Page",
     "other": "Other",
-    "edit": "Edit"
+    "edit": "Edit",
+    "date": "Date"
   },
   "nav": {
     "projects": "Projects",
@@ -214,7 +215,9 @@
     "orderedQty": "Ordered: {qty} pcs",
     "status": "Status",
     "colQty": "Qty",
-    "totalAwaitingDelivery": "Awaiting Delivery"
+    "totalAwaitingDelivery": "Awaiting Delivery",
+    "cancelOrder": "Cancel Order",
+    "orderCancelled": "Order cancelled for {name}."
   },
   "reports": {
     "refreshTooltip": "Refresh report data",
@@ -311,7 +314,10 @@
     "deleteOrderSuccess": "Order deleted successfully",
     "deleteOrderError": "Failed to delete order",
     "updateOrderSuccess": "Order updated successfully",
-    "updateOrderError": "Failed to update order"
+    "updateOrderError": "Failed to update order",
+    "cancelledOrders": "Cancelled Orders",
+    "cancelOrder": "Cancel Order",
+    "cancelOrderSuccess": "Order cancelled successfully"
   },
   "editOrderModal": {
     "title": "Edit Order #{id}",
@@ -323,6 +329,7 @@
     "deliveryStatus": "Delivery Status",
     "statusDelivered": "Delivered",
     "statusPending": "Awaiting Delivery",
+    "statusCancelled": "Cancelled",
     "deliveredDate": "Delivered Date",
     "storageBox": "Storage Box / Bin",
     "supplierUrl": "Supplier / Order URL",
@@ -617,7 +624,9 @@
     "colStatus": "Status",
     "statusPending": "Awaiting Delivery",
     "statusDelivered": "Delivered",
+    "statusCancelled": "Cancelled",
     "confirmDeliveryTooltip": "Confirm delivery and receive stock",
+    "cancelOrderTooltip": "Cancel awaiting order",
     "noOrdersFound": "No purchase order records found in database.",
     "noOrdersHint": "Record a purchase order to track pricing history, supplier links, and update inventory stock.",
     "btnBuyRecord": "Buy / Record Purchase",
@@ -780,5 +789,27 @@
     "confirmDelivery": "Confirm Delivery",
     "success": "Delivery confirmed for {qty} pcs of {component}! Stock updated to {newStock} pcs.",
     "error": "Failed to confirm delivery: {error}"
+  },
+  "cancelOrderModal": {
+    "title": "Cancel Order",
+    "subtitle": "Cancel awaiting order and optionally return components to shopping list",
+    "warningText": "This order is currently waiting for delivery. Canceling it will mark the order as cancelled in your purchase history. Since it has not been delivered, inventory stock is unaffected.",
+    "orderInfo": "Order Information",
+    "orderedDate": "Order Date",
+    "orderedQty": "Ordered Quantity",
+    "unitPrice": "Unit Price",
+    "totalCost": "Total Cost",
+    "supplier": "Supplier",
+    "returnToShoppingList": "Return component to shopping list (as needing purchase)",
+    "returnToShoppingListHint": "Re-adds this component shortage to the shopping list so you can purchase it from another supplier.",
+    "reason": "Cancellation Reason / Notes",
+    "reasonPlaceholder": "e.g. Canceled by supplier after payment, out of stock, refund received...",
+    "defaultReason": "Canceled by supplier after payment",
+    "reasonOutOfStock": "Out of stock at supplier",
+    "reasonRefunded": "Refund requested / received",
+    "cancel": "Keep Order",
+    "confirmCancel": "Cancel Order",
+    "success": "Order #{id} for {component} has been cancelled.",
+    "error": "Failed to cancel order: {error}"
   }
 }

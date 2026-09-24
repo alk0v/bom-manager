@@ -158,6 +158,14 @@ export const api = {
     if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('shopping-list-updated'));
     return res.data;
   }),
+  cancelOrder: (orderId, data = {}) => client.post(`/components/orders/${orderId}/cancel`, data).then(res => {
+    if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('shopping-list-updated'));
+    return res.data;
+  }),
+  cancelShoppingListOrder: (id, data = {}) => client.post(`/shopping-list/${id}/cancel-order`, data).then(res => {
+    if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('shopping-list-updated'));
+    return res.data;
+  }),
 
   // Reports
   getProductionReport: (params = {}) => client.get('/reports/production', { params }).then(res => res.data),

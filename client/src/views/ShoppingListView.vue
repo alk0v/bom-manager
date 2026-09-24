@@ -546,38 +546,49 @@
             </td>
 
             <!-- Actions -->
-            <td class="text-left text-no-wrap">
-              <!-- Confirm Delivery (Replaces Buy Component when purchased but awaiting delivery) -->
-              <v-btn
-                v-if="item.activeOrderStatus === 'pending' || item.orderId"
-                icon="mdi-package-variant-closed-check"
-                size="small"
-                color="success"
-                variant="text"
-                :title="t('shoppingList.confirmDelivery')"
-                @click="openConfirmDeliveryDialog(item)"
-              />
+            <td class="text-left text-no-wrap" style="width: 120px; min-width: 120px;">
+              <div class="d-inline-flex align-center" style="gap: 2px;">
+                <!-- Slot 1: Primary Action (Confirm Delivery when awaiting, Buy Component when to buy) -->
+                <v-btn
+                  v-if="item.activeOrderStatus === 'pending' || item.orderId"
+                  icon="mdi-package-variant-closed-check"
+                  size="small"
+                  color="success"
+                  variant="text"
+                  :title="t('shoppingList.confirmDelivery')"
+                  @click="openConfirmDeliveryDialog(item)"
+                />
+                <v-btn
+                  v-else
+                  icon="mdi-cash-check"
+                  size="small"
+                  color="primary"
+                  variant="text"
+                  :title="t('shoppingList.buyComponent')"
+                  @click="openPurchaseDialog(item)"
+                />
 
-              <!-- Buy Component (when item is not yet ordered) -->
-              <v-btn
-                v-else
-                icon="mdi-cash-check"
-                size="small"
-                color="primary"
-                variant="text"
-                :title="t('shoppingList.buyComponent')"
-                @click="openPurchaseDialog(item)"
-              />
+                <!-- Cancel Order (visible only when awaiting delivery) -->
+                <v-btn
+                  v-if="item.activeOrderStatus === 'pending' || item.orderId"
+                  icon="mdi-cancel"
+                  size="small"
+                  color="warning"
+                  variant="text"
+                  :title="t('shoppingList.cancelOrder')"
+                  @click="openCancelOrderDialog(item)"
+                />
 
-              <!-- Remove from list -->
-              <v-btn
-                icon="mdi-delete-outline"
-                size="small"
-                color="error"
-                variant="text"
-                :title="t('shoppingList.removeFromList')"
-                @click="removeItem(item)"
-              />
+                <!-- Slot 3: Remove from list (always aligned in 3rd slot) -->
+                <v-btn
+                  icon="mdi-delete-outline"
+                  size="small"
+                  color="error"
+                  variant="text"
+                  :title="t('shoppingList.removeFromList')"
+                  @click="removeItem(item)"
+                />
+              </div>
             </td>
           </tr>
 
@@ -632,6 +643,14 @@
       @notify="notify"
     />
 
+    <!-- Modal: Cancel Order -->
+    <CancelOrderDialog
+      v-model="showCancelOrderDialog"
+      :item="selectedItemForCancel"
+      @cancelled="onOrderCancelled"
+      @notify="notify"
+    />
+
     <!-- Modal: Purchase Confirmation & Order Creation -->
     <PurchaseConfirmDialog
       v-model="showPurchaseDialog"
@@ -683,6 +702,7 @@ import MediaLightboxDialog from '../components/MediaLightboxDialog.vue';
 import PackageLink from '../components/PackageLink.vue';
 import PurchaseConfirmDialog from '../components/PurchaseConfirmDialog.vue';
 import ConfirmDeliveryDialog from '../components/ConfirmDeliveryDialog.vue';
+import CancelOrderDialog from '../components/CancelOrderDialog.vue';
 import ComponentDetailsDialog from '../components/ComponentDetailsDialog.vue';
 import ProjectBomDialog from '../components/ProjectBomDialog.vue';
 import { useShoppingListStore } from '../stores/shoppingList';
@@ -706,6 +726,9 @@ const selectedItemForPurchase = ref(null);
 
 const showConfirmDeliveryDialog = ref(false);
 const selectedItemForDelivery = ref(null);
+
+const showCancelOrderDialog = ref(false);
+const selectedItemForCancel = ref(null);
 
 const showDetailsDialog = ref(false);
 const selectedItemForDetails = ref(null);
@@ -944,6 +967,15 @@ const openConfirmDeliveryDialog = (item) => {
 };
 
 const onItemDelivered = async () => {
+  await Promise.all([loadShoppingList(), loadProjects()]);
+};
+
+const openCancelOrderDialog = (item) => {
+  selectedItemForCancel.value = { ...item };
+  showCancelOrderDialog.value = true;
+};
+
+const onOrderCancelled = async () => {
   await Promise.all([loadShoppingList(), loadProjects()]);
 };
 
