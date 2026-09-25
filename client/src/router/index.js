@@ -38,6 +38,16 @@ const routes = [
     component: ReportsView
   },
   {
+    path: '/reports/production',
+    name: 'ProductionReport',
+    component: () => import('../views/reports/ProductionReportView.vue')
+  },
+  {
+    path: '/reports/purchases',
+    name: 'PurchasesReport',
+    component: () => import('../views/reports/PurchasesReportView.vue')
+  },
+  {
     path: '/settings',
     name: 'Settings',
     component: SettingsView

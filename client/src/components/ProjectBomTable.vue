@@ -46,7 +46,7 @@
           <tr
             v-for="item in filteredBomItems"
             :key="item.bomId"
-            :class="{ 'row-shortage': !item.isStockSufficient }"
+            :class="{ 'row-shortage': isShortage(item) }"
           >
             <!-- Photo -->
             <td>
@@ -75,7 +75,6 @@
                 :title="t('dialogs.clickDetails')"
               >
                 <span class="hover-underline">{{ item.component }}</span>
-                <v-icon size="13" class="opacity-60 info-icon">mdi-information-outline</v-icon>
               </div>
               <div class="text-caption text-disabled" v-if="item.marking || item.shortDescription">
                 <span v-if="item.marking" class="font-mono me-2">Mark: {{ item.marking }}</span>
@@ -103,11 +102,8 @@
 
             <!-- In Stock -->
             <td class="text-center font-mono font-weight-bold text-body-2">
-              <span :class="item.isStockSufficient ? 'text-slate-800' : 'text-error font-weight-bold'">
-                {{ item.stockQuantity ?? 0 }}
-              </span>
-              <span v-if="!item.isStockSufficient" class="text-caption text-error font-weight-bold ms-1">
-                (-{{ item.shortageQuantity }})
+              <span :class="!isShortage(item) ? 'text-slate-800' : 'text-error font-weight-bold'">
+                {{ getDisplayStock(item) }}
               </span>
             </td>
 
@@ -142,20 +138,30 @@
             <!-- Actions -->
             <td class="text-left">
               <div class="d-inline-flex align-center" style="gap: 2px;">
-                <!-- Add Shortage to Basket -->
+                <!-- Add Shortage to Basket / Already in Basket -->
                 <v-btn
-                  icon="mdi-cart-plus"
+                  :icon="shoppingListStore.isInShoppingList(item.componentId) ? 'mdi-cart-check' : 'mdi-cart-plus'"
                   size="x-small"
-                  color="amber-darken-3"
+                  :color="shoppingListStore.isInShoppingList(item.componentId) ? 'success' : 'amber-darken-3'"
                   variant="text"
-                  :title="t('projectDetail.addToBasket')"
+                  :title="shoppingListStore.isInShoppingList(item.componentId) ? t('projectDetail.alreadyInBasket') : t('projectDetail.addToBasket')"
                   :style="{
-                    visibility: !item.isStockSufficient ? 'visible' : 'hidden',
-                    pointerEvents: !item.isStockSufficient ? 'auto' : 'none'
+                    visibility: isShortage(item) ? 'visible' : 'hidden',
+                    pointerEvents: isShortage(item) ? 'auto' : 'none'
                   }"
-                  :tabindex="!item.isStockSufficient ? 0 : -1"
-                  :aria-hidden="item.isStockSufficient"
-                  @click="!item.isStockSufficient && $emit('add-to-cart', item)"
+                  :tabindex="isShortage(item) ? 0 : -1"
+                  :aria-hidden="!isShortage(item)"
+                  @click="isShortage(item) && $emit('add-to-cart', item)"
+                />
+
+                <!-- Manage Analogs / Substitutes -->
+                <v-btn
+                  icon="mdi-swap-horizontal"
+                  size="x-small"
+                  :color="item.substitutes && item.substitutes.length > 0 ? 'success' : 'slate-500'"
+                  :variant="item.substitutes && item.substitutes.length > 0 ? 'flat' : 'text'"
+                  :title="item.substitutes && item.substitutes.length > 0 ? t('bomAnalogs.configuredAnalogs', { count: item.substitutes.length }) : t('bomAnalogs.manageAnalogs')"
+                  @click="$emit('manage-analogs', item)"
                 />
 
                 <!-- Edit Quantity -->
@@ -261,11 +267,20 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import { useI18n } from 'vue-i18n';
 import MediaImage from './MediaImage.vue';
 import PackageLink from './PackageLink.vue';
 import { formatCurrency, formatDate } from '../utils/formatters';
+import { useShoppingListStore } from '../stores/shoppingList';
+
+const shoppingListStore = useShoppingListStore();
+
+onMounted(() => {
+  if (shoppingListStore.items.length === 0) {
+    shoppingListStore.refreshCount();
+  }
+});
 
 const props = defineProps({
   items: {
@@ -293,7 +308,9 @@ defineEmits([
   'open-component-details',
   'open-photo',
   'add-component',
-  'import-ibom'
+  'import-ibom',
+  'manage-analogs',
+  'find-analog'
 ]);
 
 const { t } = useI18n();
@@ -329,6 +346,22 @@ const bomCost = computed(() => {
     unpricedCount: props.items.length - pricedCount
   };
 });
+
+const getDisplayStock = (item) => Math.max(0, item.stockQuantity ?? 0);
+
+const getShortage = (item) => Math.max(0, item.requiredQuantity - getDisplayStock(item));
+
+const isShortage = (item) => getDisplayStock(item) < item.requiredQuantity;
+
+const hasInStockAnalog = (item) => {
+  if (!item.substitutes || item.substitutes.length === 0) return false;
+  return item.substitutes.some(s => Math.max(0, s.stockQuantity ?? 0) >= item.requiredQuantity);
+};
+
+const getBestInStockAnalog = (item) => {
+  if (!item.substitutes || item.substitutes.length === 0) return null;
+  return item.substitutes.find(s => Math.max(0, s.stockQuantity ?? 0) >= item.requiredQuantity) || item.substitutes[0];
+};
 </script>
 
 <style scoped>
@@ -338,8 +371,19 @@ const bomCost = computed(() => {
   letter-spacing: 0.02em;
 }
 
-.row-shortage {
-  background-color: #FFFBEB !important;
+/* Light Red shortage row highlighting */
+.bom-table :deep(tr.row-shortage td),
+.bom-table tr.row-shortage td,
+.bom-table :deep(tr.row-shortage),
+.bom-table tr.row-shortage {
+  background-color: #FEF2F2 !important; /* Soft rose / light red */
+}
+
+.bom-table :deep(tr.row-shortage:hover td),
+.bom-table tr.row-shortage:hover td,
+.bom-table :deep(tr.row-shortage:hover),
+.bom-table tr.row-shortage:hover {
+  background-color: #FEE2E2 !important; /* Slightly deeper rose-100 on hover */
 }
 
 .comp-name-link {
@@ -348,11 +392,6 @@ const bomCost = computed(() => {
 
 .comp-name-link:hover .hover-underline {
   text-decoration: underline;
-}
-
-.comp-name-link:hover .info-icon {
-  opacity: 1 !important;
-  color: var(--v-theme-primary);
 }
 
 .hover-zoom {

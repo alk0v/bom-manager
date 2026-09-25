@@ -35,6 +35,21 @@ router.get('/', async (req, res) => {
         COALESCE(SUM(CASE WHEN b.id IS NOT NULL THEN GREATEST(0, b.quantity - COALESCE(c.qty, 0)) ELSE 0 END), 0) AS totalShortageQty,
         (SELECT COUNT(*) FROM t_project_files pf WHERE pf.projectId = p.id) AS filesCount,
         (SELECT COUNT(*) FROM t_project_files pf WHERE pf.projectId = p.id AND pf.fileType = 'ibom') AS ibomFilesCount,
+        (
+          SELECT COUNT(DISTINCT b_cnt.componentId)
+          FROM t_busket b_cnt
+          WHERE EXISTS (
+            SELECT 1 FROM t_bom bom_cnt
+            WHERE bom_cnt.projectId = p.id
+              AND (
+                bom_cnt.componentId = b_cnt.componentId
+                OR EXISTS (
+                  SELECT 1 FROM t_bom_substitutes sub_cnt
+                  WHERE sub_cnt.bomId = bom_cnt.id AND sub_cnt.componentId = b_cnt.componentId
+                )
+              )
+          )
+        ) AS shoppingItemCount,
         COALESCE(ROUND(SUM(b.quantity * lo.latestPrice), 2), 0) AS estimatedCost,
         COUNT(DISTINCT CASE WHEN lo.latestPrice IS NOT NULL THEN b.id END) AS pricedItemsCount
       FROM i_projects p
@@ -46,7 +61,7 @@ router.get('/', async (req, res) => {
           SELECT componentId, price,
                  ROW_NUMBER() OVER (PARTITION BY componentId ORDER BY date DESC, id DESC) as rn
           FROM t_orders
-          WHERE componentId IS NOT NULL
+          WHERE componentId IS NOT NULL AND (status IS NULL OR status != 'cancelled')
         ) r WHERE rn = 1
       ) lo ON lo.componentId = b.componentId
       GROUP BY p.id, p.projectName, p.description, p.url, p.photoUrl
@@ -84,7 +99,7 @@ router.get('/:id', async (req, res) => {
           SELECT componentId, price,
                  ROW_NUMBER() OVER (PARTITION BY componentId ORDER BY date DESC, id DESC) as rn
           FROM t_orders
-          WHERE componentId IS NOT NULL
+          WHERE componentId IS NOT NULL AND (status IS NULL OR status != 'cancelled')
         ) r WHERE rn = 1
       ) lo ON lo.componentId = b.componentId
       WHERE p.id = ?
@@ -111,6 +126,8 @@ router.get('/:id/bom', async (req, res) => {
         b.componentId,
         b.quantity AS requiredQuantity,
         b.comment,
+        c.category_id AS categoryId,
+        c.package_id AS packageId,
         c.component,
         c.description AS componentDescription,
         c.shortDescription,
@@ -143,13 +160,64 @@ router.get('/:id/bom', async (req, res) => {
           SELECT componentId, price, date, url, details,
                  ROW_NUMBER() OVER (PARTITION BY componentId ORDER BY date DESC, id DESC) as rn
           FROM t_orders
-          WHERE componentId IS NOT NULL
+          WHERE componentId IS NOT NULL AND (status IS NULL OR status != 'cancelled')
         ) r WHERE rn = 1
       ) lo ON lo.componentId = b.componentId
       WHERE b.projectId = ?
       ORDER BY cat.category ASC, c.component ASC
     `;
     const [rows] = await pool.query(query, [req.params.id]);
+
+    if (rows.length > 0) {
+      const bomIds = rows.map(r => r.bomId);
+      const placeholders = bomIds.map(() => '?').join(',');
+      const [subRows] = await pool.query(`
+        SELECT 
+          s.id,
+          s.bomId,
+          s.componentId,
+          s.notes,
+          s.createdAt,
+          c.component,
+          c.description AS componentDescription,
+          c.shortDescription,
+          c.marking,
+          c.datasheetURL,
+          c.photoURL AS componentPhotoURL,
+          c.qty AS stockQuantity,
+          cat.category,
+          pkg.package,
+          pkg.isSmd,
+          pkg.pinQuantity,
+          lo.latestPrice AS unitPrice
+        FROM t_bom_substitutes s
+        JOIN i_components c ON s.componentId = c.ID
+        LEFT JOIN i_categories cat ON c.category_id = cat.ID
+        LEFT JOIN i_packages pkg ON c.package_id = pkg.ID
+        LEFT JOIN (
+          SELECT componentId, price AS latestPrice
+          FROM (
+            SELECT componentId, price,
+                   ROW_NUMBER() OVER (PARTITION BY componentId ORDER BY date DESC, id DESC) as rn
+            FROM t_orders
+            WHERE componentId IS NOT NULL AND (status IS NULL OR status != 'cancelled')
+          ) r WHERE rn = 1
+        ) lo ON lo.componentId = s.componentId
+        WHERE s.bomId IN (${placeholders})
+        ORDER BY s.id ASC
+      `, bomIds);
+
+      const subsByBomId = {};
+      for (const sub of subRows) {
+        if (!subsByBomId[sub.bomId]) subsByBomId[sub.bomId] = [];
+        subsByBomId[sub.bomId].push(sub);
+      }
+
+      for (const row of rows) {
+        row.substitutes = subsByBomId[row.bomId] || [];
+      }
+    }
+
     res.json(rows);
   } catch (error) {
     console.error('Error fetching project BOM:', error);
@@ -171,7 +239,7 @@ router.post('/:id/bom', async (req, res) => {
       'INSERT INTO t_bom (projectId, componentId, quantity, comment) VALUES (?, ?, ?, ?)',
       [projectId, componentId, quantity, comment]
     );
-    res.status(201).json({ id: result.insertId, projectId, componentId, quantity, comment });
+    res.status(201).json({ id: result.insertId, projectId, componentId, quantity, comment, substitutes: [] });
   } catch (error) {
     console.error('Error adding component to BOM:', error);
     res.status(500).json({ error: 'Failed to add component to BOM', details: error.message });
@@ -195,15 +263,184 @@ router.put('/:id/bom/:bomId', async (req, res) => {
   }
 });
 
-// DELETE /api/projects/:id/bom/:bomId - delete BOM entry
+// DELETE /api/projects/:id/bom/:bomId - delete BOM entry and its substitutes
 router.delete('/:id/bom/:bomId', async (req, res) => {
   const { bomId } = req.params;
   try {
+    await pool.query('DELETE FROM t_bom_substitutes WHERE bomId = ?', [bomId]);
     await pool.query('DELETE FROM t_bom WHERE id = ?', [bomId]);
     res.json({ success: true, bomId });
   } catch (error) {
     console.error('Error deleting BOM item:', error);
     res.status(500).json({ error: 'Failed to delete BOM item', details: error.message });
+  }
+});
+
+// POST /api/projects/:id/bom/:bomId/substitutes - add analog/substitute to a BOM item
+router.post('/:id/bom/:bomId/substitutes', async (req, res) => {
+  const { id: projectId, bomId } = req.params;
+  const { componentId, notes = '' } = req.body;
+
+  if (!componentId) {
+    return res.status(400).json({ error: 'componentId is required' });
+  }
+
+  try {
+    // 1. Verify BOM item exists in this project
+    const [bomRows] = await pool.query(
+      'SELECT id, componentId FROM t_bom WHERE id = ? AND projectId = ?',
+      [bomId, projectId]
+    );
+    if (bomRows.length === 0) {
+      return res.status(404).json({ error: 'BOM item not found in this project' });
+    }
+
+    // Cannot substitute component with itself
+    if (Number(bomRows[0].componentId) === Number(componentId)) {
+      return res.status(400).json({ error: 'Component is already the primary part for this BOM item' });
+    }
+
+    // 2. Check if already added as substitute
+    const [existing] = await pool.query(
+      'SELECT id FROM t_bom_substitutes WHERE bomId = ? AND componentId = ?',
+      [bomId, componentId]
+    );
+    if (existing.length > 0) {
+      return res.status(409).json({ error: 'This component is already configured as an analog for this BOM item' });
+    }
+
+    // 3. Insert substitute
+    const [result] = await pool.query(
+      'INSERT INTO t_bom_substitutes (bomId, componentId, notes) VALUES (?, ?, ?)',
+      [bomId, componentId, notes.trim()]
+    );
+
+    // 4. Fetch the newly inserted substitute with full component info
+    const [newSubRows] = await pool.query(`
+      SELECT 
+        s.id,
+        s.bomId,
+        s.componentId,
+        s.notes,
+        s.createdAt,
+        c.component,
+        c.description AS componentDescription,
+        c.shortDescription,
+        c.marking,
+        c.datasheetURL,
+        c.photoURL AS componentPhotoURL,
+        c.qty AS stockQuantity,
+        cat.category,
+        pkg.package,
+        pkg.isSmd,
+        pkg.pinQuantity
+      FROM t_bom_substitutes s
+      JOIN i_components c ON s.componentId = c.ID
+      LEFT JOIN i_categories cat ON c.category_id = cat.ID
+      LEFT JOIN i_packages pkg ON c.package_id = pkg.ID
+      WHERE s.id = ?
+    `, [result.insertId]);
+
+    res.status(201).json(newSubRows[0]);
+  } catch (error) {
+    console.error('Error adding BOM substitute:', error);
+    res.status(500).json({ error: 'Failed to add BOM substitute', details: error.message });
+  }
+});
+
+// PUT /api/projects/:id/bom/:bomId/substitutes/:subId - update substitute notes
+router.put('/:id/bom/:bomId/substitutes/:subId', async (req, res) => {
+  const { bomId, subId } = req.params;
+  const { notes = '' } = req.body;
+
+  try {
+    await pool.query(
+      'UPDATE t_bom_substitutes SET notes = ? WHERE id = ? AND bomId = ?',
+      [notes.trim(), subId, bomId]
+    );
+    res.json({ success: true, id: parseInt(subId, 10), notes: notes.trim() });
+  } catch (error) {
+    console.error('Error updating BOM substitute note:', error);
+    res.status(500).json({ error: 'Failed to update substitute note', details: error.message });
+  }
+});
+
+// DELETE /api/projects/:id/bom/:bomId/substitutes/:subId - remove substitute
+router.delete('/:id/bom/:bomId/substitutes/:subId', async (req, res) => {
+  const { bomId, subId } = req.params;
+
+  try {
+    await pool.query(
+      'DELETE FROM t_bom_substitutes WHERE id = ? AND bomId = ?',
+      [subId, bomId]
+    );
+    res.json({ success: true, id: parseInt(subId, 10) });
+  } catch (error) {
+    console.error('Error deleting BOM substitute:', error);
+    res.status(500).json({ error: 'Failed to delete substitute', details: error.message });
+  }
+});
+
+// POST /api/projects/:id/bom/:bomId/swap-primary - atomically swap primary BOM component with one of its substitutes
+router.post('/:id/bom/:bomId/swap-primary', async (req, res) => {
+  const { id: projectId, bomId } = req.params;
+  const { substituteId } = req.body;
+
+  if (!substituteId) {
+    return res.status(400).json({ error: 'substituteId is required' });
+  }
+
+  const conn = await pool.getConnection();
+  try {
+    await conn.beginTransaction();
+
+    // 1. Get current BOM item
+    const [bomRows] = await conn.query(
+      'SELECT id, projectId, componentId FROM t_bom WHERE id = ? AND projectId = ?',
+      [bomId, projectId]
+    );
+    if (bomRows.length === 0) {
+      await conn.rollback();
+      return res.status(404).json({ error: 'BOM item not found' });
+    }
+    const oldPrimaryCompId = bomRows[0].componentId;
+
+    // 2. Get substitute item
+    const [subRows] = await conn.query(
+      'SELECT id, bomId, componentId, notes FROM t_bom_substitutes WHERE id = ? AND bomId = ?',
+      [substituteId, bomId]
+    );
+    if (subRows.length === 0) {
+      await conn.rollback();
+      return res.status(404).json({ error: 'Substitute item not found' });
+    }
+    const newPrimaryCompId = subRows[0].componentId;
+
+    // 3. Swap component IDs
+    await conn.query(
+      'UPDATE t_bom SET componentId = ? WHERE id = ?',
+      [newPrimaryCompId, bomId]
+    );
+
+    await conn.query(
+      'UPDATE t_bom_substitutes SET componentId = ? WHERE id = ?',
+      [oldPrimaryCompId, substituteId]
+    );
+
+    await conn.commit();
+
+    res.json({
+      success: true,
+      bomId: parseInt(bomId, 10),
+      oldPrimaryComponentId: oldPrimaryCompId,
+      newPrimaryComponentId: newPrimaryCompId
+    });
+  } catch (error) {
+    await conn.rollback();
+    console.error('Error swapping primary BOM component:', error);
+    res.status(500).json({ error: 'Failed to swap primary component', details: error.message });
+  } finally {
+    conn.release();
   }
 });
 
@@ -301,6 +538,12 @@ router.delete('/:id', async (req, res) => {
 
       // Delete production runs
       await conn.query('DELETE FROM t_production_runs WHERE projectId = ?', [projectId]);
+
+      // Delete substitutes for BOM records of this project
+      await conn.query(`
+        DELETE FROM t_bom_substitutes 
+        WHERE bomId IN (SELECT id FROM t_bom WHERE projectId = ?)
+      `, [projectId]);
 
       // Delete BOM records
       await conn.query('DELETE FROM t_bom WHERE projectId = ?', [projectId]);
@@ -481,7 +724,7 @@ router.post('/:id/bom/import-ibom', async (req, res) => {
 // POST /api/projects/:id/produce - Produce N units of project and decrease component inventory
 router.post('/:id/produce', async (req, res) => {
   const projectId = req.params.id;
-  const { count = 1, allowNegativeStock = false } = req.body;
+  const { count = 1, allowNegativeStock = false, substitutions = {} } = req.body;
 
   const produceCount = parseInt(count, 10);
   if (isNaN(produceCount) || produceCount < 1) {
@@ -494,6 +737,23 @@ router.post('/:id/produce', async (req, res) => {
     return res.status(404).json({ error: 'Project not found' });
   }
   const project = projs[0];
+
+  // If any substitutions provided, preload their component metadata
+  let subCompMap = {};
+  const subComponentIds = Object.values(substitutions).map(x => parseInt(x, 10)).filter(x => !isNaN(x));
+  if (subComponentIds.length > 0) {
+    const placeholders = subComponentIds.map(() => '?').join(',');
+    const [subComps] = await pool.query(`
+      SELECT c.ID, c.component, c.marking, COALESCE(c.qty, 0) AS qty, cat.category, pkg.package
+      FROM i_components c
+      LEFT JOIN i_categories cat ON c.category_id = cat.ID
+      LEFT JOIN i_packages pkg ON c.package_id = pkg.ID
+      WHERE c.ID IN (${placeholders})
+    `, subComponentIds);
+    for (const sc of subComps) {
+      subCompMap[sc.ID] = sc;
+    }
+  }
 
   // Fetch BOM items with current stock
   const bomQuery = `
@@ -522,26 +782,49 @@ router.post('/:id/produce', async (req, res) => {
     return res.status(400).json({ error: 'Cannot produce project with an empty Bill of Materials (BOM)' });
   }
 
-  // Calculate deductions and shortages
+  // Calculate deductions and shortages (taking selected substitutions into account)
   const deductions = bomItems.map(item => {
     const totalRequired = item.requiredQuantity * produceCount;
-    const currentStock = item.currentStock;
+    
+    let targetComponentId = item.componentId;
+    let targetComponent = item.component;
+    let targetMarking = item.marking;
+    let targetCategory = item.category;
+    let targetPackage = item.package;
+    let currentStock = item.currentStock;
+    let isSubstituted = false;
+
+    const subId = substitutions[item.bomId] ? parseInt(substitutions[item.bomId], 10) : null;
+    if (subId && subId !== item.componentId && subCompMap[subId]) {
+      const sc = subCompMap[subId];
+      targetComponentId = sc.ID;
+      targetComponent = sc.component;
+      targetMarking = sc.marking;
+      targetCategory = sc.category;
+      targetPackage = sc.package;
+      currentStock = sc.qty;
+      isSubstituted = true;
+    }
+
     const remainingStock = currentStock - totalRequired;
     const shortage = Math.max(0, totalRequired - currentStock);
 
     return {
       bomId: item.bomId,
-      componentId: item.componentId,
-      component: item.component,
-      marking: item.marking,
-      category: item.category,
-      package: item.package,
+      componentId: targetComponentId,
+      originalComponentId: item.componentId,
+      component: targetComponent,
+      originalComponent: item.component,
+      marking: targetMarking,
+      category: targetCategory,
+      package: targetPackage,
       requiredPerUnit: item.requiredQuantity,
       totalRequired,
       currentStock,
       remainingStock,
       shortage,
-      isSufficient: shortage === 0
+      isSufficient: shortage === 0,
+      isSubstituted
     };
   });
 

@@ -56,6 +56,10 @@ export const usePackageDetailsStore = defineStore('packageDetails', () => {
     }
   };
 
+  const invalidateCache = () => {
+    packagesCache = null;
+  };
+
   const close = () => {
     isOpen.value = false;
   };
@@ -65,6 +69,7 @@ export const usePackageDetailsStore = defineStore('packageDetails', () => {
     loading,
     packageData,
     openPackage,
+    invalidateCache,
     close
   };
 });

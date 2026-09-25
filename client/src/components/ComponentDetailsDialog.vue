@@ -395,6 +395,7 @@
                   <thead>
                     <tr class="bg-slate-50 text-caption font-weight-bold">
                       <th class="text-left py-2 font-weight-bold">{{ t('common.date') }}</th>
+                      <th class="text-left py-2 font-weight-bold">{{ t('componentDetailsModal.colStatus') }}</th>
                       <th class="text-right py-2 font-weight-bold">{{ t('componentDetailsModal.colUnitPrice') }}</th>
                       <th class="text-center py-2 font-weight-bold">{{ t('componentDetailsModal.colQty') }}</th>
                       <th class="text-right py-2 font-weight-bold">{{ t('componentDetailsModal.colTotal') }}</th>
@@ -405,6 +406,69 @@
                   <tbody>
                     <tr v-for="order in displayComponent.pricing.orders" :key="order.id">
                       <td class="text-caption font-mono">{{ formatDate(order.date) }}</td>
+                      <td>
+                        <div class="d-flex align-center gap-1">
+                          <v-chip
+                            v-if="order.status === 'pending'"
+                            size="x-small"
+                            color="amber-darken-3"
+                            variant="tonal"
+                            class="font-weight-medium"
+                          >
+                            <v-icon start size="12">mdi-truck-delivery-outline</v-icon>
+                            {{ t('componentDetailsModal.statusPending') }}
+                          </v-chip>
+                          <v-chip
+                            v-else-if="order.status === 'cancelled'"
+                            size="x-small"
+                            color="error"
+                            variant="tonal"
+                            class="font-weight-medium"
+                          >
+                            <v-icon start size="12">mdi-close-circle-outline</v-icon>
+                            {{ t('componentDetailsModal.statusCancelled') }}
+                          </v-chip>
+                          <v-chip
+                            v-else
+                            size="x-small"
+                            color="success"
+                            variant="tonal"
+                            class="font-weight-medium"
+                            :title="order.deliveredDate ? `Delivered: ${formatDate(order.deliveredDate)}` : ''"
+                          >
+                            <v-icon start size="12">mdi-check-circle-outline</v-icon>
+                            {{ t('componentDetailsModal.statusDelivered') }}
+                          </v-chip>
+                          <v-btn
+                            icon="mdi-package-variant-closed-check"
+                            size="x-small"
+                            variant="text"
+                            color="success"
+                            :title="t('componentDetailsModal.confirmDeliveryTooltip')"
+                            :style="{
+                              visibility: order.status === 'pending' ? 'visible' : 'hidden',
+                              pointerEvents: order.status === 'pending' ? 'auto' : 'none'
+                            }"
+                            :tabindex="order.status === 'pending' ? 0 : -1"
+                            :aria-hidden="order.status !== 'pending'"
+                            @click="order.status === 'pending' && openDeliveryForOrder(order)"
+                          />
+                          <v-btn
+                            icon="mdi-cancel"
+                            size="x-small"
+                            variant="text"
+                            color="warning"
+                            :title="t('componentDetailsModal.cancelOrderTooltip')"
+                            :style="{
+                              visibility: order.status === 'pending' ? 'visible' : 'hidden',
+                              pointerEvents: order.status === 'pending' ? 'auto' : 'none'
+                            }"
+                            :tabindex="order.status === 'pending' ? 0 : -1"
+                            :aria-hidden="order.status !== 'pending'"
+                            @click="order.status === 'pending' && openCancelOrderForOrder(order)"
+                          />
+                        </div>
+                      </td>
                       <td class="text-right text-caption font-mono font-weight-bold text-primary">
                         {{ formatCurrency(order.price) }}
                       </td>
@@ -571,6 +635,22 @@
       @notify="notify"
     />
 
+    <!-- CONFIRM DELIVERY DIALOG -->
+    <ConfirmDeliveryDialog
+      v-model="showDeliveryDialog"
+      :item="deliveryDialogItem"
+      @delivered="handleDelivered"
+      @notify="notify"
+    />
+
+    <!-- CANCEL ORDER DIALOG -->
+    <CancelOrderDialog
+      v-model="showCancelDialog"
+      :item="cancelDialogItem"
+      @cancelled="handleCancelled"
+      @notify="notify"
+    />
+
     <!-- DELETE COMPONENT DIALOG (WITH PROJECT USAGE WARNING) -->
     <DeleteComponentDialog
       v-model="showDeleteDialog"
@@ -603,6 +683,8 @@ import MediaImage from './MediaImage.vue';
 import MediaLightboxDialog from './MediaLightboxDialog.vue';
 import PackageLink from './PackageLink.vue';
 import PurchaseConfirmDialog from './PurchaseConfirmDialog.vue';
+import ConfirmDeliveryDialog from './ConfirmDeliveryDialog.vue';
+import CancelOrderDialog from './CancelOrderDialog.vue';
 import DeleteComponentDialog from './DeleteComponentDialog.vue';
 import CreateComponentDialog from './CreateComponentDialog.vue';
 import { formatCurrency, formatDate } from '../utils/formatters';
@@ -828,16 +910,73 @@ const openPurchaseDialog = () => {
   showPurchaseDialog.value = true;
 };
 
+const showDeliveryDialog = ref(false);
+const deliveryDialogItem = ref(null);
+
+const showCancelDialog = ref(false);
+const cancelDialogItem = ref(null);
+
+const openDeliveryForOrder = (order) => {
+  deliveryDialogItem.value = {
+    ...order,
+    isComponentOrder: true,
+    component: displayComponent.value?.component,
+    componentName: displayComponent.value?.component,
+    marking: displayComponent.value?.marking,
+    category: displayComponent.value?.category,
+    package: displayComponent.value?.package,
+    photoURL: displayComponent.value?.photoURL,
+    currentStock: displayComponent.value?.qty ?? 0
+  };
+  showDeliveryDialog.value = true;
+};
+
+const openCancelOrderForOrder = (order) => {
+  cancelDialogItem.value = {
+    ...order,
+    isComponentOrder: true,
+    component: displayComponent.value?.component,
+    componentName: displayComponent.value?.component,
+    marking: displayComponent.value?.marking,
+    category: displayComponent.value?.category,
+    package: displayComponent.value?.package,
+    photoURL: displayComponent.value?.photoURL,
+    currentStock: displayComponent.value?.qty ?? 0
+  };
+  showCancelDialog.value = true;
+};
+
+const handleCancelled = async () => {
+  await loadFullDetails();
+  emit('updated', detailedComponent.value);
+};
+
+const handleDelivered = async (res) => {
+  if (res?.newStock != null) {
+    if (detailedComponent.value) {
+      detailedComponent.value.qty = res.newStock;
+    }
+    if (props.component) {
+      props.component.qty = res.newStock;
+    }
+  }
+  await loadFullDetails();
+  emit('updated', detailedComponent.value);
+};
+
 const handlePurchased = async (res) => {
-  notify(t('componentDetailsModal.orderSuccess', { orderId: res.orderId, qty: res.qty, newStock: res.newStock }), 'success');
-  if (detailedComponent.value) {
+  if (res.status === 'delivered') {
+    notify(t('componentDetailsModal.orderSuccess', { orderId: res.orderId, qty: res.qty, newStock: res.newStock }), 'success');
+  }
+  if (detailedComponent.value && res.newStock != null) {
     detailedComponent.value.qty = res.newStock;
   }
-  if (props.component) {
+  if (props.component && res.newStock != null) {
     props.component.qty = res.newStock;
   }
   await loadFullDetails();
   emit('purchased', res);
+  emit('updated', detailedComponent.value);
 };
 
 watch(() => props.modelValue, (isOpen) => {

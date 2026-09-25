@@ -1,5 +1,22 @@
 # Release Notes - BOM Manager
 
+## Version 0.2.7 (September 2026) - BOM Component Analogs & Substitutions
+
+### Summary
+Version 0.2.7 introduces flexible Bill of Materials (BOM) component substitutions and analogs. Hardware engineers can now assign drop-in or functional equivalents per project BOM item, view in-stock analog coverage during shortages, swap primary parts with one click, and seamlessly allocate substitute stock during Production runs.
+
+### What's New
+- **BOM Component Analogs (`t_bom_substitutes`)**: Add one or more alternative parts to any BOM item with custom engineering notes explaining circuit-specific compatibility (e.g. SN74LS04 replaced with SN74HC04).
+- **Interactive Analogs Management Modal**: Accessible directly from the BOM table using the new swap action button or analog indicator chip. Add, view, edit notes, and remove analogs with instant stock visibility.
+- **One-Click Primary Component Swap**: Easily promote an analog to become the primary BOM component while moving the old primary component into the analogs list, preserving all designators and quantities.
+- **Smart Shortage Indicators**: BOM table badges highlight when an item has an in-stock analog available, immediately signaling alternative assembly options before purchasing.
+- **Production Run Substitute Allocation**: In the "Produce Project" workflow, any item experiencing a shortage can be built using an available analog. Inventory is accurately deducted from the chosen substitute and tracked in production history.
+- **Dual-Database Parity & Cascade Deletions**: Schema migrations and lifecycle cascade deletions are implemented for both MySQL and SQLite database backends.
+- **Full Localization**: Complete 1:1 English and Ukrainian translations for all new dialogs, actions, tooltips, and badges.
+- **Order Cancellation for Awaiting Delivery Orders**: Easily cancel orders that are in "Waiting for delivery" status (e.g. when a supplier cancels after payment or parts are out of stock). Includes options to automatically restore component shortages back to the Shopping List for reordering, records custom cancellation reasons, updates order statuses to `cancelled`, and provides new filter and statistics metrics in the Purchases Report.
+
+---
+
 ## Version 0.2.6 (September 2026) - Bug Fixes & Refinements
 
 ### Summary

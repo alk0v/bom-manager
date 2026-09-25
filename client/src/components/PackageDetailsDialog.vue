@@ -72,7 +72,7 @@
               </v-btn>
             </div>
 
-            <!-- With Drawing Image (Click to zoom) -->
+            <!-- With Drawing Image (Click to zoom, no automatic blur) -->
             <div
               v-if="packageStore.packageData.drawingURL"
               class="border rounded bg-slate-50 overflow-hidden d-flex flex-column align-center justify-center p-3 position-relative cursor-pointer drawing-zoom-wrapper"
@@ -88,8 +88,18 @@
                   :cover="false"
                 />
               </div>
-              <div class="photo-overlay d-flex align-center justify-center">
-                <v-icon icon="mdi-magnify-plus-outline" size="32" color="slate-800" />
+
+              <!-- Subtle floating zoom hint chip (top right) -->
+              <div class="zoom-badge-container">
+                <v-chip
+                  size="x-small"
+                  color="grey-darken-3"
+                  variant="flat"
+                  class="font-weight-medium shadow-sm opacity-80"
+                  prepend-icon="mdi-magnify-plus-outline"
+                >
+                  Zoom
+                </v-chip>
               </div>
 
               <!-- Drawing File Info Bar -->
@@ -171,7 +181,17 @@
       <v-divider />
 
       <!-- Footer Actions -->
-      <v-card-actions class="pa-3 bg-surface d-flex justify-end">
+      <v-card-actions class="pa-3 bg-surface d-flex justify-space-between align-center">
+        <v-btn
+          variant="tonal"
+          color="primary"
+          prepend-icon="mdi-pencil-outline"
+          :disabled="!packageStore.packageData.ID && packageStore.loading"
+          @click="openEditDialog"
+        >
+          {{ t('manageCatalogModal.editPackage') }}
+        </v-btn>
+
         <v-btn
           variant="outlined"
           color="slate-700"
@@ -189,6 +209,139 @@
       :src="packageStore.packageData?.drawingURL"
       :title="packageStore.packageData?.package"
     />
+
+    <!-- EDIT PACKAGE MODAL -->
+    <v-dialog v-model="showEditDialog" max-width="520px" persistent>
+      <v-card class="rounded-0 border bg-white">
+        <v-card-title class="bg-slate-50 py-3 px-4 border-b font-weight-bold text-subtitle-1 d-flex align-center justify-space-between">
+          <span class="d-flex align-center gap-2">
+            <v-icon icon="mdi-pencil-outline" size="20" color="primary" />
+            {{ t('manageCatalogModal.editPackage') }}
+          </span>
+          <v-btn icon="mdi-close" variant="text" size="small" @click="showEditDialog = false" />
+        </v-card-title>
+        <v-card-text class="pa-4">
+          <v-text-field
+            v-model="editForm.package"
+            :label="t('manageCatalogModal.packageFootprintName')"
+            :placeholder="t('manageCatalogModal.packagePlaceholder')"
+            variant="outlined"
+            density="comfortable"
+            class="font-mono mb-3"
+            autofocus
+            :error-messages="editError"
+          />
+
+          <!-- Pin Count & Mount Technology Row -->
+          <v-row dense class="mb-3" align="center">
+            <v-col cols="12" sm="5">
+              <v-text-field
+                v-model.number="editForm.pinQuantity"
+                :label="t('manageCatalogModal.pinPadCount')"
+                type="number"
+                min="1"
+                :placeholder="t('manageCatalogModal.pinPlaceholder')"
+                variant="outlined"
+                density="comfortable"
+                hide-details="auto"
+              />
+            </v-col>
+            <v-col cols="12" sm="7">
+              <div class="border rounded-lg d-flex align-center px-3 justify-space-between bg-slate-50" style="height: 48px;">
+                <span class="text-caption font-weight-medium text-slate-600 me-2 flex-shrink-0">
+                  {{ t('manageCatalogModal.mount') }}
+                </span>
+                <v-btn-toggle
+                  v-model="editForm.isSmd"
+                  mandatory
+                  density="compact"
+                  variant="flat"
+                  rounded="md"
+                  color="primary"
+                  class="flex-grow-1 bg-white border"
+                  style="height: 34px;"
+                >
+                  <v-btn :value="1" size="small" class="flex-grow-1 text-caption font-weight-bold">
+                    SMD
+                  </v-btn>
+                  <v-btn :value="0" size="small" class="flex-grow-1 text-caption font-weight-bold">
+                    {{ t('dialogs.throughHole') }}
+                  </v-btn>
+                </v-btn-toggle>
+              </div>
+            </v-col>
+          </v-row>
+
+          <!-- Drawing / Pinout Image with Live Upload and Preview -->
+          <div class="d-flex align-center gap-3 mb-1">
+            <v-avatar
+              v-if="editForm.drawingURL"
+              rounded="lg"
+              size="48"
+              class="border bg-slate-50 flex-shrink-0"
+            >
+              <MediaImage
+                type="package"
+                :src="editForm.drawingURL"
+                height="48px"
+                width="48px"
+              />
+            </v-avatar>
+
+            <v-text-field
+              v-model="editForm.drawingURL"
+              :label="t('manageCatalogModal.drawingOrPinout')"
+              :placeholder="t('manageCatalogModal.drawingPlaceholder')"
+              variant="outlined"
+              density="comfortable"
+              prepend-inner-icon="mdi-image-outline"
+              clearable
+              hide-details="auto"
+              class="flex-grow-1"
+            >
+              <template #append-inner>
+                <v-btn
+                  variant="tonal"
+                  color="primary"
+                  size="small"
+                  class="text-caption font-weight-bold my-n1"
+                  prepend-icon="mdi-upload"
+                  :loading="uploadingDrawing"
+                  @click.stop="fileInputRef?.click()"
+                  :title="t('common.upload')"
+                >
+                  {{ t('common.upload') }}
+                </v-btn>
+              </template>
+            </v-text-field>
+            <input
+              ref="fileInputRef"
+              type="file"
+              accept="image/*"
+              style="display: none;"
+              @change="handleFileUpload"
+            />
+          </div>
+          <div class="text-caption text-slate-500 mt-1 ms-1">
+            {{ t('manageCatalogModal.drawingStoredHint') }}
+          </div>
+        </v-card-text>
+        <v-divider />
+        <v-card-actions class="pa-3 px-4 bg-slate-50 d-flex justify-end gap-2">
+          <v-btn variant="text" size="small" @click="showEditDialog = false">{{ t('common.cancel') }}</v-btn>
+          <v-btn
+            color="primary"
+            variant="flat"
+            size="small"
+            class="font-weight-bold px-4"
+            :loading="saving"
+            @click="savePackage"
+          >
+            {{ t('manageCatalogModal.savePackage') }}
+          </v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
   </v-dialog>
 </template>
 
@@ -198,11 +351,99 @@ import { useI18n } from 'vue-i18n';
 import { usePackageDetailsStore } from '../stores/packageDetails';
 import MediaImage from './MediaImage.vue';
 import MediaLightboxDialog from './MediaLightboxDialog.vue';
-import { resolveMediaUrl } from '../services/api';
+import api, { resolveMediaUrl } from '../services/api';
 
 const { t } = useI18n();
 const packageStore = usePackageDetailsStore();
 const showDrawingLightbox = ref(false);
+
+// Edit state
+const showEditDialog = ref(false);
+const saving = ref(false);
+const uploadingDrawing = ref(false);
+const editError = ref('');
+const fileInputRef = ref(null);
+const editForm = ref({
+  package: '',
+  pinQuantity: null,
+  isSmd: 1,
+  drawingURL: ''
+});
+
+const openEditDialog = () => {
+  const current = packageStore.packageData || {};
+  editForm.value = {
+    package: current.package || '',
+    pinQuantity: current.pinQuantity != null ? current.pinQuantity : null,
+    isSmd: current.isSmd === 0 ? 0 : 1,
+    drawingURL: current.drawingURL || ''
+  };
+  editError.value = '';
+  showEditDialog.value = true;
+};
+
+const handleFileUpload = async (event) => {
+  const file = event.target?.files?.[0];
+  if (!file) return;
+
+  uploadingDrawing.value = true;
+  try {
+    const res = await api.uploadMedia('packages', file);
+    editForm.value.drawingURL = res.filename;
+  } catch (err) {
+    console.error('Failed to upload package drawing:', err);
+    editError.value = t('manageCatalogModal.drawingUploadError') + ': ' + (err.response?.data?.error || err.message);
+  } finally {
+    uploadingDrawing.value = false;
+    if (event.target) event.target.value = '';
+  }
+};
+
+const savePackage = async () => {
+  const name = editForm.value.package?.trim();
+  if (!name) {
+    editError.value = t('manageCatalogModal.packageRequiredErr');
+    return;
+  }
+
+  const pkgId = packageStore.packageData?.ID;
+  if (!pkgId) {
+    editError.value = 'Package ID not found';
+    return;
+  }
+
+  saving.value = true;
+  editError.value = '';
+  try {
+    const payload = {
+      package: name,
+      pinQuantity: editForm.value.pinQuantity,
+      isSmd: editForm.value.isSmd,
+      drawingURL: (editForm.value.drawingURL || '').trim()
+    };
+
+    await api.updatePackage(pkgId, payload);
+
+    // Update store state so the details modal immediately reflects changes
+    packageStore.packageData = {
+      ...packageStore.packageData,
+      ...payload
+    };
+    packageStore.invalidateCache();
+
+    showEditDialog.value = false;
+
+    // Dispatch custom event so other components (e.g. Catalog, BOM) can refresh if needed
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('package-updated', { detail: { id: pkgId, ...payload } }));
+    }
+  } catch (err) {
+    console.error('Failed to update package:', err);
+    editError.value = err.response?.data?.error || err.message || 'Failed to update package';
+  } finally {
+    saving.value = false;
+  }
+};
 
 const drawingFullUrl = computed(() => {
   if (!packageStore.packageData?.drawingURL) return null;
@@ -217,20 +458,20 @@ const drawingFullUrl = computed(() => {
 .drawing-zoom-wrapper {
   position: relative;
   overflow: hidden;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
-.photo-overlay {
+.drawing-zoom-wrapper:hover {
+  border-color: rgba(var(--v-theme-primary), 0.5) !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+.zoom-badge-container {
   position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-color: rgba(255, 255, 255, 0.75);
-  backdrop-filter: blur(2px);
-  opacity: 0;
-  transition: opacity 0.2s ease-in-out;
+  top: 10px;
+  right: 10px;
   pointer-events: none;
+  transition: transform 0.2s ease, opacity 0.2s ease;
 }
-.drawing-zoom-wrapper:hover .photo-overlay {
-  opacity: 1;
+.drawing-zoom-wrapper:hover .zoom-badge-container {
+  transform: scale(1.05);
 }
 </style>

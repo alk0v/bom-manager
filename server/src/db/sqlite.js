@@ -85,11 +85,22 @@ function initSchema() {
       comment TEXT
     );
 
+    CREATE TABLE IF NOT EXISTS t_bom_substitutes (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      bomId INTEGER NOT NULL,
+      componentId INTEGER NOT NULL,
+      notes TEXT,
+      createdAt TEXT DEFAULT (datetime('now', 'localtime')),
+      FOREIGN KEY (bomId) REFERENCES t_bom(id) ON DELETE CASCADE,
+      FOREIGN KEY (componentId) REFERENCES i_components(ID) ON DELETE CASCADE
+    );
+
     CREATE TABLE IF NOT EXISTS t_busket (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       componentId INTEGER,
       qty INTEGER DEFAULT 1,
-      date TEXT
+      date TEXT,
+      orderId INTEGER DEFAULT NULL
     );
 
     CREATE TABLE IF NOT EXISTS t_config (
@@ -105,7 +116,10 @@ function initSchema() {
       qty INTEGER DEFAULT 1,
       date TEXT,
       url TEXT,
-      details TEXT
+      details TEXT,
+      status TEXT DEFAULT 'delivered',
+      deliveredDate TEXT DEFAULT NULL,
+      storageId INTEGER DEFAULT NULL
     );
 
     CREATE TABLE IF NOT EXISTS i_storages (
@@ -158,10 +172,43 @@ function initSchema() {
     CREATE INDEX IF NOT EXISTS idx_pi_comp ON t_production_items (componentId);
     CREATE INDEX IF NOT EXISTS idx_bom_proj ON t_bom (projectId);
     CREATE INDEX IF NOT EXISTS idx_bom_comp ON t_bom (componentId);
+    CREATE INDEX IF NOT EXISTS idx_sub_bom ON t_bom_substitutes (bomId);
+    CREATE INDEX IF NOT EXISTS idx_sub_comp ON t_bom_substitutes (componentId);
     CREATE INDEX IF NOT EXISTS idx_comp_cat ON i_components (category_id);
     CREATE INDEX IF NOT EXISTS idx_comp_pkg ON i_components (package_id);
     CREATE INDEX IF NOT EXISTS idx_wh_comp ON t_warehouse (componentId);
   `);
+
+  // Ensure migration columns for t_orders
+  try {
+    const orderCols = db.prepare("PRAGMA table_info(t_orders)").all();
+    if (!orderCols.some(c => c.name === 'status')) {
+      db.prepare("ALTER TABLE t_orders ADD COLUMN status TEXT DEFAULT 'delivered'").run();
+      db.prepare("UPDATE t_orders SET status = 'delivered' WHERE status IS NULL").run();
+      console.log('[Database:SQLite] Added "status" column to t_orders.');
+    }
+    if (!orderCols.some(c => c.name === 'deliveredDate')) {
+      db.prepare("ALTER TABLE t_orders ADD COLUMN deliveredDate TEXT DEFAULT NULL").run();
+      console.log('[Database:SQLite] Added "deliveredDate" column to t_orders.');
+    }
+    if (!orderCols.some(c => c.name === 'storageId')) {
+      db.prepare("ALTER TABLE t_orders ADD COLUMN storageId INTEGER DEFAULT NULL").run();
+      console.log('[Database:SQLite] Added "storageId" column to t_orders.');
+    }
+  } catch (err) {
+    console.warn('[Database:SQLite] Migration notice on t_orders:', err.message);
+  }
+
+  // Ensure migration column for t_busket
+  try {
+    const busketCols = db.prepare("PRAGMA table_info(t_busket)").all();
+    if (!busketCols.some(c => c.name === 'orderId')) {
+      db.prepare("ALTER TABLE t_busket ADD COLUMN orderId INTEGER DEFAULT NULL").run();
+      console.log('[Database:SQLite] Added "orderId" column to t_busket.');
+    }
+  } catch (err) {
+    console.warn('[Database:SQLite] Migration notice on t_busket:', err.message);
+  }
 
   // Seed default t_config if empty
   const configCount = db.prepare('SELECT COUNT(*) as count FROM t_config').get()?.count || 0;

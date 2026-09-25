@@ -176,6 +176,23 @@ Locations and stock quantity per storage bin/box.
   - Organize keys into clean component or dialog namespaces (e.g. `importComponentsModal`, `componentDetailsModal`, `produceModal`) or common shared namespaces (`common`, `dialogs`).
   - Use interpolation placeholders (e.g. `{name}`, `{count}`) rather than manual string concatenation so word order and grammatical inflection remain natural in all target languages.
 
+### STRICT DIRECTIVE: Component Extraction & Re-usability (Avoid Code Duplication)
+- **Always Extract Reusable Components**:
+  - Whenever a modal window, dialog, card, table, or complex UI section is used (or could be used) in more than one place, extract it into a dedicated component in `client/src/components/` (e.g. `ProjectBomDialog.vue`, `ProduceProjectDialog.vue`, `MediaLightboxDialog.vue`).
+  - **Never duplicate modal templates or large blocks of script logic** across different views.
+  - Keep views (`*View.vue`) focused on page layout, routing, and top-level data orchestration. Delegate modal dialogues, complex forms, and tables to reusable components.
+
+### STRICT DIRECTIVE: Always Align Action Icons in Tables
+- **Preserve Fixed Action Slots Across Rows**:
+  - In data tables with action buttons (e.g. Purchases Report, Shopping List, Component Details, BOM table), **never** allow action icons to collapse or shift horizontally across rows when certain actions are conditionally available.
+  - Avoid simple `v-if` removals that cause adjacent buttons (like Delete) to jump leftward on rows where preceding actions (like Confirm Delivery or Cancel) are absent.
+  - Always maintain identical fixed slots for each specific action using:
+    - `:style="{ visibility: isActionAvailable ? 'visible' : 'hidden', pointerEvents: isActionAvailable ? 'auto' : 'none' }"`
+    - `:tabindex="isActionAvailable ? 0 : -1"`
+    - `:aria-hidden="!isActionAvailable"`
+  - Set explicit fixed widths on the Actions column in both `<th>` and `<td>` (e.g., `style="width: 140px; min-width: 140px;"` with `class="text-left text-no-wrap"`).
+  - Every action (e.g., Edit, Confirm, Cancel, Delete) must remain in the exact same vertical alignment across all rows in the table.
+
 ### Core UI Layout
 - Persistent `v-navigation-drawer` with brand logo and navigation items:
   1. **Projects** (`/projects`)

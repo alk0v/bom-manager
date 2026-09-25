@@ -268,256 +268,14 @@
     <!-- ======================================================== -->
     <!-- POP-UP WINDOW: PROJECT BOM MODAL DIALOG                  -->
     <!-- ======================================================== -->
-    <v-dialog
+    <ProjectBomDialog
       v-model="showBomDialog"
-      width="94vw"
-      max-width="1650"
-      scrollable
-      transition="dialog-bottom-transition"
-    >
-      <v-card class="rounded-0 border bg-white overflow-hidden" v-if="activeProject">
-        <!-- Modal Header -->
-        <v-card-title class="bg-slate-50 py-3 px-5 border-b d-flex align-center justify-space-between">
-          <div class="d-flex align-center">
-            <v-avatar rounded="lg" size="44" class="border me-3 bg-white">
-              <MediaImage
-                type="project"
-                :src="activeProject.photoUrl"
-                height="44px"
-                width="44px"
-              />
-            </v-avatar>
-            <div>
-              <div class="text-h6 font-weight-bold text-slate-900 line-clamp-1">
-                {{ activeProject.projectName }}
-              </div>
-              <div class="text-caption text-disabled">
-                {{ t('projects.projectId', { id: activeProject.id }) }}
-                <span class="mx-1">•</span>
-                {{ t('projectDetail.bomTitle') }}
-              </div>
-            </div>
-          </div>
-
-          <div class="d-flex align-center gap-2">
-            <!-- External link -->
-            <v-btn
-              v-if="activeProject.url"
-              :href="activeProject.url"
-              target="_blank"
-              variant="outlined"
-              size="small"
-              color="primary"
-              prepend-icon="mdi-open-in-new"
-            >
-              {{ t('projects.externalLink') }}
-            </v-btn>
-
-            <!-- Produce Button -->
-            <v-btn
-              variant="flat"
-              size="small"
-              color="primary"
-              class="font-weight-bold"
-              prepend-icon="mdi-factory"
-              @click="openProduceDialog(activeProject)"
-            >
-              {{ t('projects.produce') }}
-            </v-btn>
-
-            <!-- Edit Project Button -->
-            <v-btn
-              variant="outlined"
-              size="small"
-              color="primary"
-              prepend-icon="mdi-pencil-outline"
-              :title="t('projects.editProject')"
-              @click="openEditProjectDialog(activeProject)"
-            >
-              {{ t('projects.editProject') }}
-            </v-btn>
-
-            <!-- Dedicated Page Button -->
-            <v-btn
-              :to="`/projects/${activeProject.id}`"
-              variant="outlined"
-              size="small"
-              color="primary"
-              prepend-icon="mdi-window-maximize"
-              :title="t('projects.openDedicatedPage')"
-            >
-              {{ t('common.details') }}
-            </v-btn>
-
-            <!-- Delete Project Button -->
-            <v-btn
-              variant="outlined"
-              size="small"
-              color="error"
-              prepend-icon="mdi-delete-outline"
-              :title="t('projects.deleteProject')"
-              @click="openDeleteProjectDialog(activeProject)"
-            >
-              {{ t('common.delete') }}
-            </v-btn>
-
-            <!-- Close Button -->
-            <v-btn
-              icon="mdi-close"
-              variant="text"
-              size="small"
-              @click="showBomDialog = false"
-            />
-          </div>
-        </v-card-title>
-
-        <!-- Project Overview Bar -->
-        <div class="bg-slate-50 px-5 py-3 border-b">
-          <v-row dense align="center">
-            <v-col cols="12" md="8">
-              <div class="text-caption text-slate-500 font-weight-medium text-uppercase mb-1">
-                {{ t('common.description') }}
-              </div>
-              <p class="text-body-2 text-slate-700 mb-0 pre-line">
-                {{ activeProject.description || t('projectDetail.noDescription') }}
-              </p>
-            </v-col>
-
-            <v-col cols="12" md="4" class="d-flex flex-wrap align-center justify-md-end" style="gap: 12px;">
-              <v-chip
-                size="small"
-                color="primary"
-                variant="tonal"
-                class="font-mono font-weight-bold"
-                :title="t('projectDetail.partsPricedTooltip', { priced: modalBomCost.pricedCount, total: bomItems.length })"
-              >
-                <v-icon start size="14">mdi-currency-usd</v-icon>
-                {{ t('projectDetail.estBomCost') }}: {{ formatCurrency(modalBomCost.totalCost) }}
-                <span class="ms-1 text-caption opacity-80" v-if="bomItems.length > 0">
-                  ({{ modalBomCost.pricedCount }}/{{ bomItems.length }})
-                </span>
-              </v-chip>
-
-              <v-chip
-                size="small"
-                :color="bomHealth.allSufficient ? 'success' : 'warning'"
-                variant="flat"
-                class="font-weight-bold"
-              >
-                <v-icon start size="14">
-                  {{ bomHealth.allSufficient ? 'mdi-check-circle' : 'mdi-alert-circle-outline' }}
-                </v-icon>
-                {{ bomHealth.inStockCount }} / {{ bomItems.length }} {{ t('projectDetail.partsInStock') }}
-              </v-chip>
-
-              <v-btn
-                v-if="hasShortages"
-                color="amber-darken-3"
-                prepend-icon="mdi-cart-plus"
-                size="small"
-                variant="flat"
-                :loading="addingAllShortages"
-                @click="addAllShortagesToCart"
-              >
-                {{ t('projectDetail.buyAllShortages', { count: shortageItems.length }) }}
-              </v-btn>
-            </v-col>
-          </v-row>
-        </div>
-
-        <!-- BOM Table Component -->
-        <ProjectBomTable
-          :items="bomItems"
-          :loading="loadingBom"
-          max-height="550px"
-          @add-to-cart="addToCart"
-          @edit-item="openEditBomDialog"
-          @delete-item="confirmDeleteBom"
-          @open-component-details="openComponentDetails"
-          @open-photo="openPhotoLightbox($event.type, $event.src, $event.title)"
-        >
-          <template #toolbar-actions>
-            <v-btn
-              color="primary"
-              variant="flat"
-              prepend-icon="mdi-plus"
-              size="small"
-              class="font-weight-bold"
-              @click="openAddComponentDialog"
-            >
-              {{ t('projects.addComponent') }}
-            </v-btn>
-          </template>
-        </ProjectBomTable>
-
-        <v-divider />
-
-        <!-- Modal Footer -->
-        <v-card-actions class="pa-4 bg-slate-50 d-flex align-center justify-space-between">
-          <div class="text-caption text-disabled">
-            {{ t('projects.componentsListed', { count: bomItems.length }) }}
-          </div>
-          <v-btn variant="flat" color="slate-200" @click="showBomDialog = false">
-            {{ t('common.close') }}
-          </v-btn>
-        </v-card-actions>
-      </v-card>
-    </v-dialog>
-
-    <!-- DIALOG: Add Component to Project BOM -->
-    <AddComponentDialog
-      v-model="showAddDialog"
-      :project-id="activeProject?.id"
-      :project-name="activeProject?.projectName"
-      @added="onComponentAdded"
-    />
-
-    <!-- DIALOG: Edit BOM Item -->
-    <v-dialog v-model="showEditDialog" max-width="500">
-      <v-card class="rounded-0 border bg-white" v-if="editingBom">
-        <v-card-title class="bg-slate-50 py-3 px-4 font-weight-bold text-subtitle-1 border-b">
-          {{ t('projectDetail.editBomItem') }}
-        </v-card-title>
-        <v-card-text class="pa-4">
-          <div class="font-mono font-weight-bold text-subtitle-2 mb-3 text-primary">
-            {{ editingBom.component }}
-          </div>
-          <v-text-field
-            v-model.number="editingBom.requiredQuantity"
-            :label="t('dialogs.requiredQty')"
-            type="number"
-            min="1"
-            variant="outlined"
-            density="comfortable"
-            class="mb-3"
-          />
-          <v-text-field
-            v-model="editingBom.comment"
-            :label="t('dialogs.designatorsNotes')"
-            variant="outlined"
-            density="comfortable"
-          />
-        </v-card-text>
-        <v-divider />
-        <v-card-actions class="pa-3 bg-slate-50">
-          <v-spacer />
-          <v-btn variant="text" @click="showEditDialog = false">{{ t('common.cancel') }}</v-btn>
-          <v-btn
-            color="primary"
-            variant="flat"
-            :loading="submittingBom"
-            @click="submitEditBom"
-          >
-            {{ t('common.save') }}
-          </v-btn>
-        </v-card-actions>
-      </v-card>
-    </v-dialog>
-
-    <!-- Component Details Dialog -->
-    <ComponentDetailsDialog
-      v-model="showDetailsDialog"
-      :component="selectedDetailComponent"
+      :project="activeProject"
+      show-project-actions
+      @edit-project="openEditProjectDialog"
+      @delete-project="openDeleteProjectDialog"
+      @updated="loadProjects"
+      @notify="notify"
     />
 
     <!-- DIALOG: Create / Edit Project -->
@@ -567,8 +325,7 @@ import api from '../services/api';
 const { t } = useI18n();
 import MediaImage from '../components/MediaImage.vue';
 import MediaLightboxDialog from '../components/MediaLightboxDialog.vue';
-import AddComponentDialog from '../components/AddComponentDialog.vue';
-import ProjectBomTable from '../components/ProjectBomTable.vue';
+import ProjectBomDialog from '../components/ProjectBomDialog.vue';
 import ComponentDetailsDialog from '../components/ComponentDetailsDialog.vue';
 import ProjectFormDialog from '../components/ProjectFormDialog.vue';
 import ProduceProjectDialog from '../components/ProduceProjectDialog.vue';
@@ -579,7 +336,6 @@ import { formatCurrency, formatDate } from '../utils/formatters';
 const router = useRouter();
 const projects = ref([]);
 const activeProject = ref(null);
-const bomItems = ref([]);
 
 const lightbox = ref({
   show: false,
@@ -600,13 +356,8 @@ const openPhotoLightbox = (type, src, title) => {
 
 const searchQuery = ref('');
 const loadingProjects = ref(false);
-const loadingBom = ref(false);
-const submittingBom = ref(false);
-const addingAllShortages = ref(false);
 
 const showBomDialog = ref(false);
-const showAddDialog = ref(false);
-const showEditDialog = ref(false);
 const showProjectDialog = ref(false);
 const showProduceDialog = ref(false);
 const showDeleteDialog = ref(false);
@@ -614,7 +365,6 @@ const showDetailsDialog = ref(false);
 const selectedDetailComponent = ref(null);
 const selectedProjectForDelete = ref(null);
 
-const editingBom = ref(null);
 const selectedProjectForEdit = ref(null);
 const selectedProjectForProduce = ref(null);
 
@@ -640,36 +390,6 @@ const filteredProjects = computed(() => {
 
 const totalBomEntries = computed(() => {
   return projects.value.reduce((acc, p) => acc + (p.bomItemCount || 0), 0);
-});
-
-const bomHealth = computed(() => {
-  const inStockCount = bomItems.value.filter(i => i.isStockSufficient).length;
-  return {
-    inStockCount,
-    allSufficient: inStockCount === bomItems.value.length && bomItems.value.length > 0
-  };
-});
-
-const shortageItems = computed(() => {
-  return bomItems.value.filter(i => !i.isStockSufficient);
-});
-
-const hasShortages = computed(() => shortageItems.value.length > 0);
-
-const modalBomCost = computed(() => {
-  let totalCost = 0;
-  let pricedCount = 0;
-  for (const item of bomItems.value) {
-    if (item.totalItemCost != null) {
-      totalCost += Number(item.totalItemCost);
-      pricedCount++;
-    }
-  }
-  return {
-    totalCost: Math.round(totalCost * 100) / 100,
-    pricedCount,
-    unpricedCount: bomItems.value.length - pricedCount
-  };
 });
 
 const shortageProjectsCount = computed(() => {
@@ -715,17 +435,6 @@ const onProjectDeleted = async (deletedProject) => {
 
 const onProduced = async () => {
   await loadProjects();
-  if (showBomDialog.value && activeProject.value) {
-    try {
-      bomItems.value = await api.getProjectBom(activeProject.value.id);
-      const updated = projects.value.find(p => p.id === activeProject.value.id);
-      if (updated) {
-        activeProject.value = { ...updated };
-      }
-    } catch (err) {
-      console.error('Failed to reload BOM after production:', err);
-    }
-  }
 };
 
 const onProjectSaved = async ({ project, isEdit }) => {
@@ -751,107 +460,9 @@ const loadProjects = async () => {
   }
 };
 
-const openBomModal = async (project) => {
+const openBomModal = (project) => {
   activeProject.value = project;
   showBomDialog.value = true;
-  loadingBom.value = true;
-  try {
-    bomItems.value = await api.getProjectBom(project.id);
-  } catch (err) {
-    notify('Failed to load project BOM: ' + err.message, 'error');
-  } finally {
-    loadingBom.value = false;
-  }
-};
-
-const openComponentDetails = (item) => {
-  selectedDetailComponent.value = {
-    ...item,
-    ID: item.componentId || item.ID,
-    id: item.componentId || item.id
-  };
-  showDetailsDialog.value = true;
-};
-
-const openAddComponentDialog = () => {
-  showAddDialog.value = true;
-};
-
-const onComponentAdded = async (item) => {
-  notify(`Added ${item?.component || 'component'} to BOM!`);
-  if (activeProject.value) {
-    try {
-      bomItems.value = await api.getProjectBom(activeProject.value.id);
-      loadProjects();
-    } catch (err) {
-      console.error('Failed to reload project BOM:', err);
-    }
-  }
-};
-
-const openEditBomDialog = (item) => {
-  editingBom.value = { ...item };
-  showEditDialog.value = true;
-};
-
-const submitEditBom = async () => {
-  if (!editingBom.value || !activeProject.value) return;
-  submittingBom.value = true;
-  try {
-    await api.updateBomItem(activeProject.value.id, editingBom.value.bomId, {
-      quantity: editingBom.value.requiredQuantity,
-      comment: editingBom.value.comment
-    });
-    notify('BOM item updated!');
-    showEditDialog.value = false;
-    bomItems.value = await api.getProjectBom(activeProject.value.id);
-  } catch (err) {
-    notify('Error updating BOM item: ' + (err.response?.data?.details || err.message), 'error');
-  } finally {
-    submittingBom.value = false;
-  }
-};
-
-const confirmDeleteBom = async (item) => {
-  if (confirm(`Remove ${item.component} from this BOM?`)) {
-    try {
-      await api.deleteBomItem(activeProject.value.id, item.bomId);
-      notify('Component removed from BOM');
-      bomItems.value = await api.getProjectBom(activeProject.value.id);
-      loadProjects();
-    } catch (err) {
-      notify('Error removing component: ' + (err.response?.data?.details || err.message), 'error');
-    }
-  }
-};
-
-const addToCart = async (item) => {
-  try {
-    await api.addToShoppingList({
-      componentId: item.componentId,
-      qty: item.shortageQuantity || item.requiredQuantity
-    });
-    notify(`Added ${item.component} to shopping list!`);
-  } catch (err) {
-    notify('Error adding to shopping list: ' + err.message, 'error');
-  }
-};
-
-const addAllShortagesToCart = async () => {
-  addingAllShortages.value = true;
-  try {
-    for (const item of shortageItems.value) {
-      await api.addToShoppingList({
-        componentId: item.componentId,
-        qty: item.shortageQuantity
-      });
-    }
-    notify(`Added ${shortageItems.value.length} shortages to shopping list!`);
-  } catch (err) {
-    notify('Failed to add shortages: ' + err.message, 'error');
-  } finally {
-    addingAllShortages.value = false;
-  }
 };
 
 onMounted(() => {

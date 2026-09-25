@@ -70,9 +70,37 @@ const { t } = useI18n();
 
 const releases = [
   {
-    version: '0.2.6',
+    version: '0.2.7',
     date: '2026-09-19',
     isCurrent: true,
+    summary: 'Version 0.2.7 introduces flexible Bill of Materials (BOM) component substitutions and analogs, smart shortage indicators, one-click primary component swapping, and production run substitute allocation.',
+    features: [
+      {
+        title: 'BOM Component Analogs & Substitutions',
+        description: 'Assign functional or drop-in substitute parts to any project BOM item with engineering notes explaining compatibility contexts (e.g. SN74LS04 replaced with SN74HC04).'
+      },
+      {
+        title: 'Interactive Analogs Management Modal',
+        description: 'Manage analogs directly from the BOM table with live stock status indicators, note editing, and one-click removal.'
+      },
+      {
+        title: 'One-Click Primary Component Swap',
+        description: 'Easily swap any analog component to become the primary BOM part while demoting the existing component into an analog, preserving all designators and quantities.'
+      },
+      {
+        title: 'Smart Shortage Indicators',
+        description: 'BOM table highlights items with an active shortage that have in-stock analogs available to fulfill the build.'
+      },
+      {
+        title: 'Production Run Substitute Allocation',
+        description: 'Produce assemblies even with missing primary components by selecting available analogs during the production run, accurately deducting stock and recording the substitute in production history.'
+      }
+    ]
+  },
+  {
+    version: '0.2.6',
+    date: '2026-09-19',
+    isCurrent: false,
     summary: 'Version 0.2.6 brings bug fixes and UI refinements to the component catalog, ensuring short descriptions are consistently displayed across component lists.',
     features: [
       {
@@ -313,7 +341,7 @@ const releases = [
   }
 ];
 
-const currentVersion = computed(() => releases.find(r => r.isCurrent)?.version || '0.2.6');
+const currentVersion = computed(() => releases.find(r => r.isCurrent)?.version || '0.2.7');
 </script>
 
 <style scoped>

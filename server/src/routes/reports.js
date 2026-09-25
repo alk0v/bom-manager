@@ -317,4 +317,147 @@ router.post('/production/:id/cancel', async (req, res) => {
   }
 });
 
+// GET /api/reports/purchases - list component purchase orders with stats
+router.get('/purchases', async (req, res) => {
+  try {
+    const {
+      search = '',
+      status = 'all',
+      startDate,
+      endDate,
+      componentId,
+      limit = 200,
+      offset = 0
+    } = req.query;
+
+    let whereClauses = [];
+    let params = [];
+
+    // Status filter ('pending', 'delivered', 'all')
+    if (status && status !== 'all') {
+      whereClauses.push('o.status = ?');
+      params.push(status);
+    }
+
+    // Component filter
+    if (componentId) {
+      const cId = parseInt(componentId, 10);
+      if (!isNaN(cId)) {
+        whereClauses.push('o.componentId = ?');
+        params.push(cId);
+      }
+    }
+
+    // Search filter
+    if (search && search.trim()) {
+      const term = `%${search.trim()}%`;
+      whereClauses.push('(c.component LIKE ? OR c.marking LIKE ? OR o.details LIKE ? OR o.url LIKE ?)');
+      params.push(term, term, term, term);
+    }
+
+    // Date range filter
+    if (startDate) {
+      whereClauses.push('o.date >= ?');
+      params.push(String(startDate).split('T')[0]);
+    }
+    if (endDate) {
+      whereClauses.push('o.date <= ?');
+      params.push(String(endDate).split('T')[0]);
+    }
+
+    const whereSql = whereClauses.length > 0 ? `WHERE ${whereClauses.join(' AND ')}` : '';
+
+    // Summary statistics query
+    const statsQuery = `
+      SELECT 
+        COUNT(*) AS totalOrders,
+        COALESCE(SUM(o.qty), 0) AS totalUnits,
+        COALESCE(SUM(CASE WHEN o.status != 'cancelled' THEN o.price * o.qty ELSE 0 END), 0) AS totalSpent,
+        COUNT(CASE WHEN o.status = 'pending' THEN 1 END) AS pendingOrdersCount,
+        COALESCE(SUM(CASE WHEN o.status = 'pending' THEN o.qty ELSE 0 END), 0) AS pendingUnits,
+        COALESCE(SUM(CASE WHEN o.status = 'pending' THEN o.price * o.qty ELSE 0 END), 0) AS pendingSpent,
+        COUNT(CASE WHEN o.status = 'delivered' OR o.status IS NULL THEN 1 END) AS deliveredOrdersCount,
+        COALESCE(SUM(CASE WHEN o.status = 'delivered' OR o.status IS NULL THEN o.qty ELSE 0 END), 0) AS deliveredUnits,
+        COALESCE(SUM(CASE WHEN o.status = 'delivered' OR o.status IS NULL THEN o.price * o.qty ELSE 0 END), 0) AS deliveredSpent,
+        COUNT(CASE WHEN o.status = 'cancelled' THEN 1 END) AS cancelledOrdersCount,
+        COALESCE(SUM(CASE WHEN o.status = 'cancelled' THEN o.qty ELSE 0 END), 0) AS cancelledUnits,
+        COALESCE(SUM(CASE WHEN o.status = 'cancelled' THEN o.price * o.qty ELSE 0 END), 0) AS cancelledSpent,
+        COUNT(DISTINCT o.componentId) AS uniqueComponentsCount
+      FROM t_orders o
+      LEFT JOIN i_components c ON o.componentId = c.ID
+      ${whereSql}
+    `;
+
+    const [statsRows] = await pool.query(statsQuery, params);
+    const stats = statsRows[0] || {};
+
+    const parsedLimit = parseInt(limit, 10);
+    const parsedOffset = parseInt(offset, 10);
+    const hasPagination = !isNaN(parsedLimit) && parsedLimit > 0;
+
+    let ordersQuery = `
+      SELECT 
+        o.id,
+        o.componentId,
+        o.price,
+        o.qty,
+        ROUND(o.price * o.qty, 4) AS totalCost,
+        o.date,
+        o.url,
+        o.details,
+        COALESCE(o.status, 'delivered') AS status,
+        o.deliveredDate,
+        o.storageId,
+        c.component,
+        c.marking,
+        pkg.package,
+        cat.category,
+        c.photoURL,
+        c.qty AS stockQuantity,
+        s.storage AS storageName
+      FROM t_orders o
+      LEFT JOIN i_components c ON o.componentId = c.ID
+      LEFT JOIN i_packages pkg ON c.package_id = pkg.ID
+      LEFT JOIN i_categories cat ON c.category_id = cat.ID
+      LEFT JOIN i_storages s ON o.storageId = s.ID
+      ${whereSql}
+      ORDER BY o.date DESC, o.id DESC
+    `;
+
+    let queryParams = [...params];
+    if (hasPagination) {
+      ordersQuery += ` LIMIT ? OFFSET ?`;
+      queryParams.push(parsedLimit, isNaN(parsedOffset) ? 0 : parsedOffset);
+    }
+
+    const [orders] = await pool.query(ordersQuery, queryParams);
+
+    res.json({
+      orders: orders.map(o => ({
+        ...o,
+        price: parseFloat(o.price) || 0,
+        totalCost: Math.round(((parseFloat(o.price) || 0) * (parseInt(o.qty, 10) || 0)) * 100) / 100
+      })),
+      stats: {
+        totalOrders: Number(stats.totalOrders) || 0,
+        totalUnits: Number(stats.totalUnits) || 0,
+        totalSpent: Math.round((Number(stats.totalSpent) || 0) * 100) / 100,
+        pendingOrdersCount: Number(stats.pendingOrdersCount) || 0,
+        pendingUnits: Number(stats.pendingUnits) || 0,
+        pendingSpent: Math.round((Number(stats.pendingSpent) || 0) * 100) / 100,
+        deliveredOrdersCount: Number(stats.deliveredOrdersCount) || 0,
+        deliveredUnits: Number(stats.deliveredUnits) || 0,
+        deliveredSpent: Math.round((Number(stats.deliveredSpent) || 0) * 100) / 100,
+        cancelledOrdersCount: Number(stats.cancelledOrdersCount) || 0,
+        cancelledUnits: Number(stats.cancelledUnits) || 0,
+        cancelledSpent: Math.round((Number(stats.cancelledSpent) || 0) * 100) / 100,
+        uniqueComponentsCount: Number(stats.uniqueComponentsCount) || 0
+      }
+    });
+  } catch (error) {
+    console.error('Error fetching purchases report:', error);
+    res.status(500).json({ error: 'Failed to fetch purchases report', details: error.message });
+  }
+});
+
 module.exports = router;

@@ -63,23 +63,90 @@
 
       <!-- Filter / Search & Actions Toolbar -->
       <div class="px-5 py-3 bg-white d-flex align-center justify-space-between flex-wrap gap-3">
-        <v-text-field
-          v-model="searchQuery"
-          :placeholder="t('shoppingList.searchPlaceholder')"
-          prepend-inner-icon="mdi-magnify"
-          density="compact"
-          variant="outlined"
-          hide-details
-          clearable
-          rounded="lg"
-          style="max-width: 420px; width: 100%;"
-        />
+        <div class="d-flex align-center flex-wrap gap-3" style="flex: 1 1 auto; min-width: 0;">
+          <v-text-field
+            v-model="searchQuery"
+            :placeholder="t('shoppingList.searchPlaceholder')"
+            prepend-inner-icon="mdi-magnify"
+            density="compact"
+            variant="outlined"
+            hide-details
+            clearable
+            rounded="lg"
+            style="min-width: 240px; max-width: 440px; flex: 1 1 280px;"
+          />
 
-        <div class="d-flex align-center gap-2">
-          <div class="text-caption text-disabled font-mono me-2">
-            {{ t('common.showingOf', { count: filteredItems.length, total: items.length, item: t('common.items') }) }}
-          </div>
+          <v-autocomplete
+            v-model="selectedProject"
+            :items="availableProjectsWithShoppingItems"
+            item-title="projectName"
+            item-value="id"
+            :label="t('nav.projects')"
+            :placeholder="t('common.all')"
+            prepend-inner-icon="mdi-folder-outline"
+            density="compact"
+            variant="outlined"
+            hide-details
+            clearable
+            rounded="lg"
+            style="min-width: 240px; max-width: 380px; flex: 1 1 260px;"
+            @update:model-value="onProjectFilterChange"
+          >
+            <template #item="{ props, item }">
+              <v-list-item v-bind="props" :title="item.raw.projectName">
+                <template #append>
+                  <v-chip
+                    size="x-small"
+                    color="primary"
+                    variant="flat"
+                    class="font-weight-bold"
+                  >
+                    {{ item.raw.shoppingItemCount }}
+                  </v-chip>
+                </template>
+              </v-list-item>
+            </template>
+          </v-autocomplete>
 
+          <!-- Status Filter Toggle (All, cart icon, delivery icon) -->
+          <v-btn-toggle
+            v-model="statusFilter"
+            mandatory
+            density="compact"
+            color="primary"
+            variant="outlined"
+            rounded="lg"
+            class="flex-shrink-0"
+            style="height: 40px;"
+          >
+            <v-btn value="all" size="small" class="text-none px-3 font-weight-medium">
+              {{ t('shoppingList.statusFilterAll') }}
+            </v-btn>
+            <v-btn value="to_buy" size="small" class="px-2" :title="t('shoppingList.statusToBuy')">
+              <v-icon size="18">mdi-cart-outline</v-icon>
+              <v-tooltip activator="parent" location="top">{{ t('shoppingList.statusToBuy') }}</v-tooltip>
+            </v-btn>
+            <v-btn value="pending" size="small" class="px-2" :title="t('shoppingList.totalAwaitingDelivery')">
+              <v-icon size="18">mdi-truck-delivery-outline</v-icon>
+              <v-tooltip activator="parent" location="top">{{ t('shoppingList.totalAwaitingDelivery') }}</v-tooltip>
+            </v-btn>
+          </v-btn-toggle>
+
+          <!-- View BOM button when project is selected -->
+          <v-btn
+            v-if="selectedProject"
+            color="primary"
+            variant="tonal"
+            class="font-weight-medium text-none flex-shrink-0"
+            prepend-icon="mdi-format-list-bulleted-square"
+            style="height: 40px;"
+            @click="openSelectedProjectBom"
+          >
+            {{ t('projects.viewBom') }}
+          </v-btn>
+        </div>
+
+        <div class="d-flex align-center gap-2 flex-shrink-0 ms-auto">
           <v-btn
             prepend-icon="mdi-content-copy"
             size="small"
@@ -111,15 +178,228 @@
         <thead>
           <tr class="bg-slate-50">
             <th class="text-left font-weight-bold" style="width: 50px;">Photo</th>
-            <th class="text-left font-weight-bold">{{ t('shoppingList.colComponent') }}</th>
-            <th class="text-left font-weight-bold">{{ t('common.category') }}</th>
-            <th class="text-left font-weight-bold">{{ t('common.package') }}</th>
-            <th class="text-center font-weight-bold">{{ t('shoppingList.colCurrentStock') }}</th>
-            <th class="text-center font-weight-bold" style="width: 140px;">{{ t('shoppingList.colNeeded') }}</th>
-            <th class="text-right font-weight-bold">{{ t('dialogs.unitPrice') }}</th>
-            <th class="text-right font-weight-bold">{{ t('common.total') }}</th>
-            <th class="text-center font-weight-bold">{{ t('shoppingList.colDateAdded') }}</th>
-            <th class="text-left font-weight-bold" style="width: 100px;">{{ t('shoppingList.colActions') }}</th>
+
+            <!-- Component -->
+            <th
+              class="text-left font-weight-bold cursor-pointer user-select-none hover-header"
+              :title="getHeaderTitle('component', t('shoppingList.colComponent'))"
+              @click="toggleSort('component')"
+            >
+              <div class="d-inline-flex align-center gap-1">
+                <span :class="{ 'text-primary font-weight-black': sortBy === 'component' }">
+                  {{ t('shoppingList.colComponent') }}
+                </span>
+                <v-icon
+                  v-if="sortBy === 'component'"
+                  size="16"
+                  color="primary"
+                >
+                  {{ sortOrder === 'asc' ? 'mdi-arrow-up' : 'mdi-arrow-down' }}
+                </v-icon>
+                <v-icon
+                  v-else
+                  size="14"
+                  class="text-slate-300 sort-indicator"
+                >
+                  mdi-unfold-more-horizontal
+                </v-icon>
+              </div>
+            </th>
+
+            <!-- Category -->
+            <th
+              class="text-left font-weight-bold cursor-pointer user-select-none hover-header"
+              :title="getHeaderTitle('category', t('common.category'))"
+              @click="toggleSort('category')"
+            >
+              <div class="d-inline-flex align-center gap-1">
+                <span :class="{ 'text-primary font-weight-black': sortBy === 'category' }">
+                  {{ t('common.category') }}
+                </span>
+                <v-icon
+                  v-if="sortBy === 'category'"
+                  size="16"
+                  color="primary"
+                >
+                  {{ sortOrder === 'asc' ? 'mdi-arrow-up' : 'mdi-arrow-down' }}
+                </v-icon>
+                <v-icon
+                  v-else
+                  size="14"
+                  class="text-slate-300 sort-indicator"
+                >
+                  mdi-unfold-more-horizontal
+                </v-icon>
+              </div>
+            </th>
+
+            <!-- Package -->
+            <th
+              class="text-left font-weight-bold cursor-pointer user-select-none hover-header"
+              :title="getHeaderTitle('package', t('common.package'))"
+              @click="toggleSort('package')"
+            >
+              <div class="d-inline-flex align-center gap-1">
+                <span :class="{ 'text-primary font-weight-black': sortBy === 'package' }">
+                  {{ t('common.package') }}
+                </span>
+                <v-icon
+                  v-if="sortBy === 'package'"
+                  size="16"
+                  color="primary"
+                >
+                  {{ sortOrder === 'asc' ? 'mdi-arrow-up' : 'mdi-arrow-down' }}
+                </v-icon>
+                <v-icon
+                  v-else
+                  size="14"
+                  class="text-slate-300 sort-indicator"
+                >
+                  mdi-unfold-more-horizontal
+                </v-icon>
+              </div>
+            </th>
+
+            <!-- In Stock -->
+            <th
+              class="text-center font-weight-bold cursor-pointer user-select-none hover-header"
+              :title="getHeaderTitle('stockQuantity', t('shoppingList.colCurrentStock'))"
+              @click="toggleSort('stockQuantity')"
+            >
+              <div class="d-inline-flex align-center justify-center gap-1">
+                <span :class="{ 'text-primary font-weight-black': sortBy === 'stockQuantity' }">
+                  {{ t('shoppingList.colCurrentStock') }}
+                </span>
+                <v-icon
+                  v-if="sortBy === 'stockQuantity'"
+                  size="16"
+                  color="primary"
+                >
+                  {{ sortOrder === 'asc' ? 'mdi-arrow-up' : 'mdi-arrow-down' }}
+                </v-icon>
+                <v-icon
+                  v-else
+                  size="14"
+                  class="text-slate-300 sort-indicator"
+                >
+                  mdi-unfold-more-horizontal
+                </v-icon>
+              </div>
+            </th>
+
+            <!-- Needed -->
+            <th
+              class="text-center font-weight-bold cursor-pointer user-select-none hover-header"
+              style="width: 140px;"
+              :title="getHeaderTitle('qty', t('shoppingList.colNeeded'))"
+              @click="toggleSort('qty')"
+            >
+              <div class="d-inline-flex align-center justify-center gap-1">
+                <span :class="{ 'text-primary font-weight-black': sortBy === 'qty' }">
+                  {{ t('shoppingList.colNeeded') }}
+                </span>
+                <v-icon
+                  v-if="sortBy === 'qty'"
+                  size="16"
+                  color="primary"
+                >
+                  {{ sortOrder === 'asc' ? 'mdi-arrow-up' : 'mdi-arrow-down' }}
+                </v-icon>
+                <v-icon
+                  v-else
+                  size="14"
+                  class="text-slate-300 sort-indicator"
+                >
+                  mdi-unfold-more-horizontal
+                </v-icon>
+              </div>
+            </th>
+
+            <!-- Unit Price -->
+            <th
+              class="text-right font-weight-bold cursor-pointer user-select-none hover-header"
+              :title="getHeaderTitle('latestPrice', t('dialogs.unitPrice'))"
+              @click="toggleSort('latestPrice')"
+            >
+              <div class="d-inline-flex align-center justify-end gap-1">
+                <span :class="{ 'text-primary font-weight-black': sortBy === 'latestPrice' }">
+                  {{ t('dialogs.unitPrice') }}
+                </span>
+                <v-icon
+                  v-if="sortBy === 'latestPrice'"
+                  size="16"
+                  color="primary"
+                >
+                  {{ sortOrder === 'asc' ? 'mdi-arrow-up' : 'mdi-arrow-down' }}
+                </v-icon>
+                <v-icon
+                  v-else
+                  size="14"
+                  class="text-slate-300 sort-indicator"
+                >
+                  mdi-unfold-more-horizontal
+                </v-icon>
+              </div>
+            </th>
+
+            <!-- Total -->
+            <th
+              class="text-right font-weight-bold cursor-pointer user-select-none hover-header"
+              :title="getHeaderTitle('total', t('common.total'))"
+              @click="toggleSort('total')"
+            >
+              <div class="d-inline-flex align-center justify-end gap-1">
+                <span :class="{ 'text-primary font-weight-black': sortBy === 'total' }">
+                  {{ t('common.total') }}
+                </span>
+                <v-icon
+                  v-if="sortBy === 'total'"
+                  size="16"
+                  color="primary"
+                >
+                  {{ sortOrder === 'asc' ? 'mdi-arrow-up' : 'mdi-arrow-down' }}
+                </v-icon>
+                <v-icon
+                  v-else
+                  size="14"
+                  class="text-slate-300 sort-indicator"
+                >
+                  mdi-unfold-more-horizontal
+                </v-icon>
+              </div>
+            </th>
+
+            <!-- Date Added -->
+            <th
+              class="text-center font-weight-bold cursor-pointer user-select-none hover-header"
+              :title="getHeaderTitle('date', t('shoppingList.colDateAdded'))"
+              @click="toggleSort('date')"
+            >
+              <div class="d-inline-flex align-center justify-center gap-1">
+                <span :class="{ 'text-primary font-weight-black': sortBy === 'date' }">
+                  {{ t('shoppingList.colDateAdded') }}
+                </span>
+                <v-icon
+                  v-if="sortBy === 'date'"
+                  size="16"
+                  color="primary"
+                >
+                  {{ sortOrder === 'asc' ? 'mdi-arrow-up' : 'mdi-arrow-down' }}
+                </v-icon>
+                <v-icon
+                  v-else
+                  size="14"
+                  class="text-slate-300 sort-indicator"
+                >
+                  mdi-unfold-more-horizontal
+                </v-icon>
+              </div>
+            </th>
+
+            <!-- Actions -->
+            <th class="text-left font-weight-bold" style="width: 100px;">
+              {{ t('shoppingList.colActions') }}
+            </th>
           </tr>
         </thead>
 
@@ -146,17 +426,22 @@
 
             <!-- Component Name & Marking (clickable link) -->
             <td>
-              <div
-                class="font-mono font-weight-bold text-body-2 text-primary comp-name-link d-inline-flex align-center gap-1 cursor-pointer"
-                @click="openComponentDetails(item)"
-                :title="t('shoppingList.viewDetailsAndHistory')"
-              >
-                <span class="hover-underline">{{ item.component }}</span>
-                <v-icon size="13" class="opacity-60 info-icon">mdi-information-outline</v-icon>
+              <div class="d-flex align-center gap-1 flex-wrap">
+                <div
+                  class="font-mono font-weight-bold text-body-2 text-primary comp-name-link d-inline-flex align-center gap-1 cursor-pointer"
+                  @click="openComponentDetails(item)"
+                  :title="t('shoppingList.viewDetailsAndHistory')"
+                >
+                  <span class="hover-underline">{{ item.component }}</span>
+                  <v-icon size="13" class="opacity-60 info-icon">mdi-information-outline</v-icon>
+                </div>
               </div>
-              <div class="text-caption text-disabled" v-if="item.marking || item.shortDescription">
+              <div class="text-caption text-disabled" v-if="item.marking || item.shortDescription || ((item.activeOrderStatus === 'pending' || item.orderId) && item.activeOrderDate)">
                 <span v-if="item.marking" class="font-mono me-2">Mark: {{ item.marking }}</span>
-                <span v-if="item.shortDescription">{{ item.shortDescription }}</span>
+                <span v-if="item.shortDescription" class="me-2">{{ item.shortDescription }}</span>
+                <span v-if="(item.activeOrderStatus === 'pending' || item.orderId) && item.activeOrderDate" class="text-amber-800 font-mono">
+                  • {{ t('shoppingList.orderedOn', { date: formatDate(item.activeOrderDate) }) }}
+                </span>
               </div>
             </td>
 
@@ -188,7 +473,25 @@
 
             <!-- Aligned Quantity Selector (standard fixed width) -->
             <td class="text-center">
-              <div class="d-inline-flex align-center border bg-white rounded-lg px-1 justify-space-between quantity-stepper" style="height: 32px; width: 116px;">
+              <!-- When awaiting delivery: show ordered qty with truck badge -->
+              <div
+                v-if="item.activeOrderStatus === 'pending' || item.orderId"
+                class="d-inline-flex align-center justify-center border bg-amber-50 rounded-lg px-2"
+                style="height: 32px; min-width: 90px;"
+                :title="t('shoppingList.orderedQty', { qty: item.qty })"
+              >
+                <v-icon size="14" color="amber-darken-3" class="me-1">mdi-truck-outline</v-icon>
+                <span class="font-mono font-weight-bold text-amber-900" style="font-size: 0.9rem;">
+                  {{ item.qty }}
+                </span>
+              </div>
+
+              <!-- Standard Quantity Stepper when not yet ordered -->
+              <div
+                v-else
+                class="d-inline-flex align-center border bg-white rounded-lg px-1 justify-space-between quantity-stepper"
+                style="height: 32px; width: 116px;"
+              >
                 <v-btn
                   icon="mdi-minus"
                   size="x-small"
@@ -243,26 +546,49 @@
             </td>
 
             <!-- Actions -->
-            <td class="text-left text-no-wrap">
-              <!-- Buy Component -->
-              <v-btn
-                icon="mdi-cash-check"
-                size="small"
-                color="primary"
-                variant="text"
-                :title="t('shoppingList.buyComponent')"
-                @click="openPurchaseDialog(item)"
-              />
+            <td class="text-left text-no-wrap" style="width: 120px; min-width: 120px;">
+              <div class="d-inline-flex align-center" style="gap: 2px;">
+                <!-- Slot 1: Primary Action (Confirm Delivery when awaiting, Buy Component when to buy) -->
+                <v-btn
+                  v-if="item.activeOrderStatus === 'pending' || item.orderId"
+                  icon="mdi-package-variant-closed-check"
+                  size="small"
+                  color="success"
+                  variant="text"
+                  :title="t('shoppingList.confirmDelivery')"
+                  @click="openConfirmDeliveryDialog(item)"
+                />
+                <v-btn
+                  v-else
+                  icon="mdi-cash-check"
+                  size="small"
+                  color="primary"
+                  variant="text"
+                  :title="t('shoppingList.buyComponent')"
+                  @click="openPurchaseDialog(item)"
+                />
 
-              <!-- Remove without buying -->
-              <v-btn
-                icon="mdi-delete-outline"
-                size="small"
-                color="error"
-                variant="text"
-                :title="t('shoppingList.removeFromList')"
-                @click="removeItem(item)"
-              />
+                <!-- Cancel Order (visible only when awaiting delivery) -->
+                <v-btn
+                  v-if="item.activeOrderStatus === 'pending' || item.orderId"
+                  icon="mdi-cancel"
+                  size="small"
+                  color="warning"
+                  variant="text"
+                  :title="t('shoppingList.cancelOrder')"
+                  @click="openCancelOrderDialog(item)"
+                />
+
+                <!-- Slot 3: Remove from list (always aligned in 3rd slot) -->
+                <v-btn
+                  icon="mdi-delete-outline"
+                  size="small"
+                  color="error"
+                  variant="text"
+                  :title="t('shoppingList.removeFromList')"
+                  @click="removeItem(item)"
+                />
+              </div>
             </td>
           </tr>
 
@@ -309,6 +635,22 @@
       </v-table>
     </v-card>
 
+    <!-- Modal: Confirm Delivery -->
+    <ConfirmDeliveryDialog
+      v-model="showConfirmDeliveryDialog"
+      :item="selectedItemForDelivery"
+      @delivered="onItemDelivered"
+      @notify="notify"
+    />
+
+    <!-- Modal: Cancel Order -->
+    <CancelOrderDialog
+      v-model="showCancelOrderDialog"
+      :item="selectedItemForCancel"
+      @cancelled="onOrderCancelled"
+      @notify="notify"
+    />
+
     <!-- Modal: Purchase Confirmation & Order Creation -->
     <PurchaseConfirmDialog
       v-model="showPurchaseDialog"
@@ -329,9 +671,17 @@
     <!-- Modal: Photo Lightbox -->
     <MediaLightboxDialog
       v-model="lightbox.show"
-      type="component"
+      :type="lightbox.type || 'component'"
       :src="lightbox.src"
       :title="lightbox.title"
+    />
+
+    <!-- Reusable Project BOM Preview Modal -->
+    <ProjectBomDialog
+      v-model="showBomDialog"
+      :project="activeProject"
+      @updated="onBomUpdated"
+      @notify="notify"
     />
 
     <!-- Notification Snackbar -->
@@ -351,24 +701,41 @@ import MediaImage from '../components/MediaImage.vue';
 import MediaLightboxDialog from '../components/MediaLightboxDialog.vue';
 import PackageLink from '../components/PackageLink.vue';
 import PurchaseConfirmDialog from '../components/PurchaseConfirmDialog.vue';
+import ConfirmDeliveryDialog from '../components/ConfirmDeliveryDialog.vue';
+import CancelOrderDialog from '../components/CancelOrderDialog.vue';
 import ComponentDetailsDialog from '../components/ComponentDetailsDialog.vue';
+import ProjectBomDialog from '../components/ProjectBomDialog.vue';
 import { useShoppingListStore } from '../stores/shoppingList';
 import { formatCurrency, formatDate } from '../utils/formatters';
 
 const shoppingListStore = useShoppingListStore();
 
 const items = ref([]);
+const projects = ref([]);
+const selectedProject = ref(null);
 const loading = ref(false);
 const searchQuery = ref('');
+const statusFilter = ref('all');
+
+// Project BOM Modal State
+const activeProject = ref(null);
+const showBomDialog = ref(false);
 
 const showPurchaseDialog = ref(false);
 const selectedItemForPurchase = ref(null);
+
+const showConfirmDeliveryDialog = ref(false);
+const selectedItemForDelivery = ref(null);
+
+const showCancelOrderDialog = ref(false);
+const selectedItemForCancel = ref(null);
 
 const showDetailsDialog = ref(false);
 const selectedItemForDetails = ref(null);
 
 const lightbox = ref({
   show: false,
+  type: 'component',
   src: null,
   title: ''
 });
@@ -388,6 +755,14 @@ const totalUnitsNeeded = computed(() => {
   return items.value.reduce((acc, i) => acc + (Number(i.qty) || 0), 0);
 });
 
+const toBuyCount = computed(() => {
+  return items.value.filter(i => !i.orderId && i.activeOrderStatus !== 'pending').length;
+});
+
+const awaitingDeliveryCount = computed(() => {
+  return items.value.filter(i => !!i.orderId || i.activeOrderStatus === 'pending').length;
+});
+
 const estimatedTotalCost = computed(() => {
   let cost = 0;
   for (const item of items.value) {
@@ -398,18 +773,112 @@ const estimatedTotalCost = computed(() => {
   return cost;
 });
 
+// Sorting state
+const sortBy = ref('date');
+const sortOrder = ref('desc');
+
+const getHeaderTitle = (key, label) => {
+  if (sortBy.value === key) {
+    return `${label}: ${sortOrder.value === 'asc' ? t('shoppingList.sortedAsc') : t('shoppingList.sortedDesc')}`;
+  }
+  return `${label} (${t('shoppingList.clickToSort')})`;
+};
+
+const toggleSort = (key) => {
+  if (sortBy.value === key) {
+    sortOrder.value = sortOrder.value === 'asc' ? 'desc' : 'asc';
+  } else {
+    sortBy.value = key;
+    if (['stockQuantity', 'qty', 'latestPrice', 'total', 'date'].includes(key)) {
+      sortOrder.value = 'desc';
+    } else {
+      sortOrder.value = 'asc';
+    }
+  }
+};
+
 const filteredItems = computed(() => {
-  if (!searchQuery.value.trim()) return items.value;
-  const q = searchQuery.value.toLowerCase().trim();
-  return items.value.filter(item =>
-    (item.component && item.component.toLowerCase().includes(q)) ||
-    (item.marking && item.marking.toLowerCase().includes(q)) ||
-    (item.description && item.description.toLowerCase().includes(q)) ||
-    (item.shortDescription && item.shortDescription.toLowerCase().includes(q)) ||
-    (item.category && item.category.toLowerCase().includes(q)) ||
-    (item.package && item.package.toLowerCase().includes(q)) ||
-    (item.latestOrderDetails && item.latestOrderDetails.toLowerCase().includes(q))
-  );
+  let list = items.value;
+
+  if (statusFilter.value === 'to_buy') {
+    list = list.filter(item => !item.orderId && item.activeOrderStatus !== 'pending');
+  } else if (statusFilter.value === 'pending') {
+    list = list.filter(item => !!item.orderId || item.activeOrderStatus === 'pending');
+  }
+
+  if (searchQuery.value.trim()) {
+    const q = searchQuery.value.toLowerCase().trim();
+    list = list.filter(item =>
+      (item.component && item.component.toLowerCase().includes(q)) ||
+      (item.marking && item.marking.toLowerCase().includes(q)) ||
+      (item.description && item.description.toLowerCase().includes(q)) ||
+      (item.shortDescription && item.shortDescription.toLowerCase().includes(q)) ||
+      (item.category && item.category.toLowerCase().includes(q)) ||
+      (item.package && item.package.toLowerCase().includes(q)) ||
+      (item.latestOrderDetails && item.latestOrderDetails.toLowerCase().includes(q))
+    );
+  }
+
+  if (!sortBy.value) return list;
+
+  const key = sortBy.value;
+  const orderMultiplier = sortOrder.value === 'desc' ? -1 : 1;
+
+  return [...list].sort((a, b) => {
+    let valA, valB;
+
+    switch (key) {
+      case 'component':
+        valA = (a.component || '').toLowerCase();
+        valB = (b.component || '').toLowerCase();
+        return valA.localeCompare(valB) * orderMultiplier;
+
+      case 'category':
+        valA = (a.category || '').toLowerCase();
+        valB = (b.category || '').toLowerCase();
+        if (!valA && valB) return 1;
+        if (valA && !valB) return -1;
+        return valA.localeCompare(valB) * orderMultiplier;
+
+      case 'package':
+        valA = (a.package || '').toLowerCase();
+        valB = (b.package || '').toLowerCase();
+        if (!valA && valB) return 1;
+        if (valA && !valB) return -1;
+        return valA.localeCompare(valB) * orderMultiplier;
+
+      case 'stockQuantity':
+        valA = a.stockQuantity == null ? -999999999 : Number(a.stockQuantity);
+        valB = b.stockQuantity == null ? -999999999 : Number(b.stockQuantity);
+        return (valA - valB) * orderMultiplier;
+
+      case 'qty':
+        valA = Number(a.qty) || 0;
+        valB = Number(b.qty) || 0;
+        return (valA - valB) * orderMultiplier;
+
+      case 'latestPrice':
+        valA = a.latestPrice != null ? Number(a.latestPrice) : -1;
+        valB = b.latestPrice != null ? Number(b.latestPrice) : -1;
+        return (valA - valB) * orderMultiplier;
+
+      case 'total':
+        valA = a.latestPrice != null ? (Number(a.qty) || 0) * Number(a.latestPrice) : -1;
+        valB = b.latestPrice != null ? (Number(b.qty) || 0) * Number(b.latestPrice) : -1;
+        return (valA - valB) * orderMultiplier;
+
+      case 'date':
+        valA = a.date ? new Date(a.date).getTime() : 0;
+        valB = b.date ? new Date(b.date).getTime() : 0;
+        if (valA === valB) {
+          return ((Number(a.id) || 0) - (Number(b.id) || 0)) * orderMultiplier;
+        }
+        return (valA - valB) * orderMultiplier;
+
+      default:
+        return 0;
+    }
+  });
 });
 
 const totalFilteredUnits = computed(() => {
@@ -430,14 +899,39 @@ const totalFilteredCost = computed(() => {
 const loadShoppingList = async () => {
   loading.value = true;
   try {
-    items.value = await api.getShoppingList();
-    shoppingListStore.setCount(items.value.length);
+    const params = {};
+    if (selectedProject.value) {
+      params.projectId = selectedProject.value;
+    }
+    items.value = await api.getShoppingList(params);
+    // Only update the global navbar badge store when fetching full unfiltered list
+    if (!selectedProject.value) {
+      shoppingListStore.setItems(items.value);
+    }
   } catch (err) {
     notify('Failed to load shopping list: ' + err.message, 'error');
   } finally {
     loading.value = false;
   }
 };
+
+const onProjectFilterChange = () => {
+  loadShoppingList();
+};
+
+const loadProjects = async () => {
+  try {
+    const projs = await api.getProjects();
+    // Only include projects that have components currently in the shopping list
+    projects.value = (projs || []).filter(p => Number(p.shoppingItemCount) > 0);
+  } catch (err) {
+    console.error('Failed to load projects for filter:', err);
+  }
+};
+
+const availableProjectsWithShoppingItems = computed(() => {
+  return projects.value.filter(p => Number(p.shoppingItemCount) > 0);
+});
 
 // Quantity stepper handlers
 const updateQuantity = async (item, newQty) => {
@@ -467,6 +961,24 @@ const openPurchaseDialog = (item) => {
   showPurchaseDialog.value = true;
 };
 
+const openConfirmDeliveryDialog = (item) => {
+  selectedItemForDelivery.value = { ...item };
+  showConfirmDeliveryDialog.value = true;
+};
+
+const onItemDelivered = async () => {
+  await Promise.all([loadShoppingList(), loadProjects()]);
+};
+
+const openCancelOrderDialog = (item) => {
+  selectedItemForCancel.value = { ...item };
+  showCancelOrderDialog.value = true;
+};
+
+const onOrderCancelled = async () => {
+  await Promise.all([loadShoppingList(), loadProjects()]);
+};
+
 const openComponentDetails = (item) => {
   selectedItemForDetails.value = {
     ...item,
@@ -477,26 +989,38 @@ const openComponentDetails = (item) => {
 };
 
 const openImageLightbox = (item) => {
+  if (!item?.photoURL) return;
   lightbox.value = {
     show: true,
+    type: 'component',
     src: item.photoURL,
     title: item.component
   };
 };
 
-// Purchase completion callback
-const onItemPurchased = async (result) => {
-  // If remaining in basket is 0, remove locally; otherwise update qty
-  if (result.remainingInBasket === 0) {
-    items.value = items.value.filter(i => i.id !== selectedItemForPurchase.value?.id);
-  } else {
-    const found = items.value.find(i => i.id === selectedItemForPurchase.value?.id);
-    if (found) {
-      found.qty = result.remainingInBasket;
+const openSelectedProjectBom = async () => {
+  if (!selectedProject.value) return;
+  let proj = projects.value.find(p => p.id === selectedProject.value);
+  if (!proj) {
+    try {
+      proj = await api.getProject(selectedProject.value);
+    } catch (err) {
+      notify('Failed to load project details: ' + err.message, 'error');
+      return;
     }
   }
-  // Refresh shopping list to ensure stock levels and order data are synchronized
-  await loadShoppingList();
+  activeProject.value = proj;
+  showBomDialog.value = true;
+};
+
+const onBomUpdated = async () => {
+  await Promise.all([loadShoppingList(), loadProjects()]);
+};
+
+// Purchase completion callback
+const onItemPurchased = async () => {
+  // Refresh shopping list to ensure pending/delivered order statuses, quantities, and stock levels are synchronized
+  await Promise.all([loadShoppingList(), loadProjects()]);
 };
 
 const removeItem = async (item) => {
@@ -504,6 +1028,7 @@ const removeItem = async (item) => {
     await api.deleteShoppingListItem(item.id);
     items.value = items.value.filter(i => i.id !== item.id);
     notify(`Removed ${item.component} from shopping list`);
+    loadProjects();
   } catch (err) {
     notify('Failed to remove item: ' + err.message, 'error');
   }
@@ -518,6 +1043,7 @@ const copyShoppingList = () => {
 };
 
 onMounted(() => {
+  loadProjects();
   loadShoppingList();
 });
 </script>
@@ -560,5 +1086,22 @@ onMounted(() => {
 .quantity-input,
 .quantity-stepper input[type=number] {
   -moz-appearance: textfield !important;
+}
+.hover-header {
+  transition: background-color 0.15s ease-in-out, color 0.15s ease-in-out;
+}
+.hover-header:hover {
+  background-color: #f1f5f9 !important;
+}
+.hover-header:hover .sort-indicator {
+  color: #64748b !important;
+  opacity: 1 !important;
+}
+.sort-indicator {
+  opacity: 0.35;
+  transition: opacity 0.15s, color 0.15s;
+}
+.user-select-none {
+  user-select: none;
 }
 </style>

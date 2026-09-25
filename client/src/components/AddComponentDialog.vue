@@ -21,7 +21,20 @@
             </span>
           </span>
         </div>
-        <v-btn icon="mdi-close" variant="text" size="small" @click="close" />
+        <div class="d-flex align-center gap-2">
+          <v-btn
+            v-if="!cloneModeOnly"
+            color="primary"
+            variant="flat"
+            size="small"
+            class="font-weight-medium"
+            prepend-icon="mdi-plus"
+            @click="openCreateComponentDialog"
+          >
+            {{ t('dialogs.createComponent') }}
+          </v-btn>
+          <v-btn icon="mdi-close" variant="text" size="small" @click="close" />
+        </div>
       </v-card-title>
 
       <!-- Filter Controls Bar -->
@@ -204,16 +217,23 @@
               v-for="c in components"
               :key="c.ID"
               :class="{
-                'row-shortage': !c.qty || c.qty <= 0,
-                'row-selected': selectedComponent?.ID === c.ID
+                'row-shortage': (!c.qty || c.qty <= 0) && !isExcluded(c),
+                'row-selected': selectedComponent?.ID === c.ID,
+                'row-excluded opacity-50 bg-slate-50': isExcluded(c)
               }"
-              class="cursor-pointer"
-              @click="selectComponent(c)"
-              @dblclick="onRowDblClick(c)"
+              :style="isExcluded(c) ? 'cursor: not-allowed;' : 'cursor: pointer;'"
+              @click="!isExcluded(c) && selectComponent(c)"
+              @dblclick="!isExcluded(c) && onRowDblClick(c)"
             >
               <!-- Radio Selection Indicator -->
               <td class="text-center pa-1">
+                <v-tooltip v-if="isExcluded(c)" :text="t('bomAnalogs.alreadyAddedOrPrimary') || 'Already in BOM / Analogs'" location="top">
+                  <template #activator="{ props: tipProps }">
+                    <v-icon v-bind="tipProps" color="grey" size="18">mdi-cancel</v-icon>
+                  </template>
+                </v-tooltip>
                 <v-icon
+                  v-else
                   :color="selectedComponent?.ID === c.ID ? 'primary' : 'grey-lighten-1'"
                   size="20"
                 >
@@ -277,18 +297,35 @@
 
               <!-- Action Column in Picker Mode -->
               <td v-if="pickerMode" class="text-center pa-1" @click.stop>
-                <v-tooltip :text="cloneModeOnly ? t('dialogs.cloneThisComponent') : t('dialogs.cloneAndMap')" location="top">
-                  <template #activator="{ props: tipProps }">
-                    <v-btn
-                      v-bind="tipProps"
-                      icon="mdi-content-copy"
-                      size="x-small"
-                      variant="tonal"
-                      color="indigo"
-                      @click="triggerClone(c)"
-                    />
-                  </template>
-                </v-tooltip>
+                <template v-if="!hideCloneButton">
+                  <v-tooltip :text="cloneModeOnly ? t('dialogs.cloneThisComponent') : t('dialogs.cloneAndMap')" location="top">
+                    <template #activator="{ props: tipProps }">
+                      <v-btn
+                        v-bind="tipProps"
+                        icon="mdi-content-copy"
+                        size="x-small"
+                        variant="tonal"
+                        color="indigo"
+                        @click="triggerClone(c)"
+                      />
+                    </template>
+                  </v-tooltip>
+                </template>
+                <template v-else>
+                  <v-tooltip :text="selectButtonText || t('dialogs.selectThisComponent')" location="top">
+                    <template #activator="{ props: tipProps }">
+                      <v-btn
+                        v-bind="tipProps"
+                        :icon="selectButtonIcon || 'mdi-check'"
+                        size="x-small"
+                        variant="tonal"
+                        color="primary"
+                        :disabled="isExcluded(c)"
+                        @click="selectComponent(c); confirmPick();"
+                      />
+                    </template>
+                  </v-tooltip>
+                </template>
               </td>
             </tr>
 
@@ -296,6 +333,17 @@
               <td :colspan="pickerMode ? 8 : 7" class="text-center py-8 text-disabled">
                 <v-icon size="36" class="mb-2">mdi-memory-off</v-icon>
                 <div>{{ t('dialogs.noComponentsMatch') }}</div>
+                <div v-if="!cloneModeOnly" class="mt-3">
+                  <v-btn
+                    color="primary"
+                    variant="tonal"
+                    size="small"
+                    prepend-icon="mdi-plus"
+                    @click="openCreateComponentDialog"
+                  >
+                    {{ t('dialogs.createComponent') }}
+                  </v-btn>
+                </div>
               </td>
             </tr>
 
@@ -372,13 +420,15 @@
                 variant="flat"
                 rounded="lg"
                 height="40"
-                prepend-icon="mdi-check"
+                :prepend-icon="selectButtonIcon || 'mdi-check'"
                 class="px-5 font-weight-bold"
+                :disabled="!selectedComponent || isExcluded(selectedComponent)"
                 @click="confirmPick"
               >
-                {{ t('dialogs.selectThisComponent') }}
+                {{ selectButtonText || t('dialogs.selectThisComponent') }}
               </v-btn>
               <v-btn
+                v-if="!cloneModeOnly && !hideCloneButton"
                 color="indigo"
                 :variant="cloneModeOnly ? 'flat' : 'tonal'"
                 rounded="lg"
@@ -466,9 +516,20 @@
     <ComponentDetailsDialog
       v-model="showDetailsDialog"
       :component="detailComponent"
-      :show-select-button="true"
-      :select-button-text="pickerMode ? t('dialogs.pickThisComponent') : t('dialogs.selectForBom')"
+      :show-select-button="!detailComponent || !isExcluded(detailComponent)"
+      :select-button-text="selectButtonText || (pickerMode ? t('dialogs.pickThisComponent') : t('dialogs.selectForBom'))"
       @select="onDetailComponentSelected"
+    />
+
+    <!-- Re-used Create Component Dialog Modal -->
+    <CreateComponentDialog
+      v-model="showCreateDialog"
+      :categories="categories"
+      :packages="packages"
+      :initial-data="initialCreateData"
+      @created="onComponentCreated"
+      @saved="onComponentCreated"
+      @catalog-updated="onCatalogUpdated"
     />
   </v-dialog>
 </template>
@@ -480,6 +541,7 @@ import api from '../services/api';
 import MediaImage from './MediaImage.vue';
 import PackageLink from './PackageLink.vue';
 import ComponentDetailsDialog from './ComponentDetailsDialog.vue';
+import CreateComponentDialog from './CreateComponentDialog.vue';
 
 const { t } = useI18n();
 
@@ -521,6 +583,22 @@ const props = defineProps({
     default: () => []
   },
   initialPackages: {
+    type: Array,
+    default: () => []
+  },
+  hideCloneButton: {
+    type: Boolean,
+    default: false
+  },
+  selectButtonText: {
+    type: String,
+    default: ''
+  },
+  selectButtonIcon: {
+    type: String,
+    default: 'mdi-check'
+  },
+  excludedComponentIds: {
     type: Array,
     default: () => []
   }
@@ -649,20 +727,30 @@ const nextPage = () => {
 const showDetailsDialog = ref(false);
 const detailComponent = ref(null);
 
+const isExcluded = (c) => {
+  if (!c || !props.excludedComponentIds || props.excludedComponentIds.length === 0) return false;
+  return props.excludedComponentIds.includes(c.ID);
+};
+
 const openDetails = (c) => {
   detailComponent.value = c;
-  selectComponent(c);
+  if (!isExcluded(c)) {
+    selectComponent(c);
+  }
   showDetailsDialog.value = true;
 };
 
 const onDetailComponentSelected = (c) => {
+  if (isExcluded(c)) return;
   selectComponent(c);
+  showDetailsDialog.value = false;
   if (props.pickerMode) {
     confirmPick();
   }
 };
 
 const selectComponent = (c) => {
+  if (isExcluded(c)) return;
   selectedComponent.value = c;
 };
 
@@ -697,7 +785,7 @@ const submitAdd = async () => {
 };
 
 const confirmPick = () => {
-  if (!selectedComponent.value) return;
+  if (!selectedComponent.value || isExcluded(selectedComponent.value)) return;
   emit('select', selectedComponent.value);
   close();
 };
@@ -709,11 +797,43 @@ const triggerClone = (c) => {
 };
 
 const onRowDblClick = (c) => {
+  if (isExcluded(c)) return;
   if (props.cloneModeOnly) {
     triggerClone(c);
   } else if (props.pickerMode) {
     selectedComponent.value = c;
     confirmPick();
+  }
+};
+
+const showCreateDialog = ref(false);
+const initialCreateData = ref(null);
+
+const openCreateComponentDialog = () => {
+  initialCreateData.value = search.value?.trim() ? { component: search.value.trim() } : null;
+  showCreateDialog.value = true;
+};
+
+const onComponentCreated = async (newComp) => {
+  showCreateDialog.value = false;
+  await fetchComponents();
+  if (newComp && (newComp.ID || newComp.id)) {
+    const compId = Number(newComp.ID || newComp.id);
+    const found = components.value.find(c => c.ID === compId) || newComp;
+    selectComponent(found);
+  }
+};
+
+const onCatalogUpdated = async () => {
+  try {
+    const [cats, pkgs] = await Promise.all([
+      api.getCategories(),
+      api.getPackages()
+    ]);
+    categories.value = cats || [];
+    packages.value = pkgs || [];
+  } catch (err) {
+    console.error('Failed to reload categories/packages in AddComponentDialog:', err);
   }
 };
 
