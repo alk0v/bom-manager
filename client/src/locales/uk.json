@@ -63,6 +63,8 @@
   },
   "projects": {
     "searchPlaceholder": "Пошук за назвою або описом проєкту...",
+    "filterByTags": "Фільтр за тегами",
+    "allTags": "Всі теги",
     "newProject": "Новий проєкт",
     "refreshTooltip": "Оновити список проєктів",
     "viewBom": "Переглянути BOM",
@@ -78,7 +80,10 @@
     "openExternalLink": "Відкрити зовнішнє посилання на документацію",
     "openDedicatedPage": "Відкрити окрему сторінку проєкту",
     "ibomAttached": "Прикріплено інтерактивний HTML BOM KiCAD",
-    "projectId": "ID проєкту: #{id}"
+    "projectId": "ID проєкту: #{id}",
+    "tags": "Теги",
+    "noTags": "Без тегів",
+    "addTagHint": "Введіть назву тегу та натисніть Enter"
   },
   "projectDetail": {
     "backToProjects": "Назад до проєктів",
@@ -388,7 +393,27 @@
     "rateValueHint": "Введіть значення, де 1 {from} = X {to}",
     "rateDate": "Дата набрання чинності",
     "cancel": "Скасувати",
-    "save": "Зберегти"
+    "save": "Зберегти",
+    "regionalPreviewTitle": "Попередній перегляд регіональних форматів",
+    "dateFormatLabel": "Зразок формату дати",
+    "currencyFormatLabel": "Зразок валют та цін",
+    "localeStorageKey": "Ключ сховища браузера",
+    "localeStorageActive": "Збережено в Local Storage",
+    "activeLocaleBadge": "Активна",
+    "englishDesc": "Англійська (Основний каталог та інтерфейс)",
+    "ukrainianDesc": "Українська (Повний переклад)",
+    "uiPreferencesTitle": "Профіль інтерфейсу та вигляд",
+    "themeModeLabel": "Профіль теми",
+    "pureLightTheme": "Світла тема (Стандартна BOM)",
+    "pureLightDesc": "Висококонтрастна чиста тема, оптимізована для лабораторій та робочих станцій.",
+    "fontFamilyLabel": "Система шрифтів",
+    "fontFamilyDesc": "Inter UI для інтерфейсу, Monospace для номерів деталей та параметрів BOM.",
+    "localStorageTitle": "Локальний стан браузера та кеш",
+    "localStorageDesc": "Кешовані налаштування клієнта, включно з поточною мовою, фільтрами та діалогами.",
+    "clearCacheBtn": "Скинути кеш UI",
+    "clearCacheSuccess": "Локальний кеш налаштувань інтерфейсу успішно скинуто",
+    "systemStatusLabel": "Стан клієнтського застосунку",
+    "systemStatusReady": "Готовий та синхронізований"
   },
   "dialogs": {
     "link": "Посилання",
@@ -401,6 +426,8 @@
     "projectUrl": "Посилання на репозиторій або документацію",
     "projectUrlPlaceholder": "https://github.com/...",
     "projectNameRequired": "Назва проєкту є обов'язковою",
+    "projectTags": "Теги проєкту",
+    "projectTagsPlaceholder": "Оберіть або введіть теги (наприклад: commodore 64, retro, smd)...",
     "photoFilenameOrUrl": "Ім'я файлу фото або URL",
     "photoFolderHint": "Папка: {folder}",
     "photoUploadHint": "Завантажте зображення або вкажіть відносне ім'я файлу в {folder}.",

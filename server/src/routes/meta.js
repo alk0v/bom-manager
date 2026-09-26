@@ -276,4 +276,68 @@ router.get('/config', async (req, res) => {
   }
 });
 
+// ==========================================
+// TAGS CRUD & AUTOCOMPLETE
+// ==========================================
+
+// GET /api/tags - list all tags with project count
+router.get('/tags', async (req, res) => {
+  try {
+    const [rows] = await pool.query(`
+      SELECT 
+        t.id, 
+        t.name,
+        COUNT(pt.projectId) AS projectCount
+      FROM t_tags t
+      LEFT JOIN t_project_tags pt ON t.id = pt.tagId
+      GROUP BY t.id, t.name
+      ORDER BY t.name ASC
+    `);
+    res.json(rows.map(r => ({
+      id: r.id,
+      name: r.name,
+      projectCount: Number(r.projectCount) || 0
+    })));
+  } catch (error) {
+    console.error('Error fetching tags:', error);
+    res.status(500).json({ error: 'Failed to fetch tags', details: error.message });
+  }
+});
+
+// POST /api/tags - create tag if not exists
+router.post('/tags', async (req, res) => {
+  const { name } = req.body;
+  if (!name || !name.trim()) {
+    return res.status(400).json({ error: 'Tag name is required' });
+  }
+  const cleanName = name.trim().toLowerCase();
+  try {
+    const [existing] = await pool.query('SELECT id, name FROM t_tags WHERE LOWER(name) = ?', [cleanName]);
+    if (existing.length > 0) {
+      return res.json(existing[0]);
+    }
+    const [result] = await pool.query('INSERT INTO t_tags (name) VALUES (?)', [cleanName]);
+    res.status(201).json({ id: result.insertId, name: cleanName, projectCount: 0 });
+  } catch (error) {
+    console.error('Error creating tag:', error);
+    res.status(500).json({ error: 'Failed to create tag', details: error.message });
+  }
+});
+
+// DELETE /api/tags/:id - delete tag and associations
+router.delete('/tags/:id', async (req, res) => {
+  const tagId = parseInt(req.params.id, 10);
+  if (isNaN(tagId)) {
+    return res.status(400).json({ error: 'Invalid tag ID' });
+  }
+  try {
+    await pool.query('DELETE FROM t_project_tags WHERE tagId = ?', [tagId]);
+    await pool.query('DELETE FROM t_tags WHERE id = ?', [tagId]);
+    res.json({ success: true, id: tagId });
+  } catch (error) {
+    console.error('Error deleting tag:', error);
+    res.status(500).json({ error: 'Failed to delete tag', details: error.message });
+  }
+});
+
 module.exports = router;

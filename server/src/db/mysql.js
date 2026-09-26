@@ -168,6 +168,37 @@ async function ensureTables() {
       `, [today, today, today]);
       console.log('[Database:MySQL] Seeded initial exchange rates in t_exchange_rates.');
     }
+
+    // Ensure t_tags and t_project_tags tables exist
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS t_tags (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        name VARCHAR(50) NOT NULL UNIQUE,
+        createdAt DATETIME DEFAULT CURRENT_TIMESTAMP,
+        INDEX idx_tag_name (name)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+    `);
+
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS t_project_tags (
+        projectId INT NOT NULL,
+        tagId INT NOT NULL,
+        PRIMARY KEY (projectId, tagId),
+        INDEX idx_pt_project (projectId),
+        INDEX idx_pt_tag (tagId)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+    `);
+    console.log('[Database:MySQL] Verified tables "t_tags" and "t_project_tags" exist.');
+
+    // Seed initial tags if t_tags is empty
+    const [tagCountRow] = await pool.query('SELECT COUNT(*) as cnt FROM t_tags');
+    if (tagCountRow[0]?.cnt === 0) {
+      const initialTags = ['commodore 64', 'retro', 'diy', 'kicad', 'smd'];
+      for (const t of initialTags) {
+        await pool.query('INSERT IGNORE INTO t_tags (name) VALUES (?)', [t]);
+      }
+      console.log('[Database:MySQL] Seeded initial tags in t_tags.');
+    }
   } catch (err) {
     console.warn('[Database:MySQL] Table verification note:', err.message);
   }

@@ -132,6 +132,11 @@ export const api = {
 
   getStorages: () => client.get('/storages').then(res => res.data),
 
+  // Tags
+  getTags: () => client.get('/tags').then(res => res.data),
+  createTag: (name) => client.post('/tags', { name }).then(res => res.data),
+  deleteTag: (id) => client.delete(`/tags/${id}`).then(res => res.data),
+
   // Shopping List
   getShoppingList: (params = {}) => client.get('/shopping-list', { params }).then(res => res.data),
   addToShoppingList: (data) => client.post('/shopping-list', data).then(res => {

@@ -63,6 +63,8 @@
   },
   "projects": {
     "searchPlaceholder": "Search project name, description...",
+    "filterByTags": "Filter by tags",
+    "allTags": "All Tags",
     "newProject": "New Project",
     "refreshTooltip": "Refresh projects",
     "viewBom": "View BOM",
@@ -78,7 +80,10 @@
     "openExternalLink": "Open external documentation link",
     "openDedicatedPage": "Open dedicated page for this project",
     "ibomAttached": "KiCAD Interactive HTML BOM attached",
-    "projectId": "Project ID: #{id}"
+    "projectId": "Project ID: #{id}",
+    "tags": "Tags",
+    "noTags": "No tags",
+    "addTagHint": "Type tag name and press Enter"
   },
   "projectDetail": {
     "backToProjects": "Back to Projects",
@@ -388,7 +393,27 @@
     "rateValueHint": "Enter the value where 1 {from} = X {to}",
     "rateDate": "Effective Date",
     "cancel": "Cancel",
-    "save": "Save"
+    "save": "Save",
+    "regionalPreviewTitle": "Regional & Formatting Preview",
+    "dateFormatLabel": "Date Format Sample",
+    "currencyFormatLabel": "Currency & Pricing Sample",
+    "localeStorageKey": "Browser Storage Key",
+    "localeStorageActive": "Saved in Local Storage",
+    "activeLocaleBadge": "Active",
+    "englishDesc": "English (Master catalog & interface)",
+    "ukrainianDesc": "Ukrainian (Complete translation)",
+    "uiPreferencesTitle": "Appearance & Interface Profile",
+    "themeModeLabel": "Theme Profile",
+    "pureLightTheme": "Pure Light (Standard BOM)",
+    "pureLightDesc": "High-contrast clean theme optimized for hardware labs & workstation displays.",
+    "fontFamilyLabel": "Typography System",
+    "fontFamilyDesc": "Inter UI for interfaces, Monospace for Part Numbers & BOM parameters.",
+    "localStorageTitle": "Local Browser State & Cache",
+    "localStorageDesc": "Client-side cached settings including active locale, dialog preferences, and filter states.",
+    "clearCacheBtn": "Reset UI Cache",
+    "clearCacheSuccess": "Client UI preferences and cache reset successfully",
+    "systemStatusLabel": "Client App Status",
+    "systemStatusReady": "Ready & Synchronized"
   },
   "dialogs": {
     "link": "Link",
@@ -401,6 +426,8 @@
     "projectUrl": "Repository / Documentation URL",
     "projectUrlPlaceholder": "https://github.com/...",
     "projectNameRequired": "Project name is required",
+    "projectTags": "Project Tags",
+    "projectTagsPlaceholder": "Select or type tags (e.g. commodore 64, retro, smd)...",
     "photoFilenameOrUrl": "Photo Filename or URL",
     "photoFolderHint": "Folder: {folder}",
     "photoUploadHint": "Upload an image or enter a relative filename in {folder}.",

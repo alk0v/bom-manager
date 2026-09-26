@@ -103,6 +103,7 @@ import { ref, computed, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { releasesEn } from '../data/releaseNotes/en';
 import { releasesUk } from '../data/releaseNotes/uk';
+import { APP_VERSION } from '../config/appConfig';
 
 const { t, locale } = useI18n();
 
@@ -120,7 +121,7 @@ const releases = computed(() => {
   return activeLanguage.value === 'uk' ? releasesUk : releasesEn;
 });
 
-const currentVersion = computed(() => releases.value.find(r => r.isCurrent)?.version || '0.3.0');
+const currentVersion = computed(() => releases.value.find(r => r.isCurrent)?.version || APP_VERSION);
 </script>
 
 <style scoped>

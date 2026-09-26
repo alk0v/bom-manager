@@ -9,6 +9,13 @@ const mediaDir = process.env.MEDIA_DIR
   ? path.resolve(process.env.MEDIA_DIR)
   : path.resolve(__dirname, '../../../media');
 
+let serverVersion = '0.3.1';
+try {
+  serverVersion = require('../../../package.json').version || require('../../package.json').version || '0.3.1';
+} catch (e) {
+  // ignore
+}
+
 // GET /api/settings - retrieve full system configuration and status
 router.get('/', async (req, res) => {
   try {
@@ -48,7 +55,7 @@ router.get('/', async (req, res) => {
     res.json({
       app: {
         name: 'BOM Manager',
-        version: '0.3.0',
+        version: serverVersion,
         environment: process.env.NODE_ENV || 'development',
         nodeVersion: process.version,
         platform: process.platform,

@@ -1,8 +1,34 @@
 export const releasesEn = [
   {
+    version: '0.3.1',
+    date: '2026-09-25',
+    isCurrent: true,
+    summary: 'Version 0.3.1 introduces Hardware Project Tagging, allowing flexible taxonomy, categorization (e.g., Commodore 64, Retro, SMD, KiCAD), multi-select tag filtering, autocomplete, and seamless project management.',
+    features: [
+      {
+        icon: 'mdi-tag-multiple-outline',
+        color: 'primary',
+        title: 'Hardware Project Tags & Categorization',
+        description: 'Assign custom and predefined tags to electronic hardware projects (e.g. "commodore 64", "retro", "smd"). Tags are normalized in dedicated relational tables (t_tags and t_project_tags) with automatic project counts and autocomplete.'
+      },
+      {
+        icon: 'mdi-filter-variant',
+        color: 'teal',
+        title: 'Multi-Select Tag Filter & Instant Click-to-Filter',
+        description: 'Filter projects effortlessly with a multi-select combobox in the projects toolbar. Clicking any tag chip on a project card toggles the tag filter immediately.'
+      },
+      {
+        icon: 'mdi-card-text-outline',
+        color: 'indigo',
+        title: 'Project Tags in BOM Dialog & Project Details',
+        description: 'Project tags are clearly displayed across all interfaces: Project Cards, Project BOM modal header, and the dedicated Project Details overview page.'
+      }
+    ]
+  },
+  {
     version: '0.3.0',
     date: '2026-09-24',
-    isCurrent: true,
+    isCurrent: false,
     summary: 'Version 0.3.0 delivers multi-currency support with automated exchange rate recalculations, introduces the dynamic table action columns alignment and gap elimination rule, redesigns the Purchase Confirmation modal, and expands full Ukrainian localization.',
     features: [
       {

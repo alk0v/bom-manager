@@ -23,7 +23,7 @@
               variant="flat"
               class="ms-2 font-mono font-weight-bold"
             >
-              0.3.0
+              {{ APP_VERSION }}
             </v-chip>
           </div>
         </template>
@@ -113,7 +113,7 @@
               variant="tonal"
               class="font-mono font-weight-bold"
             >
-              0.3.0
+              {{ APP_VERSION }}
             </v-chip>
           </template>
         </v-list-item>
@@ -126,7 +126,7 @@
             class="text-decoration-none d-flex align-center justify-space-between text-caption text-slate-600"
           >
             <span>BOM Manager</span>
-            <span class="font-mono font-weight-bold">v0.3.0</span>
+            <span class="font-mono font-weight-bold">v{{ APP_VERSION }}</span>
           </router-link>
         </div>
       </template>
@@ -211,6 +211,7 @@ import api from './services/api';
 import { useComponentsStore } from './stores/components';
 import { useShoppingListStore } from './stores/shoppingList';
 import { useCurrencyStore } from './stores/currency';
+import { APP_VERSION } from './config/appConfig';
 import PackageDetailsDialog from './components/PackageDetailsDialog.vue';
 import MediaUploadDialog from './components/MediaUploadDialog.vue';
 
@@ -258,7 +259,7 @@ const currentTitle = computed(() => {
     case '/settings':
       return t('header.settingsTitle');
     case '/release-notes':
-      return `${t('header.releaseNotesTitle')} (v0.3.0)`;
+      return `${t('header.releaseNotesTitle')} (v${APP_VERSION})`;
     default:
       return t('common.appName');
   }

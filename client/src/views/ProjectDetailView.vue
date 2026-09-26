@@ -131,6 +131,21 @@
             <p class="text-body-2 text-slate-600 mb-3 pre-line">
               {{ project.description || t('projectDetail.noDescription') }}
             </p>
+
+            <!-- Project Tags -->
+            <div v-if="project.tags && project.tags.length > 0" class="d-flex flex-wrap align-center mb-3" style="gap: 6px;">
+              <v-chip
+                v-for="tag in project.tags"
+                :key="tag.id || tag.name"
+                size="small"
+                variant="outlined"
+                color="slate-600"
+                class="font-weight-medium"
+              >
+                <v-icon start size="14" color="primary">mdi-tag-outline</v-icon>
+                {{ tag.name }}
+              </v-chip>
+            </div>
           </div>
 
           <div class="d-flex align-center justify-space-between pt-3 border-t">
@@ -343,7 +358,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, watch, onMounted } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useI18n } from 'vue-i18n';
 import api, { resolveMediaUrl } from '../services/api';
@@ -476,7 +491,15 @@ function onProjectDeleted(deletedProj) {
 const onProjectSaved = async ({ project: updatedProject }) => {
   notify(`Project "${updatedProject.projectName}" updated!`);
   project.value = { ...project.value, ...updatedProject };
+  await loadData();
 };
+
+// Automatically reload project data when Edit Project dialog is closed
+watch(showProjectDialog, (isOpen, wasOpen) => {
+  if (wasOpen && !isOpen) {
+    loadData();
+  }
+});
 
 const snackbar = ref({
   show: false,

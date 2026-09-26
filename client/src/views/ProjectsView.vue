@@ -24,7 +24,35 @@
           </div>
 
           <!-- Search & Actions -->
-          <div class="d-flex align-center gap-3">
+          <div class="d-flex align-center flex-wrap gap-3">
+            <v-combobox
+              v-model="selectedTags"
+              :items="allAvailableTags"
+              :placeholder="t('projects.filterByTags')"
+              multiple
+              chips
+              closable-chips
+              clearable
+              density="compact"
+              variant="outlined"
+              rounded="lg"
+              prepend-inner-icon="mdi-tag-outline"
+              hide-details
+              style="width: 260px; min-width: 220px;"
+            >
+              <template #chip="{ props, item }">
+                <v-chip
+                  v-bind="props"
+                  size="x-small"
+                  color="primary"
+                  variant="tonal"
+                  class="font-weight-medium"
+                >
+                  {{ item.raw }}
+                </v-chip>
+              </template>
+            </v-combobox>
+
             <v-text-field
               v-model="searchQuery"
               prepend-inner-icon="mdi-magnify"
@@ -34,7 +62,7 @@
               hide-details
               clearable
               rounded="lg"
-              style="width: 380px; min-width: 340px;"
+              style="width: 320px; min-width: 260px;"
             />
 
             <v-btn
@@ -106,10 +134,27 @@
                 {{ p.projectName }}
               </h2>
 
+              <!-- Project Tags (Click to toggle tag filter) -->
+              <div v-if="p.tags && p.tags.length > 0" class="d-flex flex-wrap align-center mb-3" style="gap: 4px;">
+                <v-chip
+                  v-for="tag in p.tags"
+                  :key="tag.id || tag.name"
+                  size="small"
+                  variant="outlined"
+                  color="slate-600"
+                  class="font-weight-medium px-2"
+                  @click.stop="toggleTagFilter(tag.name)"
+                >
+                  <v-icon start size="12" color="primary">mdi-tag-outline</v-icon>
+                  {{ tag.name }}
+                </v-chip>
+              </div>
+
               <!-- Description -->
-              <p class="text-caption text-medium-emphasis mb-3 line-clamp-3" :title="p.description">
+              <p class="text-caption text-medium-emphasis mb-2 line-clamp-3" :title="p.description">
                 {{ p.description || 'No description provided.' }}
               </p>
+
             </div>
 
             <!-- Chips / Stats with clear spacing -->
@@ -255,7 +300,7 @@
       <v-icon size="56" color="disabled" class="mb-3">mdi-folder-search-outline</v-icon>
       <div class="text-h6 text-slate-800">{{ t('projects.noProjects') }}</div>
       <div class="text-caption text-disabled mb-4">{{ t('projects.noProjectsMatching') }}</div>
-      <v-btn variant="outlined" color="primary" size="small" @click="searchQuery = ''">
+      <v-btn variant="outlined" color="primary" size="small" @click="searchQuery = ''; selectedTags = []">
         {{ t('common.clear') }}
       </v-btn>
     </v-card>
@@ -317,7 +362,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, watch, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { useI18n } from 'vue-i18n';
 import api from '../services/api';
@@ -355,7 +400,29 @@ const openPhotoLightbox = (type, src, title) => {
 };
 
 const searchQuery = ref('');
+const selectedTags = ref([]);
 const loadingProjects = ref(false);
+
+const allAvailableTags = computed(() => {
+  const set = new Set();
+  projects.value.forEach(p => {
+    (p.tags || []).forEach(t => {
+      const name = typeof t === 'string' ? t : t?.name;
+      if (name) set.add(name);
+    });
+  });
+  return Array.from(set).sort();
+});
+
+const toggleTagFilter = (tagName) => {
+  if (!tagName) return;
+  const idx = selectedTags.value.indexOf(tagName);
+  if (idx >= 0) {
+    selectedTags.value = selectedTags.value.filter(t => t !== tagName);
+  } else {
+    selectedTags.value = [...selectedTags.value, tagName];
+  }
+};
 
 const showBomDialog = ref(false);
 const showProjectDialog = ref(false);
@@ -380,12 +447,28 @@ const notify = (text, color = 'success') => {
 
 // Computed
 const filteredProjects = computed(() => {
-  if (!searchQuery.value.trim()) return projects.value;
-  const q = searchQuery.value.toLowerCase();
-  return projects.value.filter(p =>
-    p.projectName.toLowerCase().includes(q) ||
-    (p.description && p.description.toLowerCase().includes(q))
-  );
+  let list = projects.value;
+
+  // Filter by tags (must contain all selected tags)
+  if (selectedTags.value && selectedTags.value.length > 0) {
+    const required = selectedTags.value.map(t => (typeof t === 'string' ? t : t?.name || '').toLowerCase());
+    list = list.filter(p => {
+      const projectTags = (p.tags || []).map(t => (typeof t === 'string' ? t : t?.name || '').toLowerCase());
+      return required.every(reqTag => projectTags.includes(reqTag));
+    });
+  }
+
+  // Filter by search query
+  if (searchQuery.value && searchQuery.value.trim()) {
+    const q = searchQuery.value.toLowerCase();
+    list = list.filter(p =>
+      p.projectName.toLowerCase().includes(q) ||
+      (p.description && p.description.toLowerCase().includes(q)) ||
+      (p.tags && p.tags.some(t => (t.name || t).toLowerCase().includes(q)))
+    );
+  }
+
+  return list;
 });
 
 const totalBomEntries = computed(() => {
@@ -464,6 +547,13 @@ const openBomModal = (project) => {
   activeProject.value = project;
   showBomDialog.value = true;
 };
+
+// Automatically refresh projects whenever the project create/edit modal is closed
+watch(showProjectDialog, (isOpen, wasOpen) => {
+  if (wasOpen && !isOpen) {
+    loadProjects();
+  }
+});
 
 onMounted(() => {
   const flash = sessionStorage.getItem('flashMessage');

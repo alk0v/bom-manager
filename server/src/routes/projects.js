@@ -19,6 +19,53 @@ const mediaDir = process.env.MEDIA_DIR
 // Mount project files sub-router: /api/projects/:id/files
 router.use('/:id/files', projectFilesRouter);
 
+// Helper function to sync tags for a project
+async function syncProjectTags(connOrPool, projectId, tags) {
+  if (!Array.isArray(tags)) return;
+  // Remove existing associations
+  await connOrPool.query('DELETE FROM t_project_tags WHERE projectId = ?', [projectId]);
+
+  const uniqueTags = [...new Set(
+    tags
+      .map(t => typeof t === 'string' ? t.trim().toLowerCase() : (t?.name || '').trim().toLowerCase())
+      .filter(Boolean)
+  )];
+
+  for (const tagName of uniqueTags) {
+    // Insert tag if not exists
+    await connOrPool.query('INSERT IGNORE INTO t_tags (name) VALUES (?)', [tagName]);
+    const [rows] = await connOrPool.query('SELECT id FROM t_tags WHERE LOWER(name) = ?', [tagName]);
+    if (rows.length > 0) {
+      await connOrPool.query('INSERT IGNORE INTO t_project_tags (projectId, tagId) VALUES (?, ?)', [projectId, rows[0].id]);
+    }
+  }
+}
+
+// Helper to fetch tags for projects map
+async function getProjectTagsMap(connOrPool, projectIds = []) {
+  if (!projectIds.length) return {};
+  try {
+    const placeholders = projectIds.map(() => '?').join(',');
+    const [rows] = await connOrPool.query(`
+      SELECT pt.projectId, t.id, t.name
+      FROM t_project_tags pt
+      JOIN t_tags t ON pt.tagId = t.id
+      WHERE pt.projectId IN (${placeholders})
+      ORDER BY t.name ASC
+    `, projectIds);
+
+    const map = {};
+    for (const r of rows) {
+      if (!map[r.projectId]) map[r.projectId] = [];
+      map[r.projectId].push({ id: r.id, name: r.name });
+    }
+    return map;
+  } catch (err) {
+    console.warn('Error fetching tags for projects:', err.message);
+    return {};
+  }
+}
+
 // GET /api/projects - list all projects with BOM summary stats & attached file counts
 router.get('/', async (req, res) => {
   try {
@@ -68,7 +115,17 @@ router.get('/', async (req, res) => {
       ORDER BY p.projectName ASC
     `;
     const [rows] = await pool.query(query);
-    res.json(rows);
+
+    // Fetch tags for all returned projects
+    const projectIds = rows.map(r => r.id);
+    const tagsMap = await getProjectTagsMap(pool, projectIds);
+
+    const result = rows.map(p => ({
+      ...p,
+      tags: tagsMap[p.id] || []
+    }));
+
+    res.json(result);
   } catch (error) {
     console.error('Error fetching projects:', error);
     res.status(500).json({ error: 'Failed to fetch projects', details: error.message });
@@ -109,7 +166,10 @@ router.get('/:id', async (req, res) => {
     if (rows.length === 0) {
       return res.status(404).json({ error: 'Project not found' });
     }
-    res.json(rows[0]);
+    const project = rows[0];
+    const tagsMap = await getProjectTagsMap(pool, [project.id]);
+    project.tags = tagsMap[project.id] || [];
+    res.json(project);
   } catch (error) {
     console.error('Error fetching project:', error);
     res.status(500).json({ error: 'Failed to fetch project', details: error.message });
@@ -446,42 +506,63 @@ router.post('/:id/bom/:bomId/swap-primary', async (req, res) => {
 
 // POST /api/projects - create new project
 router.post('/', async (req, res) => {
-  const { projectName, description = '', url = '', photoUrl = '' } = req.body;
+  const { projectName, description = '', url = '', photoUrl = '', tags = [] } = req.body;
   if (!projectName || !projectName.trim()) {
     return res.status(400).json({ error: 'projectName is required' });
   }
 
+  const conn = await pool.getConnection();
   try {
-    const [result] = await pool.query(
+    await conn.beginTransaction();
+
+    const [result] = await conn.query(
       'INSERT INTO i_projects (projectName, description, url, photoUrl) VALUES (?, ?, ?, ?)',
       [projectName.trim(), description.trim(), url.trim(), photoUrl.trim()]
     );
+    const newProjectId = result.insertId;
+
+    if (Array.isArray(tags) && tags.length > 0) {
+      await syncProjectTags(conn, newProjectId, tags);
+    }
+
+    await conn.commit();
+
+    const tagsMap = await getProjectTagsMap(pool, [newProjectId]);
+
     res.status(201).json({
-      id: result.insertId,
+      id: newProjectId,
       projectName: projectName.trim(),
       description: description.trim(),
       url: url.trim(),
       photoUrl: photoUrl.trim(),
+      tags: tagsMap[newProjectId] || [],
       bomItemCount: 0,
       totalQuantityNeeded: 0,
       absentPartsCount: 0,
       totalShortageQty: 0
     });
   } catch (error) {
+    await conn.rollback();
     console.error('Error creating project:', error);
     res.status(500).json({ error: 'Failed to create project', details: error.message });
+  } finally {
+    conn.release();
   }
 });
 
 // PUT /api/projects/:id - update project
 router.put('/:id', async (req, res) => {
-  const { projectName, description, url, photoUrl } = req.body;
+  const { projectName, description, url, photoUrl, tags } = req.body;
   if (!projectName || !projectName.trim()) {
     return res.status(400).json({ error: 'projectName is required' });
   }
 
+  const projectId = Number(req.params.id);
+  const conn = await pool.getConnection();
   try {
-    await pool.query(
+    await conn.beginTransaction();
+
+    await conn.query(
       `UPDATE i_projects 
        SET projectName = ?, 
            description = ?, 
@@ -493,20 +574,33 @@ router.put('/:id', async (req, res) => {
         description !== undefined ? description.trim() : '',
         url !== undefined ? url.trim() : '',
         photoUrl !== undefined ? photoUrl.trim() : '',
-        req.params.id
+        projectId
       ]
     );
+
+    if (tags !== undefined && Array.isArray(tags)) {
+      await syncProjectTags(conn, projectId, tags);
+    }
+
+    await conn.commit();
+
+    const tagsMap = await getProjectTagsMap(pool, [projectId]);
+
     res.json({
       success: true,
-      id: Number(req.params.id),
+      id: projectId,
       projectName: projectName.trim(),
       description: description !== undefined ? description.trim() : '',
       url: url !== undefined ? url.trim() : '',
-      photoUrl: photoUrl !== undefined ? photoUrl.trim() : ''
+      photoUrl: photoUrl !== undefined ? photoUrl.trim() : '',
+      tags: tagsMap[projectId] || []
     });
   } catch (error) {
+    await conn.rollback();
     console.error('Error updating project:', error);
     res.status(500).json({ error: 'Failed to update project', details: error.message });
+  } finally {
+    conn.release();
   }
 });
 
@@ -529,6 +623,9 @@ router.delete('/:id', async (req, res) => {
     const conn = await pool.getConnection();
     try {
       await conn.beginTransaction();
+
+      // Delete project tag associations
+      await conn.query('DELETE FROM t_project_tags WHERE projectId = ?', [projectId]);
 
       // Delete production items for any production runs of this project
       await conn.query(`

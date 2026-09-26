@@ -165,6 +165,20 @@ function initSchema() {
       returnedStock INTEGER NOT NULL DEFAULT 0
     );
 
+    CREATE TABLE IF NOT EXISTS t_tags (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      name TEXT NOT NULL UNIQUE,
+      createdAt TEXT DEFAULT (datetime('now', 'localtime'))
+    );
+
+    CREATE TABLE IF NOT EXISTS t_project_tags (
+      projectId INTEGER NOT NULL,
+      tagId INTEGER NOT NULL,
+      PRIMARY KEY (projectId, tagId),
+      FOREIGN KEY (projectId) REFERENCES i_projects(id) ON DELETE CASCADE,
+      FOREIGN KEY (tagId) REFERENCES t_tags(id) ON DELETE CASCADE
+    );
+
     -- Create indexes
     CREATE INDEX IF NOT EXISTS idx_pf_project ON t_project_files (projectId);
     CREATE INDEX IF NOT EXISTS idx_pr_project ON t_production_runs (projectId);
@@ -177,6 +191,9 @@ function initSchema() {
     CREATE INDEX IF NOT EXISTS idx_comp_cat ON i_components (category_id);
     CREATE INDEX IF NOT EXISTS idx_comp_pkg ON i_components (package_id);
     CREATE INDEX IF NOT EXISTS idx_wh_comp ON t_warehouse (componentId);
+    CREATE INDEX IF NOT EXISTS idx_pt_project ON t_project_tags (projectId);
+    CREATE INDEX IF NOT EXISTS idx_pt_tag ON t_project_tags (tagId);
+    CREATE INDEX IF NOT EXISTS idx_tag_name ON t_tags (name);
   `);
 
   // Ensure migration columns for t_orders
