@@ -1637,17 +1637,12 @@ const proceedSave = async (fromConfirmation = false) => {
       }
 
       if (addAnother.value && !props.hideAddAnother) {
-        const prevCategory = form.category_id;
-        const prevPackage = form.package_id;
-        const prevQty = form.qty;
-        const prevMinQty = form.minQty;
-        const prevStorage = form.storageId;
-        resetFormFields();
-        form.category_id = prevCategory;
-        form.package_id = prevPackage;
-        form.qty = prevQty;
-        form.minQty = prevMinQty;
-        form.storageId = prevStorage;
+        showDuplicateWarning.value = false;
+        duplicateMatches.value = [];
+        errorMessage.value = '';
+        if (formRef.value) {
+          formRef.value.resetValidation();
+        }
       } else {
         close();
       }
