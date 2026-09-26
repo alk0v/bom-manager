@@ -17,6 +17,7 @@ router.get('/', async (req, res) => {
       minPins,
       maxPins,
       stockStatus,
+      customFilters,
       limit = 100,
       offset = 0
     } = req.query;
@@ -115,6 +116,61 @@ router.get('/', async (req, res) => {
       whereClauses.push('COALESCE(c.qty, 0) > 0');
     }
 
+    // Custom Category Fields / Specifications filter
+    // Supports customFilters JSON string or spec_ prefix query params
+    let parsedCustomFilters = {};
+    if (customFilters) {
+      try {
+        parsedCustomFilters = typeof customFilters === 'string' ? JSON.parse(customFilters) : customFilters;
+      } catch (e) {
+        console.warn('Failed to parse customFilters query:', e.message);
+      }
+    }
+
+    // Check spec_ query params like spec_1=value or spec_1_min=10
+    for (const [k, v] of Object.entries(req.query)) {
+      if (k.startsWith('spec_') && v !== undefined && v !== null && v !== '') {
+        const parts = k.replace('spec_', '').split('_');
+        const fieldId = parseInt(parts[0], 10);
+        if (!isNaN(fieldId)) {
+          if (!parsedCustomFilters[fieldId]) parsedCustomFilters[fieldId] = {};
+          if (parts.length > 1 && parts[1] === 'min') {
+            parsedCustomFilters[fieldId].min = v;
+          } else if (parts.length > 1 && parts[1] === 'max') {
+            parsedCustomFilters[fieldId].max = v;
+          } else {
+            parsedCustomFilters[fieldId].value = v;
+          }
+        }
+      }
+    }
+
+    for (const [fIdStr, filterVal] of Object.entries(parsedCustomFilters)) {
+      const fieldId = parseInt(fIdStr, 10);
+      if (isNaN(fieldId) || !filterVal) continue;
+
+      if (typeof filterVal === 'object') {
+        const { min, max, value } = filterVal;
+        if (min !== undefined && min !== null && min !== '' && !isNaN(parseFloat(min))) {
+          whereClauses.push('EXISTS (SELECT 1 FROM t_component_field_values cfv WHERE cfv.componentId = c.ID AND cfv.fieldId = ? AND cfv.numValue >= ?)');
+          params.push(fieldId, parseFloat(min));
+        }
+        if (max !== undefined && max !== null && max !== '' && !isNaN(parseFloat(max))) {
+          whereClauses.push('EXISTS (SELECT 1 FROM t_component_field_values cfv WHERE cfv.componentId = c.ID AND cfv.fieldId = ? AND cfv.numValue <= ?)');
+          params.push(fieldId, parseFloat(max));
+        }
+        if (value !== undefined && value !== null && String(value).trim() !== '') {
+          whereClauses.push('EXISTS (SELECT 1 FROM t_component_field_values cfv WHERE cfv.componentId = c.ID AND cfv.fieldId = ? AND (cfv.fieldValue LIKE ? OR cfv.fieldValue = ?))');
+          const term = `%${String(value).trim()}%`;
+          params.push(fieldId, term, String(value).trim());
+        }
+      } else if (String(filterVal).trim() !== '') {
+        whereClauses.push('EXISTS (SELECT 1 FROM t_component_field_values cfv WHERE cfv.componentId = c.ID AND cfv.fieldId = ? AND (cfv.fieldValue LIKE ? OR cfv.fieldValue = ?))');
+        const term = `%${String(filterVal).trim()}%`;
+        params.push(fieldId, term, String(filterVal).trim());
+      }
+    }
+
     const whereSql = whereClauses.length > 0 ? `WHERE ${whereClauses.join(' AND ')}` : '';
 
     const countQuery = `
@@ -153,6 +209,40 @@ router.get('/', async (req, res) => {
     `;
 
     const [rows] = await pool.query(dataQuery, [...params, parseInt(limit, 10), parseInt(offset, 10)]);
+
+    // Fetch custom field values for the returned component IDs
+    if (rows.length > 0) {
+      const compIds = rows.map(r => r.ID);
+      const placeholders = compIds.map(() => '?').join(', ');
+      const [customFieldRows] = await pool.query(`
+        SELECT 
+          cfv.componentId,
+          cfv.fieldId,
+          cfv.fieldValue,
+          cfv.numValue,
+          f.fieldName,
+          f.fieldLabel,
+          f.fieldType,
+          f.unit,
+          f.options
+        FROM t_component_field_values cfv
+        JOIN t_category_fields f ON cfv.fieldId = f.id
+        WHERE cfv.componentId IN (${placeholders})
+        ORDER BY f.sortOrder ASC, f.id ASC
+      `, compIds);
+
+      const fieldsByCompId = new Map();
+      for (const f of customFieldRows) {
+        if (!fieldsByCompId.has(f.componentId)) {
+          fieldsByCompId.set(f.componentId, []);
+        }
+        fieldsByCompId.get(f.componentId).push(f);
+      }
+
+      for (const row of rows) {
+        row.customFields = fieldsByCompId.get(row.ID) || [];
+      }
+    }
 
     res.json({
       total,
@@ -643,12 +733,78 @@ router.get('/:id', async (req, res) => {
       requiredQuantity: Number(p.requiredQuantity) || 1
     }));
 
+    // Fetch custom field values
+    const [customFieldRows] = await pool.query(`
+      SELECT 
+        cfv.fieldId,
+        cfv.fieldValue,
+        cfv.numValue,
+        f.fieldName,
+        f.fieldLabel,
+        f.fieldType,
+        f.unit,
+        f.options
+      FROM t_component_field_values cfv
+      JOIN t_category_fields f ON cfv.fieldId = f.id
+      WHERE cfv.componentId = ?
+      ORDER BY f.sortOrder ASC, f.id ASC
+    `, [req.params.id]);
+
+    component.customFields = customFieldRows;
+
     res.json(component);
   } catch (error) {
     console.error('Error fetching component:', error);
     res.status(500).json({ error: 'Failed to fetch component', details: error.message });
   }
 });
+
+/**
+ * Helper to save custom field values for a component
+ */
+async function saveComponentCustomFields(executor, componentId, customFields) {
+  if (customFields === undefined) return;
+  
+  await executor.query('DELETE FROM t_component_field_values WHERE componentId = ?', [componentId]);
+
+  if (!customFields) return;
+
+  let entries = [];
+  if (Array.isArray(customFields)) {
+    entries = customFields.map(cf => {
+      const fId = parseInt(cf.fieldId || cf.id, 10);
+      const val = cf.fieldValue !== undefined && cf.fieldValue !== null ? String(cf.fieldValue).trim() : (cf.value !== undefined && cf.value !== null ? String(cf.value).trim() : '');
+      const numVal = cf.numValue !== undefined && cf.numValue !== null && !isNaN(parseFloat(cf.numValue)) 
+        ? parseFloat(cf.numValue) 
+        : (!isNaN(parseFloat(val)) && val !== '' ? parseFloat(val) : null);
+      return {
+        fieldId: fId,
+        fieldValue: val,
+        numValue: numVal
+      };
+    }).filter(x => !isNaN(x.fieldId) && x.fieldValue !== '');
+  } else if (typeof customFields === 'object') {
+    for (const [key, val] of Object.entries(customFields)) {
+      const fieldId = parseInt(key, 10);
+      if (isNaN(fieldId) || val === null || val === undefined) continue;
+      const strVal = String(val).trim();
+      if (strVal === '') continue;
+      const numVal = !isNaN(parseFloat(strVal)) ? parseFloat(strVal) : null;
+      entries.push({
+        fieldId,
+        fieldValue: strVal,
+        numValue: numVal
+      });
+    }
+  }
+
+  for (const entry of entries) {
+    await executor.query(
+      'INSERT INTO t_component_field_values (componentId, fieldId, fieldValue, numValue) VALUES (?, ?, ?, ?)',
+      [componentId, entry.fieldId, entry.fieldValue, entry.numValue]
+    );
+  }
+}
 
 // POST /api/components - create component
 router.post('/', async (req, res) => {
@@ -663,7 +819,8 @@ router.post('/', async (req, res) => {
     photoURL = null,
     qty = 0,
     minQty = 0,
-    storageId = null
+    storageId = null,
+    customFields
   } = req.body;
 
   if (!component || !component.trim()) {
@@ -707,6 +864,11 @@ router.post('/', async (req, res) => {
       }
     }
 
+    // Save custom fields if provided
+    if (customFields) {
+      await saveComponentCustomFields(pool, componentId, customFields);
+    }
+
     res.status(201).json({
       id: componentId,
       component: component.trim(),
@@ -726,6 +888,100 @@ router.post('/', async (req, res) => {
   }
 });
 
+// POST /api/components/bulk-update - Bulk update multiple components
+router.post('/bulk-update', async (req, res) => {
+  const { componentIds, updates = {}, applyFields = {} } = req.body;
+
+  if (!Array.isArray(componentIds) || componentIds.length === 0) {
+    return res.status(400).json({ error: 'componentIds must be a non-empty array' });
+  }
+
+  const validIds = componentIds.map(x => parseInt(x, 10)).filter(x => !isNaN(x) && x > 0);
+  if (validIds.length === 0) {
+    return res.status(400).json({ error: 'No valid component IDs provided' });
+  }
+
+  const conn = await pool.getConnection();
+  try {
+    await conn.beginTransaction();
+
+    let setClauses = [];
+    let params = [];
+
+    if (applyFields.category && updates.category_id !== undefined) {
+      setClauses.push('category_id = ?');
+      params.push(updates.category_id ? parseInt(updates.category_id, 10) : null);
+    }
+
+    if (applyFields.package && updates.package_id !== undefined) {
+      setClauses.push('package_id = ?');
+      params.push(updates.package_id ? parseInt(updates.package_id, 10) : null);
+    }
+
+    if (applyFields.photo && updates.photoURL !== undefined) {
+      setClauses.push('photoURL = ?');
+      params.push(updates.photoURL ? String(updates.photoURL).trim() : null);
+    }
+
+    if (applyFields.datasheet && updates.datasheetURL !== undefined) {
+      setClauses.push('datasheetURL = ?');
+      params.push(updates.datasheetURL ? String(updates.datasheetURL).trim() : null);
+    }
+
+    if (setClauses.length > 0) {
+      const placeholders = validIds.map(() => '?').join(', ');
+      const sql = `UPDATE i_components SET ${setClauses.join(', ')} WHERE ID IN (${placeholders})`;
+      await conn.query(sql, [...params, ...validIds]);
+    }
+
+    // Custom specification fields
+    if (applyFields.customFields && updates.customFields && typeof updates.customFields === 'object') {
+      const activeFieldIds = Array.isArray(applyFields.customFields)
+        ? applyFields.customFields.map(x => parseInt(x, 10)).filter(x => !isNaN(x))
+        : Object.keys(applyFields.customFields)
+            .filter(k => !!applyFields.customFields[k])
+            .map(x => parseInt(x, 10))
+            .filter(x => !isNaN(x));
+
+      for (const fieldId of activeFieldIds) {
+        const val = updates.customFields[fieldId];
+        const placeholders = validIds.map(() => '?').join(', ');
+        
+        // Remove old values for this field across the selected components
+        await conn.query(
+          `DELETE FROM t_component_field_values WHERE fieldId = ? AND componentId IN (${placeholders})`,
+          [fieldId, ...validIds]
+        );
+
+        // If new value provided, insert it for all selected components
+        if (val !== undefined && val !== null && String(val).trim() !== '') {
+          const strVal = String(val).trim();
+          const numVal = !isNaN(parseFloat(strVal)) ? parseFloat(strVal) : null;
+          for (const cId of validIds) {
+            await conn.query(
+              'INSERT INTO t_component_field_values (componentId, fieldId, fieldValue, numValue) VALUES (?, ?, ?, ?)',
+              [cId, fieldId, strVal, numVal]
+            );
+          }
+        }
+      }
+    }
+
+    await conn.commit();
+    res.json({
+      success: true,
+      updatedCount: validIds.length,
+      componentIds: validIds
+    });
+  } catch (error) {
+    await conn.rollback();
+    console.error('Error in bulk-update components:', error);
+    res.status(500).json({ error: 'Failed to bulk update components', details: error.message });
+  } finally {
+    conn.release();
+  }
+});
+
 // PUT /api/components/:id - update component
 router.put('/:id', async (req, res) => {
   const {
@@ -739,7 +995,8 @@ router.put('/:id', async (req, res) => {
     photoURL,
     qty,
     minQty,
-    storageId
+    storageId,
+    customFields
   } = req.body;
 
   try {
@@ -780,6 +1037,11 @@ router.put('/:id', async (req, res) => {
           );
         }
       }
+    }
+
+    // Save custom fields if provided
+    if (customFields !== undefined) {
+      await saveComponentCustomFields(pool, req.params.id, customFields);
     }
 
     res.json({ success: true, id: req.params.id, minQty: parsedMinQty });

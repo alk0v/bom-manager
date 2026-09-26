@@ -190,6 +190,45 @@ async function ensureTables() {
     `);
     console.log('[Database:MySQL] Verified tables "t_tags" and "t_project_tags" exist.');
 
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS t_category_packages (
+        categoryId INT NOT NULL,
+        packageId INT NOT NULL,
+        PRIMARY KEY (categoryId, packageId),
+        INDEX idx_cp_cat (categoryId),
+        INDEX idx_cp_pkg (packageId)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+    `);
+
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS t_category_fields (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        categoryId INT NOT NULL,
+        fieldName VARCHAR(100) NOT NULL,
+        fieldLabel VARCHAR(255) NOT NULL,
+        fieldType VARCHAR(50) NOT NULL DEFAULT 'number',
+        unit VARCHAR(50) DEFAULT NULL,
+        options TEXT DEFAULT NULL,
+        sortOrder INT DEFAULT 0,
+        INDEX idx_cf_cat (categoryId)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+    `);
+
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS t_component_field_values (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        componentId INT NOT NULL,
+        fieldId INT NOT NULL,
+        fieldValue TEXT,
+        numValue DOUBLE DEFAULT NULL,
+        UNIQUE KEY uq_comp_field (componentId, fieldId),
+        INDEX idx_cfv_comp (componentId),
+        INDEX idx_cfv_field (fieldId),
+        INDEX idx_cfv_num (numValue)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+    `);
+    console.log('[Database:MySQL] Verified tables "t_category_packages", "t_category_fields", and "t_component_field_values" exist.');
+
     // Seed initial tags if t_tags is empty
     const [tagCountRow] = await pool.query('SELECT COUNT(*) as cnt FROM t_tags');
     if (tagCountRow[0]?.cnt === 0) {

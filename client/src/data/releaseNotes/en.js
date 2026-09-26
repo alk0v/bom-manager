@@ -1,8 +1,46 @@
 export const releasesEn = [
   {
+    version: '0.3.2',
+    date: '2026-09-26',
+    isCurrent: true,
+    summary: 'Version 0.3.2 brings Category ↔ Package associations to prevent invalid footprint selections, introduces dynamic category-specific Custom Specification Fields (e.g. Capacitance, Voltage, Current Gain hFE), and adds advanced technical specification filtering across the catalog.',
+    features: [
+      {
+        icon: 'mdi-package-variant-closed',
+        color: 'primary',
+        title: 'Category ↔ Package Associations & Footprint Validation',
+        description: 'Configure allowed footprints and packages per category (e.g. Microcontrollers cannot be assigned 0603; Electrolytic Capacitors cannot be DIP-32). Component forms automatically filter packages with a convenient "Show all packages" override button.'
+      },
+      {
+        icon: 'mdi-tune-vertical',
+        color: 'teal',
+        title: 'Category Technical Specifications & Parameter Re-use',
+        description: 'Define custom typed specification fields per category (numeric values with units like µF, V, mA, Ω, hFE, text parameters, or dropdown options). Easily re-use parameters across categories (e.g. hFE, VCEO, IC for PNP & NPN transistors) using the "Copy from Category..." tool and standard electronic presets.'
+      },
+      {
+        icon: 'mdi-filter-cog-outline',
+        color: 'indigo',
+        title: 'Advanced Technical Specification Filtering',
+        description: 'Filter components by their dynamic technical specifications directly in the catalog toolbar (numeric min/max ranges, dropdown options, text matches) when browsing specific categories.'
+      },
+      {
+        icon: 'mdi-chip',
+        color: 'blue-darken-2',
+        title: 'Component Specifications in Details & Catalog Views',
+        description: 'Component specifications with units are clearly displayed in Component Details overview and as compact parameter badges in the main catalog table.'
+      },
+      {
+        icon: 'mdi-table-edit',
+        color: 'amber-darken-3',
+        title: 'Bulk Component Editing & Multi-Selection',
+        description: 'Select filtered components (one by one or all visible) and batch-update Category, Package/Footprint, Component Photo, Datasheet, and Category Specification Parameters with granular per-field update controls.'
+      }
+    ]
+  },
+  {
     version: '0.3.1',
     date: '2026-09-25',
-    isCurrent: true,
+    isCurrent: false,
     summary: 'Version 0.3.1 introduces Hardware Project Tagging, allowing flexible taxonomy, categorization (e.g., Commodore 64, Retro, SMD, KiCAD), multi-select tag filtering, autocomplete, and seamless project management.',
     features: [
       {

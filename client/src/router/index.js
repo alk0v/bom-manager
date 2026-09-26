@@ -33,6 +33,21 @@ const routes = [
     component: ShoppingListView
   },
   {
+    path: '/dictionaries',
+    name: 'Dictionaries',
+    component: () => import('../views/DictionariesView.vue')
+  },
+  {
+    path: '/dictionaries/categories',
+    name: 'CategoriesDictionary',
+    component: () => import('../views/dictionaries/CategoriesDictionaryView.vue')
+  },
+  {
+    path: '/dictionaries/packages',
+    name: 'PackagesDictionary',
+    component: () => import('../views/dictionaries/PackagesDictionaryView.vue')
+  },
+  {
     path: '/reports',
     name: 'Reports',
     component: ReportsView

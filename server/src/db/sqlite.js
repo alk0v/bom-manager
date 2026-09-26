@@ -179,6 +179,37 @@ function initSchema() {
       FOREIGN KEY (tagId) REFERENCES t_tags(id) ON DELETE CASCADE
     );
 
+    CREATE TABLE IF NOT EXISTS t_category_packages (
+      categoryId INTEGER NOT NULL,
+      packageId INTEGER NOT NULL,
+      PRIMARY KEY (categoryId, packageId),
+      FOREIGN KEY (categoryId) REFERENCES i_categories(ID) ON DELETE CASCADE,
+      FOREIGN KEY (packageId) REFERENCES i_packages(ID) ON DELETE CASCADE
+    );
+
+    CREATE TABLE IF NOT EXISTS t_category_fields (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      categoryId INTEGER NOT NULL,
+      fieldName TEXT NOT NULL,
+      fieldLabel TEXT NOT NULL,
+      fieldType TEXT NOT NULL DEFAULT 'number',
+      unit TEXT DEFAULT NULL,
+      options TEXT DEFAULT NULL,
+      sortOrder INTEGER DEFAULT 0,
+      FOREIGN KEY (categoryId) REFERENCES i_categories(ID) ON DELETE CASCADE
+    );
+
+    CREATE TABLE IF NOT EXISTS t_component_field_values (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      componentId INTEGER NOT NULL,
+      fieldId INTEGER NOT NULL,
+      fieldValue TEXT,
+      numValue REAL DEFAULT NULL,
+      FOREIGN KEY (componentId) REFERENCES i_components(ID) ON DELETE CASCADE,
+      FOREIGN KEY (fieldId) REFERENCES t_category_fields(id) ON DELETE CASCADE,
+      UNIQUE(componentId, fieldId)
+    );
+
     -- Create indexes
     CREATE INDEX IF NOT EXISTS idx_pf_project ON t_project_files (projectId);
     CREATE INDEX IF NOT EXISTS idx_pr_project ON t_production_runs (projectId);
@@ -194,6 +225,12 @@ function initSchema() {
     CREATE INDEX IF NOT EXISTS idx_pt_project ON t_project_tags (projectId);
     CREATE INDEX IF NOT EXISTS idx_pt_tag ON t_project_tags (tagId);
     CREATE INDEX IF NOT EXISTS idx_tag_name ON t_tags (name);
+    CREATE INDEX IF NOT EXISTS idx_cp_cat ON t_category_packages (categoryId);
+    CREATE INDEX IF NOT EXISTS idx_cp_pkg ON t_category_packages (packageId);
+    CREATE INDEX IF NOT EXISTS idx_cf_cat ON t_category_fields (categoryId);
+    CREATE INDEX IF NOT EXISTS idx_cfv_comp ON t_component_field_values (componentId);
+    CREATE INDEX IF NOT EXISTS idx_cfv_field ON t_component_field_values (fieldId);
+    CREATE INDEX IF NOT EXISTS idx_cfv_num ON t_component_field_values (numValue);
   `);
 
   // Ensure migration columns for t_orders

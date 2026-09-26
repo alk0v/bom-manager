@@ -50,6 +50,40 @@
 
       <!-- Form Content -->
       <v-card-text class="pa-6 overflow-y-auto">
+        <!-- Bulk Edit Info Banner -->
+        <div v-if="isBulkEdit" class="bg-blue-50 border border-blue-200 rounded-lg pa-4 mb-4">
+          <div class="d-flex align-center gap-2 mb-1">
+            <v-icon color="primary" size="20">mdi-table-edit</v-icon>
+            <span class="font-weight-bold text-subtitle-2 text-slate-900">
+              {{ t('components.bulkEditTitle') }} ({{ bulkComponents.length }})
+            </span>
+          </div>
+          <div class="text-caption text-slate-600 mb-3">
+            {{ t('components.bulkEditHint') }}
+          </div>
+          <div class="d-flex flex-wrap gap-1 align-center">
+            <v-chip
+              v-for="c in bulkComponents.slice(0, 10)"
+              :key="c.ID || c.id"
+              size="x-small"
+              variant="tonal"
+              color="primary"
+              class="font-mono font-weight-bold"
+            >
+              {{ c.component }}
+            </v-chip>
+            <v-chip
+              v-if="bulkComponents.length > 10"
+              size="x-small"
+              variant="outlined"
+              color="slate-600"
+              class="font-mono font-weight-bold"
+            >
+              +{{ bulkComponents.length - 10 }} more
+            </v-chip>
+          </div>
+        </div>
+
         <!-- Cloned Component Alert -->
         <v-alert
           v-if="isCloning"
@@ -108,7 +142,8 @@
             </div>
           </div>
 
-          <v-row dense class="mb-1">
+          <!-- Component Part Name & Marking (hidden in bulk edit mode) -->
+          <v-row dense class="mb-1" v-if="!isBulkEdit">
             <!-- Component / Part Name -->
             <v-col cols="12" md="7">
               <v-text-field
@@ -144,21 +179,27 @@
           <v-row dense class="mb-1">
             <!-- Category -->
             <v-col cols="12" md="6">
+              <div v-if="isBulkEdit" class="d-flex align-center mb-1">
+                <v-checkbox-btn v-model="applyCategory" color="primary" density="compact" class="me-1" />
+                <span class="text-caption font-weight-bold text-slate-800">{{ t('components.updateCategory') }}</span>
+              </div>
               <v-autocomplete
                 v-model="form.category_id"
                 :items="availableCategories"
                 item-title="category"
                 item-value="ID"
-                :label="t('dialogs.category') + ' *'"
+                :label="t('dialogs.category') + (isBulkEdit ? '' : ' *')"
                 :placeholder="t('dialogs.categoryPlaceholder')"
                 density="compact"
                 variant="outlined"
                 rounded="lg"
                 prepend-inner-icon="mdi-shape-outline"
                 clearable
-                :rules="[rules.requiredSelection]"
+                :disabled="isBulkEdit && !applyCategory"
+                :rules="isBulkEdit ? (applyCategory ? [rules.requiredSelection] : []) : [rules.requiredSelection]"
+                @update:model-value="onCategoryChangeInForm"
               >
-                <template #append>
+                <template #append v-if="!isBulkEdit">
                   <v-btn
                     icon="mdi-plus"
                     size="x-small"
@@ -173,21 +214,26 @@
 
             <!-- Package / Footprint -->
             <v-col cols="12" md="6">
+              <div v-if="isBulkEdit" class="d-flex align-center mb-1">
+                <v-checkbox-btn v-model="applyPackage" color="primary" density="compact" class="me-1" />
+                <span class="text-caption font-weight-bold text-slate-800">{{ t('components.updatePackage') }}</span>
+              </div>
               <v-autocomplete
                 v-model="form.package_id"
                 :items="filteredPackagesList"
                 item-title="package"
                 item-value="ID"
-                :label="packageMountType === 'all' ? `${t('dialogs.package')} *` : `${t('dialogs.package')} (${packageMountType.toUpperCase()}) *`"
+                :label="(packageMountType === 'all' ? `${t('dialogs.package')}` : `${t('dialogs.package')} (${packageMountType.toUpperCase()})`) + (isBulkEdit ? '' : ' *')"
                 :placeholder="t('dialogs.packagePlaceholder')"
                 density="compact"
                 variant="outlined"
                 rounded="lg"
                 prepend-inner-icon="mdi-package-variant-closed"
                 clearable
-                :rules="[rules.requiredSelection]"
+                :disabled="isBulkEdit && !applyPackage"
+                :rules="isBulkEdit ? (applyPackage ? [rules.requiredSelection] : []) : [rules.requiredSelection]"
               >
-                <template #append>
+                <template #append v-if="!isBulkEdit">
                   <v-btn
                     icon="mdi-plus"
                     size="x-small"
@@ -198,7 +244,7 @@
                   />
                 </template>
                 <template #prepend-item>
-                  <div class="pa-2 px-3 bg-slate-50 border-b d-flex align-center justify-space-between">
+                  <div class="pa-2 px-3 bg-slate-50 border-b d-flex align-center justify-space-between flex-wrap gap-1">
                     <span class="text-caption font-weight-bold text-slate-600">{{ t('dialogs.filterByMountType') }}:</span>
                     <v-btn-toggle
                       v-model="packageMountType"
@@ -242,6 +288,23 @@
                   </v-list-item>
                 </template>
               </v-autocomplete>
+
+              <!-- Category Package Filter Indicator & Toggle -->
+              <div v-if="categoryAllowedPackages.length > 0" class="d-flex align-center justify-space-between mt-1 px-1">
+                <span class="text-caption font-weight-medium text-slate-600 d-flex align-center gap-1">
+                  <v-icon size="14" color="info">mdi-filter-check-outline</v-icon>
+                  {{ showAllPackagesForCategory ? t('dialogs.showAllPackages') : t('dialogs.categoryFilterActive', { count: categoryAllowedPackages.length }) }}
+                </span>
+                <v-btn
+                  size="x-small"
+                  variant="text"
+                  color="primary"
+                  class="text-none font-weight-bold px-1"
+                  @click="showAllPackagesForCategory = !showAllPackagesForCategory"
+                >
+                  {{ showAllPackagesForCategory ? t('dialogs.filteredPackagesOnly') : t('dialogs.showAllPackages') }}
+                </v-btn>
+              </div>
             </v-col>
           </v-row>
 
@@ -272,8 +335,8 @@
             </div>
           </div>
 
-          <!-- Short Description -->
-          <v-row dense class="mb-2">
+          <!-- Short Description (hidden in bulk mode) -->
+          <v-row dense class="mb-2" v-if="!isBulkEdit">
             <v-col cols="12">
               <v-text-field
                 v-model="form.shortDescription"
@@ -289,48 +352,128 @@
             </v-col>
           </v-row>
 
-          <!-- SECTION 2: INVENTORY & STOCK -->
-          <div class="d-flex align-center gap-2 mb-3 mt-4 pb-1 border-b border-slate-200">
-            <v-icon icon="mdi-warehouse" size="18" color="primary" />
-            <span class="text-caption font-weight-bold text-slate-700 text-uppercase tracking-wider">
-              {{ t('dialogs.sectionInventory') }}
-            </span>
+          <!-- SECTION: CATEGORY SPECIFICATIONS / ATTRIBUTES (Dynamic) -->
+          <div v-if="categoryCustomFields.length > 0" class="mb-3 mt-4">
+            <div class="d-flex align-center justify-space-between mb-3 pb-1 border-b border-slate-200">
+              <div class="d-flex align-center gap-2">
+                <v-icon icon="mdi-tune-vertical" size="18" color="primary" />
+                <span class="text-caption font-weight-bold text-slate-700 text-uppercase tracking-wider">
+                  {{ t('dialogs.sectionSpecifications') }}
+                </span>
+              </div>
+              <div class="d-flex align-center gap-2">
+                <div v-if="isBulkEdit" class="d-flex align-center gap-1 me-2">
+                  <v-btn size="x-small" variant="text" color="primary" class="text-none font-weight-bold" @click="checkAllSpecs(true)">
+                    {{ t('components.checkAllSpecs') }}
+                  </v-btn>
+                  <span class="text-disabled">|</span>
+                  <v-btn size="x-small" variant="text" color="slate-600" class="text-none font-weight-bold" @click="checkAllSpecs(false)">
+                    {{ t('components.uncheckAllSpecs') }}
+                  </v-btn>
+                </div>
+                <v-chip size="x-small" color="primary" variant="tonal" class="font-weight-bold" v-if="selectedCategoryObj">
+                  {{ selectedCategoryObj.category }}
+                </v-chip>
+              </div>
+            </div>
+
+            <v-row dense>
+              <v-col
+                v-for="field in categoryCustomFields"
+                :key="field.id"
+                cols="12"
+                :sm="categoryCustomFields.length === 1 ? 12 : 6"
+                :md="categoryCustomFields.length > 2 ? 4 : 6"
+              >
+                <div v-if="isBulkEdit" class="d-flex align-center mb-1">
+                  <v-checkbox-btn v-model="applyCustomFields[field.id]" color="primary" density="compact" class="me-1" />
+                  <span class="text-caption font-weight-bold text-slate-800">{{ field.fieldLabel }}</span>
+                </div>
+
+                <v-select
+                  v-if="field.fieldType === 'select'"
+                  v-model="form.customFields[field.id]"
+                  :items="parseFieldOptions(field.options)"
+                  :label="field.fieldLabel"
+                  density="compact"
+                  variant="outlined"
+                  rounded="lg"
+                  clearable
+                  :disabled="isBulkEdit && !applyCustomFields[field.id]"
+                  :suffix="field.unit || undefined"
+                />
+                <v-text-field
+                  v-else-if="field.fieldType === 'number'"
+                  v-model="form.customFields[field.id]"
+                  :label="field.fieldLabel"
+                  type="number"
+                  step="any"
+                  density="compact"
+                  variant="outlined"
+                  rounded="lg"
+                  class="font-mono"
+                  clearable
+                  :disabled="isBulkEdit && !applyCustomFields[field.id]"
+                  :suffix="field.unit || undefined"
+                />
+                <v-text-field
+                  v-else
+                  v-model="form.customFields[field.id]"
+                  :label="field.fieldLabel"
+                  density="compact"
+                  variant="outlined"
+                  rounded="lg"
+                  clearable
+                  :disabled="isBulkEdit && !applyCustomFields[field.id]"
+                  :suffix="field.unit || undefined"
+                />
+              </v-col>
+            </v-row>
           </div>
 
-          <v-row dense class="mb-2">
-            <!-- Initial Stock Quantity -->
-            <v-col cols="12" sm="6">
-              <v-text-field
-                v-model.number="form.qty"
-                :label="t('dialogs.initialStock')"
-                type="number"
-                min="0"
-                density="compact"
-                variant="outlined"
-                rounded="lg"
-                class="font-mono"
-                prepend-inner-icon="mdi-counter"
-                :rules="[rules.nonNegativeNumber]"
-              />
-            </v-col>
+          <!-- SECTION 2: INVENTORY & STOCK (Temporarily commented out)
+          <template v-if="!isBulkEdit">
+            <div class="d-flex align-center gap-2 mb-3 mt-4 pb-1 border-b border-slate-200">
+              <v-icon icon="mdi-warehouse" size="18" color="primary" />
+              <span class="text-caption font-weight-bold text-slate-700 text-uppercase tracking-wider">
+                {{ t('dialogs.sectionInventory') }}
+              </span>
+            </div>
 
-            <!-- Minimal Acceptable Quantity -->
-            <v-col cols="12" sm="6">
-              <v-text-field
-                v-model.number="form.minQty"
-                :label="t('dialogs.minQty')"
-                type="number"
-                min="0"
-                density="compact"
-                variant="outlined"
-                rounded="lg"
-                class="font-mono"
-                prepend-inner-icon="mdi-alert-circle-check-outline"
-                :hint="t('dialogs.minQtyHint')"
-                persistent-hint
-              />
-            </v-col>
-          </v-row>
+            <v-row dense class="mb-2">
+              <v-col cols="12" sm="6">
+                <v-text-field
+                  v-model.number="form.qty"
+                  :label="t('dialogs.initialStock')"
+                  type="number"
+                  min="0"
+                  density="compact"
+                  variant="outlined"
+                  rounded="lg"
+                  class="font-mono"
+                  prepend-inner-icon="mdi-counter"
+                  :rules="[rules.nonNegativeNumber]"
+                />
+              </v-col>
+
+              <v-col cols="12" sm="6">
+                <v-text-field
+                  v-model.number="form.minQty"
+                  :label="t('dialogs.minQty')"
+                  type="number"
+                  min="0"
+                  density="compact"
+                  variant="outlined"
+                  rounded="lg"
+                  class="font-mono"
+                  prepend-inner-icon="mdi-alert-circle-check-outline"
+                  :hint="t('dialogs.minQtyHint')"
+                  persistent-hint
+                />
+              </v-col>
+            </v-row>
+          </template>
+          -->
 
           <!-- SECTION 3: TECHNICAL SPECS & MEDIA -->
           <div class="d-flex align-center gap-2 mb-3 mt-4 pb-1 border-b border-slate-200">
@@ -340,7 +483,7 @@
             </span>
           </div>
 
-          <v-row dense class="mb-2">
+          <v-row dense class="mb-2" v-if="!isBulkEdit">
             <!-- Detailed Description -->
             <v-col cols="12">
               <v-textarea
@@ -361,6 +504,10 @@
           <v-row dense class="mb-2">
             <!-- Datasheet URL or filename with Upload -->
             <v-col cols="12" md="6">
+              <div v-if="isBulkEdit" class="d-flex align-center mb-1">
+                <v-checkbox-btn v-model="applyDatasheet" color="primary" density="compact" class="me-1" />
+                <span class="text-caption font-weight-bold text-slate-800">{{ t('components.updateDatasheet') }}</span>
+              </div>
               <v-text-field
                 v-model="form.datasheetURL"
                 :label="t('dialogs.datasheet')"
@@ -370,6 +517,7 @@
                 rounded="lg"
                 prepend-inner-icon="mdi-file-pdf-box"
                 clearable
+                :disabled="isBulkEdit && !applyDatasheet"
               >
                 <template #append-inner>
                   <v-btn
@@ -379,6 +527,7 @@
                     class="text-caption font-weight-bold my-n1"
                     prepend-icon="mdi-upload"
                     :loading="uploadingDatasheet"
+                    :disabled="isBulkEdit && !applyDatasheet"
                     @click.stop="datasheetInputRef?.click()"
                     :title="t('common.upload')"
                   >
@@ -397,6 +546,10 @@
 
             <!-- Photo URL or filename with Upload -->
             <v-col cols="12" md="6">
+              <div v-if="isBulkEdit" class="d-flex align-center mb-1">
+                <v-checkbox-btn v-model="applyPhoto" color="primary" density="compact" class="me-1" />
+                <span class="text-caption font-weight-bold text-slate-800">{{ t('components.updatePhoto') }}</span>
+              </div>
               <v-text-field
                 v-model="form.photoURL"
                 :label="t('dialogs.componentPhoto')"
@@ -406,6 +559,7 @@
                 rounded="lg"
                 prepend-inner-icon="mdi-camera-outline"
                 clearable
+                :disabled="isBulkEdit && !applyPhoto"
               >
                 <template #append-inner>
                   <v-btn
@@ -415,6 +569,7 @@
                     class="text-caption font-weight-bold my-n1"
                     prepend-icon="mdi-upload"
                     :loading="uploadingPhoto"
+                    :disabled="isBulkEdit && !applyPhoto"
                     @click.stop="photoInputRef?.click()"
                     :title="t('common.upload')"
                   >
@@ -826,6 +981,14 @@ const props = defineProps({
   isClone: {
     type: Boolean,
     default: false
+  },
+  isBulkEdit: {
+    type: Boolean,
+    default: false
+  },
+  bulkComponents: {
+    type: Array,
+    default: () => []
   }
 });
 
@@ -833,6 +996,24 @@ const emit = defineEmits(['update:modelValue', 'created', 'updated', 'saved', 'c
 
 const isCloning = ref(false);
 const clonedSourceName = ref('');
+
+const applyCategory = ref(false);
+const applyPackage = ref(false);
+const applyPhoto = ref(false);
+const applyDatasheet = ref(false);
+const applyCustomFields = reactive({});
+
+const checkAllSpecs = (val) => {
+  categoryCustomFields.value.forEach(f => {
+    applyCustomFields[f.id] = val;
+  });
+};
+
+const onCategoryChangeInForm = (val) => {
+  if (props.isBulkEdit && val) {
+    applyCategory.value = true;
+  }
+};
 
 const cloneComponent = () => {
   const currentName = form.component || props.component?.component || '';
@@ -845,18 +1026,23 @@ const cloneComponent = () => {
 };
 
 const isEditMode = computed(() => {
+  if (props.isBulkEdit) return false;
   if (isCloning.value) return false;
   return props.isEdit || !!(props.component?.id || props.component?.ID);
 });
 
 const dialogTitle = computed(() => {
   if (props.title) return props.title;
+  if (props.isBulkEdit) return t('components.bulkEditTitle');
   if (isCloning.value) return t('dialogs.newComponent');
   return isEditMode.value ? t('dialogs.editComponent') : t('dialogs.newComponent');
 });
 
 const dialogSubtitle = computed(() => {
   if (props.subtitle) return props.subtitle;
+  if (props.isBulkEdit) {
+    return t('components.bulkEditSubtitle', { count: props.bulkComponents.length });
+  }
   if (isCloning.value) {
     return `${t('dialogs.cloneComponentSubtitle')} "${clonedSourceName.value || ''}"`;
   }
@@ -866,11 +1052,13 @@ const dialogSubtitle = computed(() => {
 });
 
 const dialogIcon = computed(() => {
+  if (props.isBulkEdit) return 'mdi-table-edit';
   return isEditMode.value ? 'mdi-pencil-outline' : 'mdi-chip';
 });
 
 const submitButtonText = computed(() => {
   if (props.draftMode) return t('common.apply');
+  if (props.isBulkEdit) return t('components.bulkSaveBtn', { count: props.bulkComponents.length });
   return isEditMode.value ? t('dialogs.saveChanges') : t('dialogs.createComponent');
 });
 
@@ -928,6 +1116,14 @@ const handlePhotoUpload = async (event) => {
   }
 };
 
+const showAllPackagesForCategory = ref(false);
+const categoryCustomFields = ref([]);
+
+const parseFieldOptions = (optionsStr) => {
+  if (!optionsStr) return [];
+  return String(optionsStr).split(',').map(s => s.trim()).filter(Boolean);
+};
+
 const initialForm = () => ({
   component: '',
   category_id: null,
@@ -939,7 +1135,8 @@ const initialForm = () => ({
   minQty: 0,
   storageId: null,
   datasheetURL: '',
-  photoURL: ''
+  photoURL: '',
+  customFields: {}
 });
 
 const form = reactive(initialForm());
@@ -976,16 +1173,58 @@ const availablePackages = computed(() => {
   return localPackages.value.length > 0 ? localPackages.value : props.packages;
 });
 
-// Packages filtered by SMD / THT toggle
+const selectedCategoryObj = computed(() => {
+  if (!form.category_id) return null;
+  return availableCategories.value.find(c => Number(c.ID || c.id) === Number(form.category_id)) || null;
+});
+
+const categoryAllowedPackages = computed(() => {
+  return selectedCategoryObj.value?.packageIds || [];
+});
+
+// Packages filtered by SMD / THT toggle and Category associations
 const filteredPackagesList = computed(() => {
-  const pkgs = availablePackages.value;
+  let pkgs = availablePackages.value;
   if (packageMountType.value === 'smd') {
-    return pkgs.filter(p => p.isSmd === 1);
+    pkgs = pkgs.filter(p => p.isSmd === 1);
+  } else if (packageMountType.value === 'tht') {
+    pkgs = pkgs.filter(p => p.isSmd === 0);
   }
-  if (packageMountType.value === 'tht') {
-    return pkgs.filter(p => p.isSmd === 0);
+  if (!showAllPackagesForCategory.value && categoryAllowedPackages.value.length > 0) {
+    pkgs = pkgs.filter(p => categoryAllowedPackages.value.includes(p.ID));
   }
   return pkgs;
+});
+
+// Load category custom fields whenever category changes
+const loadCategoryCustomFields = async (catId) => {
+  if (!catId) {
+    categoryCustomFields.value = [];
+    return;
+  }
+  const cat = availableCategories.value.find(c => Number(c.ID || c.id) === Number(catId));
+  if (cat && Array.isArray(cat.customFields) && cat.customFields.length > 0) {
+    categoryCustomFields.value = cat.customFields;
+  } else {
+    try {
+      const fields = await api.getCategoryFields(catId);
+      categoryCustomFields.value = fields || [];
+    } catch (err) {
+      console.warn('Failed to load category fields:', err.message);
+      categoryCustomFields.value = [];
+    }
+  }
+};
+
+watch(() => form.category_id, async (newCatId) => {
+  await loadCategoryCustomFields(newCatId);
+
+  // If newly selected category restricts packages and current package is invalid, select the first allowed package
+  if (newCatId && !showAllPackagesForCategory.value && categoryAllowedPackages.value.length > 0) {
+    if (form.package_id && !categoryAllowedPackages.value.includes(form.package_id)) {
+      form.package_id = categoryAllowedPackages.value[0];
+    }
+  }
 });
 
 // Selected package object details
@@ -1018,7 +1257,7 @@ const submitQuickCategory = async () => {
     const res = await api.createCategory({ category: name });
     const refreshed = await api.getCategories();
     localCategories.value = refreshed;
-    form.category_id = res.ID;
+    form.category_id = res.ID || res.id || res.insertId;
     showQuickCategory.value = false;
     emit('catalog-updated');
   } catch (err) {
@@ -1085,7 +1324,7 @@ const submitQuickPackage = async () => {
     const res = await api.createPackage(payload);
     const refreshed = await api.getPackages();
     localPackages.value = refreshed;
-    form.package_id = res.ID;
+    form.package_id = res.ID || res.id || res.insertId;
     showQuickPackage.value = false;
     emit('catalog-updated');
   } catch (err) {
@@ -1110,7 +1349,46 @@ const loadStorages = async () => {
   }
 };
 
-const applyInitialDataOrDefaults = () => {
+const applyInitialDataOrDefaults = async () => {
+  if (props.isBulkEdit) {
+    applyCategory.value = false;
+    applyPackage.value = false;
+    applyPhoto.value = false;
+    applyDatasheet.value = false;
+    Object.keys(applyCustomFields).forEach(k => delete applyCustomFields[k]);
+    form.component = '';
+    form.marking = '';
+    form.description = '';
+    form.shortDescription = '';
+    form.qty = 0;
+    form.minQty = 0;
+    form.storageId = null;
+    form.datasheetURL = '';
+    form.photoURL = '';
+    form.customFields = {};
+
+    if (props.bulkComponents && props.bulkComponents.length > 0) {
+      const firstCat = props.bulkComponents[0].category_id;
+      const allSameCat = firstCat && props.bulkComponents.every(c => Number(c.category_id) === Number(firstCat));
+      if (allSameCat) {
+        form.category_id = Number(firstCat);
+        await loadCategoryCustomFields(form.category_id);
+      } else {
+        form.category_id = null;
+        categoryCustomFields.value = [];
+      }
+
+      const firstPkg = props.bulkComponents[0].package_id;
+      const allSamePkg = firstPkg && props.bulkComponents.every(c => Number(c.package_id) === Number(firstPkg));
+      if (allSamePkg) {
+        form.package_id = Number(firstPkg);
+      } else {
+        form.package_id = null;
+      }
+    }
+    return;
+  }
+
   const source = (props.component && props.initialData)
     ? { ...props.component, ...props.initialData }
     : (props.component || props.initialData);
@@ -1128,6 +1406,23 @@ const applyInitialDataOrDefaults = () => {
     form.storageId = source.storageId || source.storage_id || warehouseStorageId || null;
     form.datasheetURL = source.datasheetURL || '';
     form.photoURL = source.photoURL || '';
+
+    // Populate custom fields
+    form.customFields = {};
+    if (Array.isArray(source.customFields)) {
+      for (const cf of source.customFields) {
+        const fId = cf.fieldId || cf.id;
+        if (fId) {
+          form.customFields[fId] = cf.fieldValue !== undefined ? cf.fieldValue : (cf.value !== undefined ? cf.value : '');
+        }
+      }
+    } else if (typeof source.customFields === 'object' && source.customFields !== null) {
+      form.customFields = { ...source.customFields };
+    }
+
+    if (form.category_id) {
+      await loadCategoryCustomFields(form.category_id);
+    }
   } else {
     resetFormFields();
   }
@@ -1139,6 +1434,7 @@ const applyInitialDataOrDefaults = () => {
   }
 
   packageMountType.value = 'all';
+  showAllPackagesForCategory.value = false;
 };
 
 watch(() => props.modelValue, (isOpen) => {
@@ -1186,6 +1482,64 @@ const submitForm = async () => {
   if (props.draftMode) {
     emit('created', { ...form });
     close();
+    return;
+  }
+
+  // Bulk Edit submission handling
+  if (props.isBulkEdit) {
+    const hasAnyField = applyCategory.value ||
+      applyPackage.value ||
+      applyPhoto.value ||
+      applyDatasheet.value ||
+      Object.values(applyCustomFields).some(v => !!v);
+
+    if (!hasAnyField) {
+      errorMessage.value = t('components.bulkSelectAtLeastOneField');
+      return;
+    }
+
+    if (applyCategory.value && !form.category_id) {
+      errorMessage.value = t('common.category') + ' is required';
+      return;
+    }
+
+    if (applyPackage.value && !form.package_id) {
+      errorMessage.value = t('common.package') + ' is required';
+      return;
+    }
+
+    try {
+      submitting.value = true;
+      errorMessage.value = '';
+
+      const payload = {
+        componentIds: props.bulkComponents.map(c => c.ID || c.id),
+        updates: {
+          category_id: form.category_id,
+          package_id: form.package_id,
+          photoURL: form.photoURL,
+          datasheetURL: form.datasheetURL,
+          customFields: form.customFields
+        },
+        applyFields: {
+          category: applyCategory.value,
+          package: applyPackage.value,
+          photo: applyPhoto.value,
+          datasheet: applyDatasheet.value,
+          customFields: Object.keys(applyCustomFields).filter(id => !!applyCustomFields[id])
+        }
+      };
+
+      await api.bulkUpdateComponents(payload);
+      emit('saved', { isBulk: true, count: props.bulkComponents.length });
+      emit('catalog-updated');
+      close();
+    } catch (err) {
+      console.error('Failed to bulk update components:', err);
+      errorMessage.value = err.response?.data?.error || err.message;
+    } finally {
+      submitting.value = false;
+    }
     return;
   }
 
@@ -1237,7 +1591,8 @@ const proceedSave = async (fromConfirmation = false) => {
       minQty: form.minQty !== undefined && form.minQty !== null ? parseInt(form.minQty, 10) : 0,
       storageId: form.qty > 0 && form.storageId ? form.storageId : null,
       datasheetURL: form.datasheetURL ? form.datasheetURL.trim() : null,
-      photoURL: form.photoURL ? form.photoURL.trim() : null
+      photoURL: form.photoURL ? form.photoURL.trim() : null,
+      customFields: form.customFields
     };
 
     const source = props.component || props.initialData;

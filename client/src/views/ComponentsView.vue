@@ -209,23 +209,24 @@
               variant="outlined"
               color="primary"
               size="small"
-              prepend-icon="mdi-shape-outline"
-              class="font-weight-bold"
-              @click="showManageCatalogDialog = true"
-            >
-              {{ t('components.manageCatalog') }}
-            </v-btn>
-
-            <v-btn
-              variant="outlined"
-              color="primary"
-              size="small"
               prepend-icon="mdi-file-delimited-outline"
               class="font-weight-bold"
               @click="showImportDialog = true"
               :title="t('components.importCsvTooltip')"
             >
               {{ t('components.importCsv') }}
+            </v-btn>
+
+            <v-btn
+              v-if="selectedCount > 0"
+              color="primary"
+              variant="tonal"
+              size="small"
+              prepend-icon="mdi-table-edit"
+              class="font-weight-bold"
+              @click="openBulkEditDialog"
+            >
+              {{ t('components.bulkEdit') }} ({{ selectedCount }})
             </v-btn>
 
             <v-btn
@@ -240,14 +241,174 @@
             </v-btn>
           </v-col>
         </v-row>
+
+        <!-- Row 3: Category Specifications / Attributes Dynamic Filter (When category with custom fields is selected) -->
+        <v-expand-transition>
+          <div v-if="activeCategoryFields.length > 0" class="mt-3">
+            <div class="bg-slate-50 border border-slate-200 rounded-lg pa-3">
+              <!-- Specs Filter Header Bar -->
+              <div class="d-flex align-center justify-space-between flex-wrap gap-2 mb-2.5 pb-2 border-b border-slate-200">
+                <div class="d-flex align-center gap-2">
+                  <div class="rounded-md bg-blue-50 text-primary pa-1 d-flex align-center justify-center border border-blue-100">
+                    <v-icon size="16" color="primary">mdi-tune-vertical</v-icon>
+                  </div>
+                  <span class="text-caption font-weight-bold text-slate-800 text-uppercase tracking-wider">
+                    {{ t('components.advancedSpecsFilter') }}
+                  </span>
+                  <v-chip size="x-small" color="primary" variant="tonal" class="font-weight-bold">
+                    {{ activeCategoryName }}
+                  </v-chip>
+                  <v-chip v-if="activeSpecFilterCount > 0" size="x-small" color="primary" variant="flat" class="font-weight-bold">
+                    {{ activeSpecFilterCount }} {{ activeSpecFilterCount === 1 ? 'active' : 'active' }}
+                  </v-chip>
+                </div>
+
+                <v-btn
+                  v-if="hasActiveSpecFilters"
+                  size="x-small"
+                  variant="text"
+                  color="error"
+                  prepend-icon="mdi-filter-off-outline"
+                  class="text-none font-weight-bold"
+                  @click="resetSpecFilters"
+                >
+                  {{ t('common.reset') }}
+                </v-btn>
+              </div>
+
+              <!-- Specs Filter Controls Grid -->
+              <v-row dense align="center">
+                <v-col
+                  v-for="field in activeCategoryFields"
+                  :key="field.id"
+                  cols="12"
+                  sm="6"
+                  md="4"
+                  lg="3"
+                >
+                  <!-- Number Range / Min-Max Filter -->
+                  <div v-if="field.fieldType === 'number'" class="d-flex align-center gap-1">
+                    <v-text-field
+                      v-model="customFilters[field.id].min"
+                      :label="`${field.fieldLabel} (${t('components.specMin')})`"
+                      :suffix="field.unit || undefined"
+                      type="number"
+                      step="any"
+                      density="compact"
+                      variant="outlined"
+                      bg-color="white"
+                      hide-details
+                      clearable
+                      rounded="lg"
+                      class="font-mono"
+                      @update:model-value="debounceFetch"
+                    />
+                    <span class="text-caption text-disabled font-weight-bold px-0-5">—</span>
+                    <v-text-field
+                      v-model="customFilters[field.id].max"
+                      :label="`${field.fieldLabel} (${t('components.specMax')})`"
+                      :suffix="field.unit || undefined"
+                      type="number"
+                      step="any"
+                      density="compact"
+                      variant="outlined"
+                      bg-color="white"
+                      hide-details
+                      clearable
+                      rounded="lg"
+                      class="font-mono"
+                      @update:model-value="debounceFetch"
+                    />
+                  </div>
+
+                  <!-- Select Filter -->
+                  <v-select
+                    v-else-if="field.fieldType === 'select'"
+                    v-model="customFilters[field.id].value"
+                    :items="parseFieldOptions(field.options)"
+                    :label="field.fieldLabel"
+                    :suffix="field.unit || undefined"
+                    density="compact"
+                    variant="outlined"
+                    bg-color="white"
+                    hide-details
+                    clearable
+                    rounded="lg"
+                    @update:model-value="onFilterChange"
+                  />
+
+                  <!-- Text Filter -->
+                  <v-text-field
+                    v-else
+                    v-model="customFilters[field.id].value"
+                    :label="field.fieldLabel"
+                    :suffix="field.unit || undefined"
+                    density="compact"
+                    variant="outlined"
+                    bg-color="white"
+                    hide-details
+                    clearable
+                    rounded="lg"
+                    @update:model-value="debounceFetch"
+                  />
+                </v-col>
+              </v-row>
+            </div>
+          </div>
+        </v-expand-transition>
       </div>
 
       <v-divider />
+
+      <!-- Bulk Selection Bar -->
+      <v-slide-y-transition>
+        <div v-if="selectedCount > 0" class="bg-blue-50 border-b px-5 py-3 d-flex align-center justify-space-between flex-wrap gap-3" style="min-height: 54px;">
+          <div class="d-flex align-center gap-3">
+            <v-chip color="primary" variant="flat" size="small" class="font-weight-bold px-3">
+              {{ t('components.selectedCount', { count: selectedCount }) }}
+            </v-chip>
+            <span class="text-body-2 text-slate-800 font-weight-medium">
+              {{ t('components.bulkActionsPrompt') }}
+            </span>
+          </div>
+          <div class="d-flex align-center gap-2">
+            <v-btn
+              color="primary"
+              variant="flat"
+              size="small"
+              prepend-icon="mdi-table-edit"
+              class="font-weight-bold px-4"
+              @click="openBulkEditDialog"
+            >
+              {{ t('components.bulkEdit') }}
+            </v-btn>
+            <v-btn
+              size="small"
+              variant="outlined"
+              color="slate-600"
+              class="font-weight-medium"
+              @click="clearSelection"
+            >
+              {{ t('components.deselectAll') }}
+            </v-btn>
+          </div>
+        </div>
+      </v-slide-y-transition>
 
       <!-- Components Table -->
       <v-table density="comfortable" hover class="components-table">
         <thead>
           <tr>
+            <th class="text-center font-weight-bold" style="width: 44px;">
+              <v-checkbox-btn
+                :model-value="isAllSelected"
+                :indeterminate="isSomeSelected && !isAllSelected"
+                color="primary"
+                density="compact"
+                @update:model-value="toggleSelectAll"
+                :title="isAllSelected ? t('components.deselectAll') : t('components.selectAll')"
+              />
+            </th>
             <th class="text-left font-weight-bold" style="width: 50px;">Photo</th>
             <th class="text-left font-weight-bold">{{ t('components.colPart') }}</th>
             <th class="text-left font-weight-bold">{{ t('components.colCategory') }}</th>
@@ -265,9 +426,20 @@
             :key="c.ID"
             :class="{
               'row-shortage': !c.qty || c.qty <= 0,
-              'row-low-stock': c.qty > 0 && c.minQty > 0 && c.qty <= c.minQty
+              'row-low-stock': c.qty > 0 && c.minQty > 0 && c.qty <= c.minQty,
+              'bg-blue-50': isComponentSelected(c.ID)
             }"
           >
+            <!-- Selection Checkbox -->
+            <td class="text-center" @click.stop>
+              <v-checkbox-btn
+                :model-value="isComponentSelected(c.ID)"
+                color="primary"
+                density="compact"
+                @update:model-value="toggleComponentSelection(c)"
+              />
+            </td>
+
             <!-- Photo Thumbnail -->
             <td>
               <v-avatar rounded="lg" size="38" class="border">
@@ -324,6 +496,24 @@
             <td>
               <div class="text-body-2 text-truncate text-slate-700" style="max-width: 320px;" :title="c.description || c.shortDescription">
                 {{ c.shortDescription?.trim() || '—' }}
+              </div>
+              <div v-if="c.customFields && c.customFields.length > 0" class="d-flex align-center gap-1 flex-wrap mt-1">
+                <v-chip
+                  v-for="spec in c.customFields.slice(0, 3)"
+                  :key="spec.fieldId"
+                  size="x-small"
+                  variant="tonal"
+                  color="primary"
+                  class="font-mono text-caption font-weight-bold px-1-5"
+                  style="height: 20px; font-size: 11px;"
+                  :title="`${spec.fieldLabel}: ${spec.fieldValue}${spec.unit ? ' ' + spec.unit : ''}`"
+                >
+                  <span class="text-slate-600 me-0-5">{{ spec.fieldLabel }}:</span>
+                  {{ spec.fieldValue }}<span v-if="spec.unit" class="text-slate-500 ms-0-5">{{ spec.unit }}</span>
+                </v-chip>
+                <span v-if="c.customFields.length > 3" class="text-caption text-disabled font-mono" style="font-size: 10px;">
+                  +{{ c.customFields.length - 3 }}
+                </span>
               </div>
             </td>
 
@@ -423,14 +613,14 @@
           </tr>
 
           <tr v-if="components.length === 0 && !loading">
-            <td colspan="8" class="text-center py-8 text-disabled">
+            <td colspan="9" class="text-center py-8 text-disabled">
               <v-icon size="40" class="mb-2">mdi-memory-off</v-icon>
               <div>{{ t('components.noComponentsMatching') }}</div>
             </td>
           </tr>
 
           <tr v-if="loading">
-            <td colspan="8" class="text-center py-8">
+            <td colspan="9" class="text-center py-8">
               <v-progress-circular indeterminate color="primary" />
             </td>
           </tr>
@@ -474,16 +664,19 @@
       @updated="fetchComponents"
     />
 
-    <!-- CREATE / EDIT / CLONE COMPONENT DIALOG -->
+    <!-- CREATE / EDIT / CLONE / BULK COMPONENT DIALOG -->
     <CreateComponentDialog
       v-model="showCreateDialog"
       :is-edit="isEditMode"
       :is-clone="isCloneMode"
+      :is-bulk-edit="isBulkEditMode"
+      :bulk-components="selectedComponentsList"
       :component="selectedComponentForEdit"
       :categories="categories"
       :packages="packages"
       @created="handleComponentCreated"
       @updated="handleComponentUpdated"
+      @saved="handleComponentSaved"
       @catalog-updated="onCatalogUpdated"
     />
 
@@ -493,12 +686,6 @@
       :item="directPurchaseItem"
       @purchased="handleDirectPurchased"
       @notify="notify"
-    />
-
-    <!-- MANAGE CATALOG (CATEGORIES & PACKAGES) DIALOG -->
-    <ManageCatalogDialog
-      v-model="showManageCatalogDialog"
-      @updated="onCatalogUpdated"
     />
 
     <!-- DELETE COMPONENT DIALOG (WITH PROJECT USAGE WARNING) -->
@@ -525,7 +712,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, watch, onMounted } from 'vue';
 import { useI18n } from 'vue-i18n';
 import api, { resolveMediaUrl } from '../services/api';
 
@@ -535,7 +722,6 @@ import PackageLink from '../components/PackageLink.vue';
 import CreateComponentDialog from '../components/CreateComponentDialog.vue';
 import ComponentDetailsDialog from '../components/ComponentDetailsDialog.vue';
 import PurchaseConfirmDialog from '../components/PurchaseConfirmDialog.vue';
-import ManageCatalogDialog from '../components/ManageCatalogDialog.vue';
 import DeleteComponentDialog from '../components/DeleteComponentDialog.vue';
 import ImportComponentsDialog from '../components/ImportComponentsDialog.vue';
 import { useComponentsStore } from '../stores/components';
@@ -551,12 +737,73 @@ const totalComponents = ref(0);
 const showCreateDialog = ref(false);
 const isEditMode = ref(false);
 const isCloneMode = ref(false);
+const isBulkEditMode = ref(false);
 const selectedComponentForEdit = ref(null);
-const showManageCatalogDialog = ref(false);
+const selectedComponentIds = ref(new Set());
 const showDeleteDialog = ref(false);
 const showImportDialog = ref(false);
 const componentToDelete = ref(null);
 const loading = ref(false);
+
+const selectedCount = computed(() => selectedComponentIds.value.size);
+
+const isAllSelected = computed(() => {
+  if (components.value.length === 0) return false;
+  return components.value.every(c => selectedComponentIds.value.has(c.ID));
+});
+
+const isSomeSelected = computed(() => {
+  return components.value.some(c => selectedComponentIds.value.has(c.ID));
+});
+
+const isComponentSelected = (id) => {
+  return selectedComponentIds.value.has(id);
+};
+
+const toggleComponentSelection = (component) => {
+  const newSet = new Set(selectedComponentIds.value);
+  if (newSet.has(component.ID)) {
+    newSet.delete(component.ID);
+  } else {
+    newSet.add(component.ID);
+  }
+  selectedComponentIds.value = newSet;
+};
+
+const toggleSelectAll = () => {
+  const newSet = new Set(selectedComponentIds.value);
+  if (isAllSelected.value) {
+    components.value.forEach(c => newSet.delete(c.ID));
+  } else {
+    components.value.forEach(c => newSet.add(c.ID));
+  }
+  selectedComponentIds.value = newSet;
+};
+
+const clearSelection = () => {
+  selectedComponentIds.value = new Set();
+};
+
+const selectedComponentsList = computed(() => {
+  return components.value.filter(c => selectedComponentIds.value.has(c.ID));
+});
+
+const openBulkEditDialog = () => {
+  if (selectedCount.value === 0) return;
+  isEditMode.value = false;
+  isCloneMode.value = false;
+  isBulkEditMode.value = true;
+  selectedComponentForEdit.value = null;
+  showCreateDialog.value = true;
+};
+
+const handleComponentSaved = (info) => {
+  if (info?.isBulk) {
+    notify(t('components.bulkUpdateSuccess', { count: info.count || selectedCount.value }));
+    clearSelection();
+  }
+  fetchComponents();
+};
 
 // Filter states
 const search = ref('');
@@ -567,6 +814,87 @@ const selectedProject = ref(null);
 const stockStatus = ref('');
 const minPins = ref(null);
 const maxPins = ref(null);
+const customFilters = ref({});
+const activeCategoryFields = ref([]);
+
+const parseFieldOptions = (optionsStr) => {
+  if (!optionsStr) return [];
+  return String(optionsStr).split(',').map(s => s.trim()).filter(Boolean);
+};
+
+const activeCategoryName = computed(() => {
+  if (selectedCategories.value.length === 1) {
+    const cat = categories.value.find(c => c.ID === selectedCategories.value[0]);
+    return cat ? cat.category : '';
+  }
+  return '';
+});
+
+const hasActiveSpecFilters = computed(() => {
+  for (const val of Object.values(customFilters.value)) {
+    if (!val) continue;
+    if (typeof val === 'object') {
+      if ((val.min !== undefined && val.min !== null && val.min !== '') ||
+          (val.max !== undefined && val.max !== null && val.max !== '') ||
+          (val.value !== undefined && val.value !== null && val.value !== '')) {
+        return true;
+      }
+    } else if (String(val).trim() !== '') {
+      return true;
+    }
+  }
+  return false;
+});
+
+const activeSpecFilterCount = computed(() => {
+  let count = 0;
+  for (const val of Object.values(customFilters.value)) {
+    if (!val) continue;
+    if (typeof val === 'object') {
+      if ((val.min !== undefined && val.min !== null && val.min !== '') ||
+          (val.max !== undefined && val.max !== null && val.max !== '')) {
+        count++;
+      } else if (val.value !== undefined && val.value !== null && val.value !== '') {
+        count++;
+      }
+    } else if (String(val).trim() !== '') {
+      count++;
+    }
+  }
+  return count;
+});
+
+const resetSpecFilters = () => {
+  for (const field of activeCategoryFields.value) {
+    customFilters.value[field.id] = { min: '', max: '', value: '' };
+  }
+  onFilterChange();
+};
+
+watch(() => selectedCategories.value, async (newCatIds) => {
+  if (newCatIds && newCatIds.length === 1) {
+    const catId = newCatIds[0];
+    const cat = categories.value.find(c => c.ID === catId);
+    if (cat && Array.isArray(cat.customFields) && cat.customFields.length > 0) {
+      activeCategoryFields.value = cat.customFields;
+    } else {
+      try {
+        const fields = await api.getCategoryFields(catId);
+        activeCategoryFields.value = fields || [];
+      } catch (err) {
+        activeCategoryFields.value = [];
+      }
+    }
+    for (const f of activeCategoryFields.value) {
+      if (!customFilters.value[f.id]) {
+        customFilters.value[f.id] = { min: '', max: '', value: '' };
+      }
+    }
+  } else {
+    activeCategoryFields.value = [];
+    customFilters.value = {};
+  }
+});
 
 const stockStatusOptions = computed(() => [
   { title: t('components.stockAbsent'), value: 'absent', icon: 'mdi-alert-circle', color: 'error' },
@@ -619,6 +947,7 @@ const activeFilterCount = computed(() => {
   if (stockStatus.value) count++;
   if (minPins.value !== null && minPins.value !== undefined && minPins.value !== '') count++;
   if (maxPins.value !== null && maxPins.value !== undefined && maxPins.value !== '') count++;
+  if (hasActiveSpecFilters.value) count++;
   return count;
 });
 
@@ -654,6 +983,7 @@ const resetFilters = () => {
   stockStatus.value = '';
   minPins.value = null;
   maxPins.value = null;
+  customFilters.value = {};
   offset.value = 0;
   fetchComponents();
 };
@@ -670,6 +1000,7 @@ const fetchComponents = async () => {
       isSmd: packageMountType.value === 'smd' ? 1 : (packageMountType.value === 'tht' ? 0 : undefined),
       minPins: minPins.value,
       maxPins: maxPins.value,
+      customFilters: hasActiveSpecFilters.value ? JSON.stringify(customFilters.value) : undefined,
       limit: limit.value,
       offset: offset.value
     });
@@ -778,6 +1109,7 @@ const onComponentDeleted = ({ id, component }) => {
 const openCreateComponent = () => {
   isEditMode.value = false;
   isCloneMode.value = false;
+  isBulkEditMode.value = false;
   selectedComponentForEdit.value = null;
   showCreateDialog.value = true;
 };
@@ -785,6 +1117,7 @@ const openCreateComponent = () => {
 const openEditComponent = (c) => {
   isEditMode.value = true;
   isCloneMode.value = false;
+  isBulkEditMode.value = false;
   selectedComponentForEdit.value = c;
   showCreateDialog.value = true;
 };
@@ -792,6 +1125,7 @@ const openEditComponent = (c) => {
 const openCloneComponent = (c) => {
   isEditMode.value = false;
   isCloneMode.value = true;
+  isBulkEditMode.value = false;
   selectedComponentForEdit.value = c;
   showCreateDialog.value = true;
 };
