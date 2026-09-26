@@ -519,7 +519,7 @@
     "throughHole": "THT",
     "pins": "виводів",
     "drawing": "Креслення",
-    "sectionInventory": "Склад та місце зберігання",
+    "sectionInventory": "Кількість на складі",
     "minQty": "Мін. допустима кількість",
     "minQtyHint": "За замовчуванням 0. Попереджає про дефіцит",
     "storageLocationPlaceholder": "Виберіть комірку або ящик",

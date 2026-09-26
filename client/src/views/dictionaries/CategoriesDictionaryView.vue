@@ -317,26 +317,6 @@
               <div v-else class="text-center py-6 text-disabled border rounded-lg bg-slate-50">
                 <v-icon size="36" class="mb-1">mdi-tune-vertical</v-icon>
                 <div class="text-caption mb-2">{{ t('manageCatalogModal.noFieldsDefined') }}</div>
-                <div class="d-flex justify-center gap-2">
-                  <v-btn
-                    size="x-small"
-                    variant="outlined"
-                    color="slate-700"
-                    prepend-icon="mdi-content-copy"
-                    @click="openCopyCategoryFieldsModal"
-                  >
-                    {{ t('manageCatalogModal.copyFromCategory') }}
-                  </v-btn>
-                  <v-btn
-                    size="x-small"
-                    variant="flat"
-                    color="primary"
-                    prepend-icon="mdi-plus"
-                    @click="openFieldEditor()"
-                  >
-                    {{ t('manageCatalogModal.addField') }}
-                  </v-btn>
-                </div>
               </div>
             </v-window-item>
           </v-window>

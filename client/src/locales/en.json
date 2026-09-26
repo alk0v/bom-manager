@@ -519,7 +519,7 @@
     "throughHole": "Through-Hole",
     "pins": "pins",
     "drawing": "Drawing",
-    "sectionInventory": "Stock & Storage Location",
+    "sectionInventory": "Stock Quantity",
     "minQty": "Min. Acceptable Qty",
     "minQtyHint": "Default 0. Warns when stock is low",
     "storageLocationPlaceholder": "Select bin or drawer",

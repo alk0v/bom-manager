@@ -308,7 +308,7 @@
             </v-col>
           </v-row>
 
-          <!-- Package Preview Bar (if selected) -->
+          <!-- Package Preview Bar (hidden per user request)
           <div
             v-if="selectedPackageObj"
             class="pa-2 px-3 mb-3 bg-blue-50 border border-blue-200 rounded-lg d-flex align-center justify-space-between text-caption font-mono"
@@ -334,6 +334,7 @@
               <span>{{ t('dialogs.drawing') }}: {{ selectedPackageObj.drawingURL }}</span>
             </div>
           </div>
+          -->
 
           <!-- Short Description (hidden in bulk mode) -->
           <v-row dense class="mb-2" v-if="!isBulkEdit">
@@ -431,16 +432,17 @@
             </v-row>
           </div>
 
-          <!-- SECTION 2: INVENTORY & STOCK (Temporarily commented out)
+          <!-- SECTION 2: INVENTORY & STOCK (Amount without storage place) -->
           <template v-if="!isBulkEdit">
             <div class="d-flex align-center gap-2 mb-3 mt-4 pb-1 border-b border-slate-200">
-              <v-icon icon="mdi-warehouse" size="18" color="primary" />
+              <v-icon icon="mdi-counter" size="18" color="primary" />
               <span class="text-caption font-weight-bold text-slate-700 text-uppercase tracking-wider">
                 {{ t('dialogs.sectionInventory') }}
               </span>
             </div>
 
             <v-row dense class="mb-2">
+              <!-- Initial Stock Quantity / Amount -->
               <v-col cols="12" sm="6">
                 <v-text-field
                   v-model.number="form.qty"
@@ -456,6 +458,7 @@
                 />
               </v-col>
 
+              <!-- Minimal Acceptable Quantity -->
               <v-col cols="12" sm="6">
                 <v-text-field
                   v-model.number="form.minQty"
@@ -473,7 +476,6 @@
               </v-col>
             </v-row>
           </template>
-          -->
 
           <!-- SECTION 3: TECHNICAL SPECS & MEDIA -->
           <div class="d-flex align-center gap-2 mb-3 mt-4 pb-1 border-b border-slate-200">
