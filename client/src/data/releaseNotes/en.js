@@ -22,6 +22,12 @@ export const releasesEn = [
         color: 'indigo',
         title: 'Project Tags in BOM Dialog & Project Details',
         description: 'Project tags are clearly displayed across all interfaces: Project Cards, Project BOM modal header, and the dedicated Project Details overview page.'
+      },
+      {
+        icon: 'mdi-file-image-outline',
+        color: 'blue-darken-2',
+        title: 'Image Attachments Support (PNG, JPG, SVG)',
+        description: 'Attach board photos, assembly diagrams, and vector schematics directly to project files with automatic type detection, interactive table thumbnails, upload preview, and full-screen lightbox viewing.'
       }
     ]
   },
