@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const pool = require('../db');
+const currencyService = require('../services/currencyService');
 
 // GET /api/shopping-list - list all basket items joined with component data and latest price
 router.get('/', async (req, res) => {
@@ -37,8 +38,10 @@ router.get('/', async (req, res) => {
         b.date,
         b.orderId,
         ord.status AS activeOrderStatus,
+        ord.currency AS activeOrderCurrency,
         ord.date AS activeOrderDate,
         ord.price AS activeOrderPrice,
+        ord.convertedPrice AS activeOrderConvertedPrice,
         ord.qty AS activeOrderQty,
         ord.url AS activeOrderUrl,
         ord.details AS activeOrderDetails,
@@ -57,7 +60,7 @@ router.get('/', async (req, res) => {
         pkg.pinQuantity,
         pkg.isSmd,
         pkg.drawingURL,
-        COALESCE(ord.price, lo.latestPrice) AS latestPrice,
+        COALESCE(ord.convertedPrice, ord.price, lo.latestPrice) AS latestPrice,
         COALESCE(ord.date, lo.latestOrderDate) AS latestOrderDate,
         COALESCE(ord.url, lo.latestOrderUrl) AS latestOrderUrl,
         COALESCE(ord.details, lo.latestOrderDetails) AS latestOrderDetails
@@ -67,9 +70,9 @@ router.get('/', async (req, res) => {
       LEFT JOIN i_categories cat ON c.category_id = cat.ID
       LEFT JOIN i_packages pkg ON c.package_id = pkg.ID
       LEFT JOIN (
-        SELECT componentId, price AS latestPrice, date AS latestOrderDate, url AS latestOrderUrl, details AS latestOrderDetails
+        SELECT componentId, COALESCE(convertedPrice, price) AS latestPrice, date AS latestOrderDate, url AS latestOrderUrl, details AS latestOrderDetails
         FROM (
-          SELECT componentId, price, date, url, details,
+          SELECT componentId, price, convertedPrice, date, url, details,
                  ROW_NUMBER() OVER (PARTITION BY componentId ORDER BY date DESC, id DESC) as rn
           FROM t_orders
           WHERE componentId IS NOT NULL AND (status IS NULL OR status != 'cancelled')
@@ -127,7 +130,8 @@ router.post('/:id/purchase', async (req, res) => {
     details = '',
     addToStock = true,
     storageId = null,
-    deliveryStatus = 'pending'
+    deliveryStatus = 'pending',
+    currency = null
   } = req.body;
 
   const conn = await pool.getConnection();
@@ -161,10 +165,19 @@ router.post('/:id/purchase', async (req, res) => {
 
     const formattedDate = date ? String(date).split('T')[0] : new Date().toISOString().slice(0, 10);
 
+    // Currency calculation
+    const defaultCurrency = await currencyService.getDefaultCurrency(conn);
+    const orderCurrency = (currency && currencyService.SUPPORTED_CURRENCIES.includes(String(currency).toUpperCase().trim()))
+      ? String(currency).toUpperCase().trim()
+      : defaultCurrency;
+    const allRates = await currencyService.getAllRates(conn);
+    const rateInfo = currencyService.findNearestRate(allRates, orderCurrency, defaultCurrency, formattedDate);
+    const convertedPrice = Math.round(unitPrice * rateInfo.rate * 10000) / 10000;
+
     // 2. Insert into t_orders
     const [orderResult] = await conn.query(
-      `INSERT INTO t_orders (componentId, price, qty, date, url, details, status, deliveredDate, storageId) 
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      `INSERT INTO t_orders (componentId, price, qty, date, url, details, status, deliveredDate, storageId, currency, convertedPrice) 
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         componentId,
         unitPrice,
@@ -174,7 +187,9 @@ router.post('/:id/purchase', async (req, res) => {
         details ? details.trim() : '',
         isPending ? 'pending' : 'delivered',
         isPending ? null : formattedDate,
-        parsedStorageId
+        parsedStorageId,
+        orderCurrency,
+        convertedPrice
       ]
     );
     const orderId = orderResult.insertId;

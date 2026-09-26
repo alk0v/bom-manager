@@ -56,9 +56,9 @@ router.get('/', async (req, res) => {
       LEFT JOIN t_bom b ON p.id = b.projectId
       LEFT JOIN i_components c ON b.componentId = c.ID
       LEFT JOIN (
-        SELECT componentId, price AS latestPrice
+        SELECT componentId, COALESCE(convertedPrice, price) AS latestPrice
         FROM (
-          SELECT componentId, price,
+          SELECT componentId, price, convertedPrice,
                  ROW_NUMBER() OVER (PARTITION BY componentId ORDER BY date DESC, id DESC) as rn
           FROM t_orders
           WHERE componentId IS NOT NULL AND (status IS NULL OR status != 'cancelled')
@@ -94,9 +94,9 @@ router.get('/:id', async (req, res) => {
       LEFT JOIN t_bom b ON p.id = b.projectId
       LEFT JOIN i_components c ON b.componentId = c.ID
       LEFT JOIN (
-        SELECT componentId, price AS latestPrice
+        SELECT componentId, COALESCE(convertedPrice, price) AS latestPrice
         FROM (
-          SELECT componentId, price,
+          SELECT componentId, price, convertedPrice,
                  ROW_NUMBER() OVER (PARTITION BY componentId ORDER BY date DESC, id DESC) as rn
           FROM t_orders
           WHERE componentId IS NOT NULL AND (status IS NULL OR status != 'cancelled')
@@ -155,9 +155,9 @@ router.get('/:id/bom', async (req, res) => {
       LEFT JOIN i_categories cat ON c.category_id = cat.ID
       LEFT JOIN i_packages pkg ON c.package_id = pkg.ID
       LEFT JOIN (
-        SELECT componentId, price AS latestPrice, date AS latestOrderDate, url AS latestOrderUrl, details AS latestOrderDetails
+        SELECT componentId, COALESCE(convertedPrice, price) AS latestPrice, date AS latestOrderDate, url AS latestOrderUrl, details AS latestOrderDetails
         FROM (
-          SELECT componentId, price, date, url, details,
+          SELECT componentId, price, convertedPrice, date, url, details,
                  ROW_NUMBER() OVER (PARTITION BY componentId ORDER BY date DESC, id DESC) as rn
           FROM t_orders
           WHERE componentId IS NOT NULL AND (status IS NULL OR status != 'cancelled')
@@ -195,9 +195,9 @@ router.get('/:id/bom', async (req, res) => {
         LEFT JOIN i_categories cat ON c.category_id = cat.ID
         LEFT JOIN i_packages pkg ON c.package_id = pkg.ID
         LEFT JOIN (
-          SELECT componentId, price AS latestPrice
+          SELECT componentId, COALESCE(convertedPrice, price) AS latestPrice
           FROM (
-            SELECT componentId, price,
+            SELECT componentId, price, convertedPrice,
                    ROW_NUMBER() OVER (PARTITION BY componentId ORDER BY date DESC, id DESC) as rn
             FROM t_orders
             WHERE componentId IS NOT NULL AND (status IS NULL OR status != 'cancelled')

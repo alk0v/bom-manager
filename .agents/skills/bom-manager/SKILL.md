@@ -106,6 +106,8 @@ Key entries in `t_config`:
 - `componentPhotoFolder`: Subfolder for component images (default: `components/`)
 - `packagePhotoFolder`: Subfolder for package drawings (default: `packages/`)
 - `datasheetFolder`: Subfolder for datasheet PDF files (default: `datasheets/`)
+- `defaultCurrency`: Operating currency (default: `'USD'`, options: `USD`, `EUR`, `UAH`, `PLN`)
+- `secondaryCurrencies`: JSON array of enabled secondary currencies (up to 3, e.g. `'["EUR","UAH","PLN"]'`)
 
 #### 8. `t_orders`
 Component purchasing history and supplier order log.
@@ -113,13 +115,27 @@ Component purchasing history and supplier order log.
 |---|---|---|---|
 | `id` | `INT` (PK, AI) | NO | Unique order record ID |
 | `componentId` | `INT` | YES | FK reference to `i_components.ID` |
-| `price` | `FLOAT` | YES | Unit or order price |
+| `price` | `FLOAT` | YES | Unit purchase price in order currency |
+| `currency` | `VARCHAR(10)` | YES | Currency of purchase (default: `'USD'`) |
+| `convertedPrice` | `FLOAT` | YES | Unit price converted to default currency using nearest exchange rate |
 | `qty` | `INT` | YES | Purchased quantity |
 | `date` | `DATE` | YES | Purchase date |
 | `url` | `VARCHAR(200)` | YES | Supplier item URL (e.g., AliExpress, Mouser, LCSC) |
 | `details` | `VARCHAR(500)` | YES | Supplier notes, tracking number, or store name |
+| `status` | `VARCHAR(20)` | YES | Delivery status: `'pending'`, `'delivered'`, `'cancelled'` |
 
-#### 9. `i_storages` & `t_warehouse`
+#### 9. `t_exchange_rates`
+Dedicated currency exchange rate history used for normalizing order costs to default operating currency.
+| Column | Type | Nullable | Description |
+|---|---|---|---|
+| `id` | `INT` (PK, AI) | NO | Unique exchange rate record ID |
+| `fromCurrency` | `VARCHAR(10)` | NO | Source currency (e.g. `'EUR'`, `'UAH'`, `'PLN'`) |
+| `toCurrency` | `VARCHAR(10)` | NO | Target currency (typically default currency, e.g. `'USD'`) |
+| `rate` | `FLOAT` | NO | Conversion rate where `1 fromCurrency = rate * toCurrency` |
+| `rateDate` | `DATE` | NO | Effective date of exchange rate |
+| `createdAt` | `DATETIME` | YES | Timestamp when rate was recorded |
+
+#### 10. `i_storages` & `t_warehouse`
 Locations and stock quantity per storage bin/box.
 - `i_storages`: `ID`, `storage` (e.g. "Default Storage", "storage1", "storage2")
 - `t_warehouse`: `id`, `componentId`, `storageId`, `quantity`
@@ -182,16 +198,19 @@ Locations and stock quantity per storage bin/box.
   - **Never duplicate modal templates or large blocks of script logic** across different views.
   - Keep views (`*View.vue`) focused on page layout, routing, and top-level data orchestration. Delegate modal dialogues, complex forms, and tables to reusable components.
 
-### STRICT DIRECTIVE: Always Align Action Icons in Tables
-- **Preserve Fixed Action Slots Across Rows**:
-  - In data tables with action buttons (e.g. Purchases Report, Shopping List, Component Details, BOM table), **never** allow action icons to collapse or shift horizontally across rows when certain actions are conditionally available.
-  - Avoid simple `v-if` removals that cause adjacent buttons (like Delete) to jump leftward on rows where preceding actions (like Confirm Delivery or Cancel) are absent.
-  - Always maintain identical fixed slots for each specific action using:
-    - `:style="{ visibility: isActionAvailable ? 'visible' : 'hidden', pointerEvents: isActionAvailable ? 'auto' : 'none' }"`
-    - `:tabindex="isActionAvailable ? 0 : -1"`
-    - `:aria-hidden="!isActionAvailable"`
-  - Set explicit fixed widths on the Actions column in both `<th>` and `<td>` (e.g., `style="width: 140px; min-width: 140px;"` with `class="text-left text-no-wrap"`).
-  - Every action (e.g., Edit, Confirm, Cancel, Delete) must remain in the exact same vertical alignment across all rows in the table.
+### STRICT DIRECTIVE: Action Columns Alignment & Gap Elimination Rule
+- **Rule for Conditional Action Buttons in Tables**:
+  - In tables with action buttons (e.g. Shopping List, Purchases Report, Component Details, BOM table), actions can be conditionally available depending on row state (e.g. `Cancel Order` or `Confirm Delivery` only on pending orders, `Add to Basket` only on shortage rows).
+  - **Case 1: The action is NOT relevant for ANY row in the table/view**:
+    - **Rebuild the column without gap**: Completely omit the conditional action slot (`<template v-if="hasAnyConditionalAction">`).
+    - **Collapse the column width dynamically** in both `<th>` and `<td>` (e.g. collapse from `120px`/`140px` down to `80px`/`100px`) so that the remaining buttons sit flush side-by-side with zero empty gaps or whitespace holes.
+    - **Never** use `visibility: hidden` unconditionally across all rows when none of the rows need that slot, as this leaves an awkward phantom gap.
+  - **Case 2: The action IS available / relevant in AT LEAST ONE row**:
+    - Expand the column width to accommodate all action slots (e.g. `120px` or `140px`).
+    - **Align icons strictly across all rows**:
+      - For rows where the action is relevant: render the active, clickable action button.
+      - For rows where the action is NOT relevant: render an **inactive (light-grey) disabled button** (`color="slate-300"`, `class="opacity-25"`, `disabled`, `style="pointer-events: none;"`, `tabindex="-1"`, `aria-hidden="true"`).
+      - This prevents adjacent icons (such as Delete) from shifting horizontally or jumping between columns, keeping every icon in its fixed vertical slot without leaving strange holes.
 
 ### Core UI Layout
 - Persistent `v-navigation-drawer` with brand logo and navigation items:

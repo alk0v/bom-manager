@@ -1,4 +1,4 @@
-# BOM Manager (Bill of Materials) - v0.2.7
+# BOM Manager (Bill of Materials) - v0.3.0
 
 A modern web application designed to manage electronic components, hardware project builds, Bill of Materials (BOM), warehouse inventory stocks, and procurement shopping lists.
 
@@ -8,6 +8,10 @@ Built with **Vue 3**, **Vuetify 3**, **Node.js/Express**, with out-of-the-box du
 
 ## Key Features
 
+- **Multi-Currency Orders & Exchange Rates**:
+  - Configure primary currency (`USD`, `EUR`, `UAH`, `PLN`) and up to 3 secondary operating currencies.
+  - Multi-currency order creation with live exchange conversions, dynamic currency symbols, and historical rate tracking in `t_exchange_rates`.
+  - Automated nearest-date exchange rate matching (`ABS(DATEDIFF)`) and order cost recalculations.
 - **BOM Component Analogs & Substitutions**:
   - Assign drop-in or functional equivalent parts to project BOM items with custom engineering notes.
   - Visual shortage indicators highlighting when in-stock analogs can cover missing primary components.

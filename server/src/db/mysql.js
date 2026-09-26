@@ -114,6 +114,60 @@ async function ensureTables() {
       await pool.query("ALTER TABLE t_busket ADD COLUMN orderId INT NULL");
       console.log('[Database:MySQL] Added "orderId" column to t_busket.');
     }
+
+    // Ensure t_exchange_rates table exists
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS t_exchange_rates (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        fromCurrency VARCHAR(10) NOT NULL,
+        toCurrency VARCHAR(10) NOT NULL,
+        rate DECIMAL(14, 6) NOT NULL,
+        rateDate DATE NOT NULL,
+        createdAt DATETIME DEFAULT CURRENT_TIMESTAMP,
+        INDEX idx_pair_date (fromCurrency, toCurrency, rateDate),
+        INDEX idx_date (rateDate)
+      )
+    `);
+
+    // Ensure currency column in t_orders
+    const [currencyCols] = await pool.query("SHOW COLUMNS FROM t_orders LIKE 'currency'");
+    if (currencyCols.length === 0) {
+      await pool.query("ALTER TABLE t_orders ADD COLUMN currency VARCHAR(10) NOT NULL DEFAULT 'USD'");
+      await pool.query("UPDATE t_orders SET currency = 'USD' WHERE currency IS NULL OR currency = ''");
+      console.log('[Database:MySQL] Added "currency" column to t_orders.');
+    }
+
+    // Ensure convertedPrice column in t_orders
+    const [convPriceCols] = await pool.query("SHOW COLUMNS FROM t_orders LIKE 'convertedPrice'");
+    if (convPriceCols.length === 0) {
+      await pool.query("ALTER TABLE t_orders ADD COLUMN convertedPrice FLOAT NULL");
+      await pool.query("UPDATE t_orders SET convertedPrice = price WHERE convertedPrice IS NULL");
+      console.log('[Database:MySQL] Added "convertedPrice" column to t_orders.');
+    }
+
+    // Ensure defaultCurrency and secondaryCurrencies in t_config
+    const [defaultCurrRow] = await pool.query("SELECT id FROM t_config WHERE c_key = 'defaultCurrency'");
+    if (defaultCurrRow.length === 0) {
+      await pool.query("INSERT INTO t_config (c_key, c_value) VALUES ('defaultCurrency', 'USD')");
+    }
+
+    const [secCurrRow] = await pool.query("SELECT id FROM t_config WHERE c_key = 'secondaryCurrencies'");
+    if (secCurrRow.length === 0) {
+      await pool.query("INSERT INTO t_config (c_key, c_value) VALUES ('secondaryCurrencies', '[\"EUR\",\"UAH\",\"PLN\"]')");
+    }
+
+    // Seed default exchange rates if t_exchange_rates is empty
+    const [rateCountRow] = await pool.query("SELECT COUNT(*) as cnt FROM t_exchange_rates");
+    if (rateCountRow[0]?.cnt === 0) {
+      const today = new Date().toISOString().slice(0, 10);
+      await pool.query(`
+        INSERT INTO t_exchange_rates (fromCurrency, toCurrency, rate, rateDate) VALUES
+        ('EUR', 'USD', 1.085000, ?),
+        ('UAH', 'USD', 0.024100, ?),
+        ('PLN', 'USD', 0.250000, ?)
+      `, [today, today, today]);
+      console.log('[Database:MySQL] Seeded initial exchange rates in t_exchange_rates.');
+    }
   } catch (err) {
     console.warn('[Database:MySQL] Table verification note:', err.message);
   }

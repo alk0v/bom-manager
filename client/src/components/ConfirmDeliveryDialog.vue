@@ -157,25 +157,7 @@
               />
             </v-col>
 
-            <!-- Storage Box Selection -->
-            <v-col cols="12" class="mt-2" v-if="storages.length > 0">
-              <label class="text-caption text-slate-700 font-weight-bold text-uppercase d-block mb-1">
-                {{ t('confirmDeliveryModal.storageLocation') }}
-              </label>
-              <v-select
-                v-model="form.storageId"
-                :items="storageItems"
-                item-title="title"
-                item-value="id"
-                density="compact"
-                variant="outlined"
-                rounded="lg"
-                :placeholder="t('confirmDeliveryModal.selectStorage')"
-                clearable
-                hide-details
-                prepend-inner-icon="mdi-archive-outline"
-              />
-            </v-col>
+
 
             <!-- Add to Stock Checkbox -->
             <v-col cols="12" class="mt-2 pt-2 border-t">

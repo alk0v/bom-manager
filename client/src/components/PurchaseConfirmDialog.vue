@@ -1,7 +1,7 @@
 <template>
   <v-dialog
     :model-value="modelValue"
-    max-width="650"
+    max-width="850"
     scrollable
     @update:model-value="val => emit('update:modelValue', val)"
   >
@@ -53,34 +53,30 @@
           </div>
         </div>
 
-        <!-- Restored Kit Values Banner -->
-        <v-alert
-          v-if="hasRestoredValues"
-          density="compact"
-          color="info"
-          variant="tonal"
-          class="mb-3 py-1 px-3 text-caption"
-          icon="mdi-history"
-        >
-          <div class="d-flex align-center justify-space-between w-100">
-            <span>{{ t('purchaseModal.prefilledKit') }}</span>
-            <v-btn
-              size="x-small"
-              variant="text"
-              color="info"
-              prepend-icon="mdi-broom"
-              class="ms-2 font-weight-bold"
-              @click="clearForm"
-            >
-              {{ t('purchaseModal.clear') }}
-            </v-btn>
-          </div>
-        </v-alert>
+
 
         <v-form @submit.prevent="submitPurchase" ref="formRef">
           <v-row dense>
+            <!-- Currency Selection -->
+            <v-col cols="12" sm="3">
+              <label class="text-caption text-slate-700 font-weight-bold text-uppercase d-block mb-1">
+                {{ t('purchaseModal.currency') }}
+              </label>
+              <v-select
+                v-model="form.currency"
+                :items="currencyStore.currencyOptions"
+                item-title="label"
+                item-value="code"
+                density="compact"
+                variant="outlined"
+                rounded="lg"
+                hide-details
+                prepend-inner-icon="mdi-cash"
+              />
+            </v-col>
+
             <!-- Quantity Purchased -->
-            <v-col cols="12" sm="4">
+            <v-col cols="12" sm="3">
               <label class="text-caption text-slate-700 font-weight-bold text-uppercase d-block mb-1">
                 {{ t('purchaseModal.quantityPcs') }}
               </label>
@@ -111,16 +107,10 @@
                   @click="incrementQty"
                 />
               </div>
-              <div class="text-caption text-slate-500 mt-1" v-if="!item.isComponentDirect && item.qty">
-                {{ t('purchaseModal.shoppingListQty', { qty: item.qty }) }}
-              </div>
-              <div class="text-caption text-slate-400 mt-1" v-else>
-                {{ t('purchaseModal.unitsToPurchase') }}
-              </div>
             </v-col>
 
             <!-- Unit Price -->
-            <v-col cols="12" sm="4">
+            <v-col cols="12" sm="3">
               <label class="text-caption text-slate-700 font-weight-bold text-uppercase d-block mb-1">
                 {{ t('purchaseModal.unitPrice') }}
               </label>
@@ -129,7 +119,7 @@
                 type="number"
                 min="0"
                 step="0.0001"
-                prefix="$"
+                :prefix="currencyStore.getSymbol(form.currency)"
                 density="compact"
                 variant="outlined"
                 rounded="lg"
@@ -138,16 +128,10 @@
                 class="font-mono"
                 @input="onUnitPriceInput"
               />
-              <div class="text-caption text-slate-500 mt-1" v-if="item.latestPrice != null">
-                {{ t('purchaseModal.lastPrice', { price: item.latestPrice }) }}
-              </div>
-              <div class="text-caption text-slate-400 mt-1" v-else>
-                {{ t('purchaseModal.per1pc') }}
-              </div>
             </v-col>
 
             <!-- Order Sum / Total -->
-            <v-col cols="12" sm="4">
+            <v-col cols="12" sm="3">
               <label class="text-caption text-slate-700 font-weight-bold text-uppercase d-block mb-1">
                 {{ t('purchaseModal.orderSum') }}
               </label>
@@ -156,7 +140,7 @@
                 type="number"
                 min="0"
                 step="0.01"
-                prefix="$"
+                :prefix="currencyStore.getSymbol(form.currency)"
                 density="compact"
                 variant="outlined"
                 rounded="lg"
@@ -165,14 +149,11 @@
                 class="font-mono font-weight-bold"
                 @input="onOrderSumInput"
               />
-              <div class="text-caption text-slate-500 mt-1">
-                {{ t('purchaseModal.totalForBatch') }}
-              </div>
             </v-col>
 
             <!-- Total Cost Summary Box -->
             <v-col cols="12" class="my-2">
-              <div class="d-flex align-center justify-space-between pa-3 px-4 bg-primary-lighten-5 border border-primary rounded-lg">
+              <div class="d-flex align-center justify-space-between pa-3 px-4 bg-primary-lighten-5 border border-primary rounded-lg flex-wrap gap-2">
                 <div class="d-flex align-center gap-2">
                   <v-icon color="primary" size="22">mdi-calculator</v-icon>
                   <div>
@@ -180,21 +161,25 @@
                       {{ t('purchaseModal.pricingBreakdown') }}
                     </span>
                     <span class="text-caption text-slate-600 font-mono">
-                      {{ form.qty || 1 }} {{ t('shoppingList.pcs') }} × {{ formatCurrency(form.price || 0) }} / {{ t('shoppingList.pcs') }}
+                      {{ form.qty || 1 }} {{ t('shoppingList.pcs') }} × {{ formatCurrency(form.price || 0, form.currency) }} / {{ t('shoppingList.pcs') }}
                     </span>
                   </div>
                 </div>
                 <div class="text-right">
                   <div class="text-caption text-disabled text-uppercase font-weight-bold">{{ t('purchaseModal.orderTotal') }}</div>
                   <div class="text-h6 font-mono font-weight-bold text-primary">
-                    {{ formatCurrency(form.totalSum || 0) }}
+                    {{ formatCurrency(form.totalSum || 0, form.currency) }}
+                  </div>
+                  <div v-if="conversionPreview" class="text-caption text-slate-600 font-mono mt-0.5">
+                    ≈ {{ formatCurrency(conversionPreview.convertedTotal, currencyStore.defaultCurrency) }}
+                    <span class="text-slate-400 ms-1">(1 {{ form.currency }} = {{ conversionPreview.rate }} {{ currencyStore.defaultCurrency }})</span>
                   </div>
                 </div>
               </div>
             </v-col>
 
             <!-- Purchase Date -->
-            <v-col cols="12" sm="6">
+            <v-col cols="12" sm="5">
               <label class="text-caption text-slate-700 font-weight-bold text-uppercase d-block mb-1">
                 {{ t('purchaseModal.purchaseDate') }}
               </label>
@@ -209,36 +194,8 @@
               />
             </v-col>
 
-            <!-- Supplier / Store Notes -->
-            <v-col cols="12" sm="6">
-              <label class="text-caption text-slate-700 font-weight-bold text-uppercase d-block mb-1">
-                {{ t('purchaseModal.supplierStore') }}
-              </label>
-              <v-text-field
-                v-model="form.details"
-                :placeholder="t('purchaseModal.supplierPlaceholder')"
-                density="compact"
-                variant="outlined"
-                rounded="lg"
-                hide-details
-              />
-              <!-- Quick store chips -->
-              <div class="d-flex align-center gap-1 mt-1 flex-wrap">
-                <v-chip
-                  v-for="store in ['AliExpress', 'LCSC', 'Mouser', 'DigiKey']"
-                  :key="store"
-                  size="x-small"
-                  variant="outlined"
-                  class="cursor-pointer"
-                  @click="form.details = store"
-                >
-                  {{ store }}
-                </v-chip>
-              </div>
-            </v-col>
-
             <!-- Supplier Product URL -->
-            <v-col cols="12" class="mt-2">
+            <v-col cols="12" sm="7">
               <label class="text-caption text-slate-700 font-weight-bold text-uppercase d-block mb-1">
                 {{ t('purchaseModal.supplierUrl') }}
               </label>
@@ -266,58 +223,63 @@
               </v-text-field>
             </v-col>
 
+            <!-- Notes (Full width input box) -->
+            <v-col cols="12" class="mt-2">
+              <label class="text-caption text-slate-700 font-weight-bold text-uppercase d-block mb-1">
+                {{ t('purchaseModal.notes') }}
+              </label>
+              <v-text-field
+                v-model="form.details"
+                :placeholder="t('purchaseModal.notesPlaceholder')"
+                density="compact"
+                variant="outlined"
+                rounded="lg"
+                hide-details
+                prepend-inner-icon="mdi-note-text-outline"
+                clearable
+              />
+            </v-col>
+
             <!-- Delivery Status Option -->
             <v-col cols="12" class="mt-2 pt-3 border-t">
               <label class="text-caption text-slate-700 font-weight-bold text-uppercase d-block mb-1">
                 {{ t('purchaseModal.deliveryStatus') }}
               </label>
-              <v-radio-group v-model="form.deliveryStatus" inline hide-details density="compact" class="mb-1">
-                <v-radio
-                  value="pending"
-                  :label="t('purchaseModal.statusPending')"
-                  color="warning"
-                  class="me-4"
-                />
-                <v-radio
-                  value="delivered"
-                  :label="t('purchaseModal.statusDelivered')"
-                  color="success"
-                />
-              </v-radio-group>
-              <div class="text-caption text-amber-800 bg-amber-50 pa-2 rounded border border-amber-200 mt-1 d-flex align-center gap-2" v-if="form.deliveryStatus === 'pending'">
-                <v-icon size="16" color="warning">mdi-truck-delivery-outline</v-icon>
-                <span>{{ t('purchaseModal.stockPendingHint') }}</span>
-              </div>
-            </v-col>
+              <div class="d-flex align-center flex-wrap gap-x-4 gap-y-1">
+                <v-radio-group v-model="form.deliveryStatus" inline hide-details density="compact">
+                  <v-radio
+                    value="pending"
+                    :label="t('purchaseModal.statusPending')"
+                    color="warning"
+                    class="me-4"
+                  />
+                  <v-radio
+                    value="delivered"
+                    :label="t('purchaseModal.statusDelivered')"
+                    color="success"
+                  />
+                </v-radio-group>
 
-            <!-- Inventory Stock Options -->
-            <v-col cols="12" class="mt-2 pt-2 border-t">
-              <div class="d-flex align-center justify-space-between">
+                <!-- Delivered: Checkbox to add stock -->
                 <v-checkbox
+                  v-if="form.deliveryStatus === 'delivered'"
                   v-model="form.addToStock"
                   :label="t('purchaseModal.addToStock')"
                   color="primary"
                   hide-details
                   density="compact"
+                  class="ms-2"
                 />
-              </div>
 
-              <!-- Optional Storage Location Selection -->
-              <div v-if="form.addToStock && storages.length > 0" class="mt-2 ps-8">
-                <v-select
-                  v-model="form.storageId"
-                  :items="storageItems"
-                  item-title="title"
-                  item-value="id"
-                  density="compact"
-                  variant="outlined"
-                  rounded="lg"
-                  :label="t('purchaseModal.assignStorage')"
-                  :placeholder="t('purchaseModal.selectStorage')"
-                  clearable
-                  hide-details
-                  prepend-inner-icon="mdi-archive-outline"
-                />
+                <!-- Pending: Informational text on the same place -->
+                <div
+                  v-else-if="form.deliveryStatus === 'pending'"
+                  class="text-body-2 text-slate-700 d-flex align-center ms-2"
+                  style="min-height: 40px;"
+                >
+                  <v-icon size="18" color="warning" class="me-1.5 flex-shrink-0">mdi-truck-delivery-outline</v-icon>
+                  <span>{{ t('purchaseModal.stockPendingHint') }}</span>
+                </div>
               </div>
             </v-col>
           </v-row>
@@ -371,8 +333,10 @@ import { useI18n } from 'vue-i18n';
 import api from '../services/api';
 import MediaImage from './MediaImage.vue';
 import { formatCurrency } from '../utils/formatters';
+import { useCurrencyStore } from '../stores/currency';
 
 const { t } = useI18n();
+const currencyStore = useCurrencyStore();
 
 const props = defineProps({
   modelValue: {
@@ -391,6 +355,7 @@ const submitting = ref(false);
 const storages = ref([]);
 
 const form = ref({
+  currency: currencyStore.defaultCurrency,
   qty: 1,
   price: 0,
   totalSum: 0,
@@ -400,6 +365,22 @@ const form = ref({
   deliveryStatus: 'pending',
   addToStock: true,
   storageId: null
+});
+
+const isForeignCurrency = computed(() => {
+  return form.value.currency && form.value.currency !== currencyStore.defaultCurrency;
+});
+
+const conversionPreview = computed(() => {
+  if (!isForeignCurrency.value) return null;
+  const rateInfo = currencyStore.getNearestRate(form.value.currency, currencyStore.defaultCurrency, form.value.date);
+  const total = Number(form.value.totalSum) || 0;
+  const convertedTotal = Math.round(total * rateInfo.rate * 100) / 100;
+  return {
+    convertedTotal,
+    rate: rateInfo.rate,
+    rateDate: rateInfo.rateDate
+  };
 });
 
 const lastEdited = ref('price');
@@ -509,6 +490,7 @@ const clearForm = () => {
   const defaultTotal = Math.round((initialQty * defaultPrice + Number.EPSILON) * 100) / 100;
 
   form.value = {
+    currency: currencyStore.defaultCurrency,
     qty: initialQty,
     price: defaultPrice,
     totalSum: defaultTotal,
@@ -540,6 +522,7 @@ const initForm = () => {
     }
 
     form.value = {
+      currency: last.currency || props.item.activeOrderCurrency || currencyStore.defaultCurrency,
       qty: restoredQty,
       price: restoredPrice,
       totalSum: restoredTotal,
@@ -559,6 +542,7 @@ const initForm = () => {
     const initialTotal = Math.round((initialQty * initialPrice + Number.EPSILON) * 100) / 100;
 
     form.value = {
+      currency: props.item.activeOrderCurrency || currencyStore.defaultCurrency,
       qty: initialQty,
       price: initialPrice,
       totalSum: initialTotal,
@@ -610,6 +594,7 @@ const submitPurchase = async () => {
     if (!props.item.isComponentDirect && props.item.id && props.item.componentId) {
       // Shopping list purchase
       res = await api.purchaseShoppingListItem(props.item.id, {
+        currency: form.value.currency,
         qty: form.value.qty,
         price: finalPrice,
         date: form.value.date,
@@ -622,6 +607,7 @@ const submitPurchase = async () => {
     } else {
       // Direct component purchase
       res = await api.purchaseComponent(compId, {
+        currency: form.value.currency,
         qty: form.value.qty,
         price: finalPrice,
         date: form.value.date,
@@ -635,6 +621,7 @@ const submitPurchase = async () => {
 
     // Save successful purchase values for kit orders
     saveLastPurchase({
+      currency: form.value.currency,
       qty: form.value.qty,
       price: finalPrice,
       totalSum: form.value.totalSum,

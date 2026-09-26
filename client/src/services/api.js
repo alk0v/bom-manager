@@ -194,6 +194,23 @@ export const api = {
         'Content-Type': 'multipart/form-data'
       }
     }).then(res => res.data);
+  },
+
+  // Currency & Exchange Rates
+  getCurrencySettings() {
+    return client.get('/settings/currencies').then(res => res.data);
+  },
+  updateCurrencySettings(payload) {
+    return client.put('/settings/currencies', payload).then(res => res.data);
+  },
+  addExchangeRate(payload) {
+    return client.post('/settings/exchange-rates', payload).then(res => res.data);
+  },
+  deleteExchangeRate(id) {
+    return client.delete(`/settings/exchange-rates/${id}`).then(res => res.data);
+  },
+  recalculateOrderCosts() {
+    return client.post('/settings/currencies/recalculate').then(res => res.data);
   }
 };
 

@@ -23,7 +23,7 @@
               variant="flat"
               class="ms-2 font-mono font-weight-bold"
             >
-              0.2.7
+              0.3.0
             </v-chip>
           </div>
         </template>
@@ -113,7 +113,7 @@
               variant="tonal"
               class="font-mono font-weight-bold"
             >
-              0.2.7
+              0.3.0
             </v-chip>
           </template>
         </v-list-item>
@@ -126,7 +126,7 @@
             class="text-decoration-none d-flex align-center justify-space-between text-caption text-slate-600"
           >
             <span>BOM Manager</span>
-            <span class="font-mono font-weight-bold">v0.2.7</span>
+            <span class="font-mono font-weight-bold">v0.3.0</span>
           </router-link>
         </div>
       </template>
@@ -210,6 +210,7 @@ import { useI18n } from 'vue-i18n';
 import api from './services/api';
 import { useComponentsStore } from './stores/components';
 import { useShoppingListStore } from './stores/shoppingList';
+import { useCurrencyStore } from './stores/currency';
 import PackageDetailsDialog from './components/PackageDetailsDialog.vue';
 import MediaUploadDialog from './components/MediaUploadDialog.vue';
 
@@ -217,6 +218,7 @@ const route = useRoute();
 const { t } = useI18n();
 const componentsStore = useComponentsStore();
 const shoppingListStore = useShoppingListStore();
+const currencyStore = useCurrencyStore();
 
 const drawer = ref(true);
 const rail = ref(false);
@@ -256,7 +258,7 @@ const currentTitle = computed(() => {
     case '/settings':
       return t('header.settingsTitle');
     case '/release-notes':
-      return `${t('header.releaseNotesTitle')} (v0.2.7)`;
+      return `${t('header.releaseNotesTitle')} (v0.3.0)`;
     default:
       return t('common.appName');
   }
@@ -294,6 +296,7 @@ watch(() => route.path, () => {
 
 onMounted(() => {
   shoppingListStore.refreshCount();
+  currencyStore.loadCurrencies();
 });
 </script>
 

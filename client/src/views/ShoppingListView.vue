@@ -397,7 +397,13 @@
             </th>
 
             <!-- Actions -->
-            <th class="text-left font-weight-bold" style="width: 100px;">
+            <th
+              class="text-left font-weight-bold"
+              :style="{
+                width: hasAnyPendingOrders ? '120px' : '80px',
+                minWidth: hasAnyPendingOrders ? '120px' : '80px'
+              }"
+            >
               {{ t('shoppingList.colActions') }}
             </th>
           </tr>
@@ -546,7 +552,13 @@
             </td>
 
             <!-- Actions -->
-            <td class="text-left text-no-wrap" style="width: 120px; min-width: 120px;">
+            <td
+              class="text-left text-no-wrap"
+              :style="{
+                width: hasAnyPendingOrders ? '120px' : '80px',
+                minWidth: hasAnyPendingOrders ? '120px' : '80px'
+              }"
+            >
               <div class="d-inline-flex align-center" style="gap: 2px;">
                 <!-- Slot 1: Primary Action (Confirm Delivery when awaiting, Buy Component when to buy) -->
                 <v-btn
@@ -568,16 +580,32 @@
                   @click="openPurchaseDialog(item)"
                 />
 
-                <!-- Cancel Order (visible only when awaiting delivery) -->
-                <v-btn
-                  v-if="item.activeOrderStatus === 'pending' || item.orderId"
-                  icon="mdi-cancel"
-                  size="small"
-                  color="warning"
-                  variant="text"
-                  :title="t('shoppingList.cancelOrder')"
-                  @click="openCancelOrderDialog(item)"
-                />
+                <!-- Slot 2: Cancel Order (rendered ONLY when at least one item has an awaiting order) -->
+                <template v-if="hasAnyPendingOrders">
+                  <!-- Active Cancel button if this row is awaiting delivery -->
+                  <v-btn
+                    v-if="item.activeOrderStatus === 'pending' || item.orderId"
+                    icon="mdi-cancel"
+                    size="small"
+                    color="warning"
+                    variant="text"
+                    :title="t('shoppingList.cancelOrder')"
+                    @click="openCancelOrderDialog(item)"
+                  />
+                  <!-- Inactive (light grey) button to preserve slot alignment without an awkward empty gap -->
+                  <v-btn
+                    v-else
+                    icon="mdi-cancel"
+                    size="small"
+                    variant="text"
+                    disabled
+                    color="slate-300"
+                    class="opacity-25"
+                    tabindex="-1"
+                    aria-hidden="true"
+                    style="pointer-events: none;"
+                  />
+                </template>
 
                 <!-- Slot 3: Remove from list (always aligned in 3rd slot) -->
                 <v-btn
@@ -893,6 +921,10 @@ const totalFilteredCost = computed(() => {
     }
   }
   return cost;
+});
+
+const hasAnyPendingOrders = computed(() => {
+  return filteredItems.value.some(item => !!item.orderId || item.activeOrderStatus === 'pending');
 });
 
 // Load shopping list from API

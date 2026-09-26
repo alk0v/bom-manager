@@ -1,19 +1,48 @@
 # Release Notes - BOM Manager
 
+## Version 0.3.0 (September 2026) - Multi-Currency Orders, Action Columns Alignment & Purchase Workflow Redesign
+
+### Summary
+Version 0.3.0 delivers complete multi-currency support with automated exchange rate recalculations, introduces the dynamic table action columns alignment and gap elimination rule, redesigns the Purchase Confirmation modal, and expands full Ukrainian localization.
+
+### What's New
+- 💰 **Multi-Currency System & Exchange Rates**:
+  - Configure the primary operating currency (`USD`, `EUR`, `UAH`, `PLN`) and enable up to 3 additional secondary currencies in Settings (`/settings`).
+  - Choose supplier order currencies with dynamic currency symbols (`$`, `€`, `₴`, `zł`) and real-time conversion breakdown in order dialogs.
+  - Dedicated `t_exchange_rates` database table keeping historical dated exchange rates with bidirectional rate conversion.
+- 💱 **Automated Order Recalculation by Nearest Date**:
+  - Order costs are automatically normalized to the base currency using the nearest exchange rate to the order date (`ABS(DATEDIFF)` / milliseconds diff).
+  - Keeps project BOM estimates, component metrics, and purchase reports financially accurate across multiple currencies.
+- 📐 **Action Columns Alignment & Dynamic Gap Elimination**:
+  - Rebuilt all table action columns (Shopping List, Purchases Report, BOM Table, Component Details) to dynamically omit unused conditional slots and collapse column widths with 0 gap when no items in the visible view require the action.
+  - When an action is active on at least one row, column widths expand and ineligible rows display light-grey disabled buttons (`opacity-25`), guaranteeing 100% vertical alignment across all rows without horizontal shifts.
+- 🛒 **Purchase Confirmation Modal Redesign**:
+  - Widened modal dialog to 850px for spacious, clean horizontal layout.
+  - Replaced supplier quick-chips with a full-width "Notes" text field.
+  - Removed redundant helper captions under Currency, Quantity, Unit Price, and Order Sum for a clean aesthetic.
+  - Positioned the "Add purchased quantity to catalog inventory stock" checkbox directly next to the "Delivered" radio button, and added the delivery hint inline when "Awaiting Delivery" with matching typography.
+  - Temporarily hid storage box selection awaiting upcoming redesign.
+- ❌ **Awaiting Delivery Order Cancellation**:
+  - Cancel orders in "Waiting for delivery" status with 1-click option to restore part shortages back into the Shopping List, custom cancellation notes, and filtered metrics in the Purchases Report.
+- 🌐 **Multi-Language Release Notes & Translation Fixes**:
+  - Fixed missing date translation in Component Details "Purchases & Pricing" tab (`common.date`).
+  - Modularized release notes into dedicated language modules (`en.js` and `uk.js`) with custom category icons and language toggle selector.
+  - 100% key parity between English and Ukrainian localizations.
+
+---
+
 ## Version 0.2.7 (September 2026) - BOM Component Analogs & Substitutions
 
 ### Summary
 Version 0.2.7 introduces flexible Bill of Materials (BOM) component substitutions and analogs. Hardware engineers can now assign drop-in or functional equivalents per project BOM item, view in-stock analog coverage during shortages, swap primary parts with one click, and seamlessly allocate substitute stock during Production runs.
 
 ### What's New
-- **BOM Component Analogs (`t_bom_substitutes`)**: Add one or more alternative parts to any BOM item with custom engineering notes explaining circuit-specific compatibility (e.g. SN74LS04 replaced with SN74HC04).
-- **Interactive Analogs Management Modal**: Accessible directly from the BOM table using the new swap action button or analog indicator chip. Add, view, edit notes, and remove analogs with instant stock visibility.
-- **One-Click Primary Component Swap**: Easily promote an analog to become the primary BOM component while moving the old primary component into the analogs list, preserving all designators and quantities.
-- **Smart Shortage Indicators**: BOM table badges highlight when an item has an in-stock analog available, immediately signaling alternative assembly options before purchasing.
-- **Production Run Substitute Allocation**: In the "Produce Project" workflow, any item experiencing a shortage can be built using an available analog. Inventory is accurately deducted from the chosen substitute and tracked in production history.
-- **Dual-Database Parity & Cascade Deletions**: Schema migrations and lifecycle cascade deletions are implemented for both MySQL and SQLite database backends.
-- **Full Localization**: Complete 1:1 English and Ukrainian translations for all new dialogs, actions, tooltips, and badges.
-- **Order Cancellation for Awaiting Delivery Orders**: Easily cancel orders that are in "Waiting for delivery" status (e.g. when a supplier cancels after payment or parts are out of stock). Includes options to automatically restore component shortages back to the Shopping List for reordering, records custom cancellation reasons, updates order statuses to `cancelled`, and provides new filter and statistics metrics in the Purchases Report.
+- 🔄 **BOM Component Analogs (`t_bom_substitutes`)**: Add one or more alternative parts to any BOM item with custom engineering notes explaining circuit-specific compatibility (e.g. SN74LS04 replaced with SN74HC04).
+- 📋 **Interactive Analogs Management Modal**: Accessible directly from the BOM table using the new swap action button or analog indicator chip. Add, view, edit notes, and remove analogs with instant stock visibility.
+- 🔀 **One-Click Primary Component Swap**: Easily promote an analog to become the primary BOM component while moving the old primary component into the analogs list, preserving all designators and quantities.
+- ⚠️ **Smart Shortage Indicators**: BOM table badges highlight when an item has an in-stock analog available, immediately signaling alternative assembly options before purchasing.
+- 🏭 **Production Run Substitute Allocation**: In the "Produce Project" workflow, any item experiencing a shortage can be built using an available analog. Inventory is accurately deducted from the chosen substitute and tracked in production history.
+- 🗄️ **Dual-Database Parity & Cascade Deletions**: Schema migrations and lifecycle cascade deletions are implemented for both MySQL and SQLite database backends.
 
 ---
 

@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const pool = require('../db');
+const currencyService = require('../services/currencyService');
 
 // GET /api/reports/production - list production history with items & summary stats
 router.get('/production', async (req, res) => {
@@ -367,21 +368,24 @@ router.get('/purchases', async (req, res) => {
 
     const whereSql = whereClauses.length > 0 ? `WHERE ${whereClauses.join(' AND ')}` : '';
 
-    // Summary statistics query
+    const defaultCurrency = await currencyService.getDefaultCurrency();
+    const allRates = await currencyService.getAllRates();
+
+    // Summary statistics query (recalculated to default currency using convertedPrice)
     const statsQuery = `
       SELECT 
         COUNT(*) AS totalOrders,
         COALESCE(SUM(o.qty), 0) AS totalUnits,
-        COALESCE(SUM(CASE WHEN o.status != 'cancelled' THEN o.price * o.qty ELSE 0 END), 0) AS totalSpent,
+        COALESCE(SUM(CASE WHEN o.status != 'cancelled' THEN COALESCE(o.convertedPrice, o.price) * o.qty ELSE 0 END), 0) AS totalSpent,
         COUNT(CASE WHEN o.status = 'pending' THEN 1 END) AS pendingOrdersCount,
         COALESCE(SUM(CASE WHEN o.status = 'pending' THEN o.qty ELSE 0 END), 0) AS pendingUnits,
-        COALESCE(SUM(CASE WHEN o.status = 'pending' THEN o.price * o.qty ELSE 0 END), 0) AS pendingSpent,
+        COALESCE(SUM(CASE WHEN o.status = 'pending' THEN COALESCE(o.convertedPrice, o.price) * o.qty ELSE 0 END), 0) AS pendingSpent,
         COUNT(CASE WHEN o.status = 'delivered' OR o.status IS NULL THEN 1 END) AS deliveredOrdersCount,
         COALESCE(SUM(CASE WHEN o.status = 'delivered' OR o.status IS NULL THEN o.qty ELSE 0 END), 0) AS deliveredUnits,
-        COALESCE(SUM(CASE WHEN o.status = 'delivered' OR o.status IS NULL THEN o.price * o.qty ELSE 0 END), 0) AS deliveredSpent,
+        COALESCE(SUM(CASE WHEN o.status = 'delivered' OR o.status IS NULL THEN COALESCE(o.convertedPrice, o.price) * o.qty ELSE 0 END), 0) AS deliveredSpent,
         COUNT(CASE WHEN o.status = 'cancelled' THEN 1 END) AS cancelledOrdersCount,
         COALESCE(SUM(CASE WHEN o.status = 'cancelled' THEN o.qty ELSE 0 END), 0) AS cancelledUnits,
-        COALESCE(SUM(CASE WHEN o.status = 'cancelled' THEN o.price * o.qty ELSE 0 END), 0) AS cancelledSpent,
+        COALESCE(SUM(CASE WHEN o.status = 'cancelled' THEN COALESCE(o.convertedPrice, o.price) * o.qty ELSE 0 END), 0) AS cancelledSpent,
         COUNT(DISTINCT o.componentId) AS uniqueComponentsCount
       FROM t_orders o
       LEFT JOIN i_components c ON o.componentId = c.ID
@@ -400,8 +404,9 @@ router.get('/purchases', async (req, res) => {
         o.id,
         o.componentId,
         o.price,
+        o.convertedPrice,
+        o.currency,
         o.qty,
-        ROUND(o.price * o.qty, 4) AS totalCost,
         o.date,
         o.url,
         o.details,
@@ -433,11 +438,22 @@ router.get('/purchases', async (req, res) => {
     const [orders] = await pool.query(ordersQuery, queryParams);
 
     res.json({
-      orders: orders.map(o => ({
-        ...o,
-        price: parseFloat(o.price) || 0,
-        totalCost: Math.round(((parseFloat(o.price) || 0) * (parseInt(o.qty, 10) || 0)) * 100) / 100
-      })),
+      defaultCurrency,
+      orders: orders.map(o => {
+        const conv = currencyService.convertOrderPrice(o, allRates, defaultCurrency);
+        return {
+          ...o,
+          currency: conv.currency,
+          originalPrice: conv.originalPrice,
+          originalTotalCost: conv.originalTotalCost,
+          price: conv.price, // in defaultCurrency
+          totalCost: conv.totalCost, // in defaultCurrency
+          convertedPrice: conv.convertedPrice,
+          convertedTotalCost: conv.convertedTotalCost,
+          exchangeRate: conv.exchangeRate,
+          exchangeRateDate: conv.exchangeRateDate
+        };
+      }),
       stats: {
         totalOrders: Number(stats.totalOrders) || 0,
         totalUnits: Number(stats.totalUnits) || 0,

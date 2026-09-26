@@ -56,8 +56,23 @@
         <!-- Form fields -->
         <v-form ref="formRef" v-model="formValid" @submit.prevent="save">
           <v-row dense>
+            <!-- Currency -->
+            <v-col cols="12" sm="3">
+              <v-select
+                v-model="form.currency"
+                :items="currencyStore.currencyOptions"
+                item-title="label"
+                item-value="code"
+                :label="t('purchaseModal.currency')"
+                density="compact"
+                variant="outlined"
+                rounded="lg"
+                prepend-inner-icon="mdi-cash"
+              />
+            </v-col>
+
             <!-- Quantity -->
-            <v-col cols="12" sm="4">
+            <v-col cols="12" sm="3">
               <v-text-field
                 v-model.number="form.qty"
                 type="number"
@@ -74,26 +89,26 @@
             </v-col>
 
             <!-- Unit Price -->
-            <v-col cols="12" sm="4">
+            <v-col cols="12" sm="3">
               <v-text-field
                 v-model.number="form.price"
                 type="number"
                 min="0"
                 step="0.0001"
                 :label="t('editOrderModal.unitPrice')"
+                :prefix="currencyStore.getSymbol(form.currency)"
                 density="compact"
                 variant="outlined"
                 rounded="lg"
-                prepend-inner-icon="mdi-currency-usd"
                 :rules="[v => v !== null && v !== undefined && v >= 0 || t('purchaseModal.validationPrice')]"
                 required
               />
             </v-col>
 
             <!-- Total Cost (Calculated preview) -->
-            <v-col cols="12" sm="4">
+            <v-col cols="12" sm="3">
               <v-text-field
-                :model-value="formatCurrency(computedTotalCost)"
+                :model-value="formatCurrency(computedTotalCost, form.currency)"
                 :label="t('editOrderModal.totalCost')"
                 density="compact"
                 variant="outlined"
@@ -143,7 +158,7 @@
             </v-col>
 
             <!-- Delivery Date (Visible if delivered) -->
-            <v-col cols="12" sm="6" v-if="form.status === 'delivered'">
+            <v-col cols="12" v-if="form.status === 'delivered'">
               <v-text-field
                 v-model="form.deliveredDate"
                 type="date"
@@ -154,28 +169,6 @@
                 prepend-inner-icon="mdi-calendar-check"
                 required
               />
-            </v-col>
-
-            <!-- Storage Box / Bin -->
-            <v-col cols="12" :sm="form.status === 'delivered' ? 6 : 12">
-              <v-select
-                v-model="form.storageId"
-                :items="storageBoxes"
-                item-title="name"
-                item-value="id"
-                :label="t('editOrderModal.storageBox')"
-                density="compact"
-                variant="outlined"
-                rounded="lg"
-                prepend-inner-icon="mdi-archive-outline"
-                clearable
-                :loading="loadingBoxes"
-                :placeholder="t('purchaseModal.selectStoragePlaceholder')"
-              >
-                <template #item="{ props, item }">
-                  <v-list-item v-bind="props" :subtitle="item.raw.description || ''" />
-                </template>
-              </v-select>
             </v-col>
 
             <!-- Supplier / Order URL -->
@@ -277,8 +270,10 @@ import { useI18n } from 'vue-i18n';
 import MediaImage from './MediaImage.vue';
 import api from '../services/api';
 import { formatCurrency } from '../utils/formatters';
+import { useCurrencyStore } from '../stores/currency';
 
 const { t } = useI18n();
+const currencyStore = useCurrencyStore();
 
 const props = defineProps({
   modelValue: {
@@ -300,6 +295,7 @@ const loadingBoxes = ref(false);
 const storageBoxes = ref([]);
 
 const form = ref({
+  currency: currencyStore.defaultCurrency,
   qty: 1,
   price: 0,
   date: '',
@@ -361,8 +357,9 @@ const loadStorageBoxes = async () => {
 watch(() => props.order, (newOrder) => {
   if (newOrder) {
     form.value = {
+      currency: newOrder.currency || currencyStore.defaultCurrency,
       qty: Number(newOrder.qty) || 1,
-      price: Number(newOrder.price) || 0,
+      price: Number(newOrder.originalPrice ?? newOrder.price) || 0,
       date: formatDateForInput(newOrder.date) || new Date().toISOString().slice(0, 10),
       status: newOrder.status || 'delivered',
       deliveredDate: formatDateForInput(newOrder.deliveredDate) || (newOrder.status === 'delivered' ? formatDateForInput(newOrder.date) : ''),
@@ -393,6 +390,7 @@ const save = async () => {
   try {
     saving.value = true;
     const payload = {
+      currency: form.value.currency,
       qty: Number(form.value.qty),
       price: Number(form.value.price),
       date: form.value.date,

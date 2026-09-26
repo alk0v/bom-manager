@@ -211,28 +211,7 @@
               {{ displayComponent.description || displayComponent.shortDescription || t('componentDetailsModal.noDescription') }}
             </p>
 
-            <!-- Warehouse Allocations -->
-            <div class="mt-2">
-              <div class="text-caption text-disabled text-uppercase font-weight-bold mb-1">{{ t('componentDetailsModal.warehouseStorage') }}</div>
-              <div v-if="displayComponent.warehouse && displayComponent.warehouse.length > 0">
-                <v-chip-group class="flex-wrap">
-                  <v-chip
-                    v-for="w in displayComponent.warehouse"
-                    :key="w.id"
-                    size="small"
-                    variant="outlined"
-                    color="slate-800"
-                    class="font-mono"
-                  >
-                    <v-icon start size="14" color="primary">mdi-archive-outline</v-icon>
-                    {{ w.storage || t('componentDetailsModal.boxStorage', { id: w.storageId }) }}: <strong class="ms-1">{{ w.quantity }} {{ t('componentDetailsModal.pcs') }}</strong>
-                  </v-chip>
-                </v-chip-group>
-              </div>
-              <div v-else class="text-caption text-disabled italic">
-                {{ t('componentDetailsModal.noWarehouseStorage') }}
-              </div>
-            </div>
+
           </v-window-item>
 
           <!-- TAB 2: USED IN PROJECTS -->
@@ -345,9 +324,9 @@
               <v-row dense>
                 <v-col cols="6" sm="3">
                   <v-card variant="outlined" class="pa-2 bg-slate-50 rounded-lg">
-                    <div class="text-caption text-disabled text-truncate">Latest Price</div>
+                    <div class="text-caption text-disabled text-truncate">{{ t('componentDetailsModal.latestPrice') }}</div>
                     <div class="text-subtitle-1 font-weight-bold text-primary font-mono">
-                      {{ formatCurrency(displayComponent.pricing.latestPrice) }}
+                      {{ formatCurrency(displayComponent.pricing.latestPrice, displayComponent.pricing?.defaultCurrency || currencyStore.defaultCurrency) }}
                     </div>
                     <div class="text-caption text-disabled text-truncate font-mono" v-if="displayComponent.pricing.latestOrderDate">
                       {{ formatDate(displayComponent.pricing.latestOrderDate) }}
@@ -358,7 +337,7 @@
                   <v-card variant="outlined" class="pa-2 bg-slate-50 rounded-lg">
                     <div class="text-caption text-disabled text-truncate">{{ t('componentDetailsModal.weightedAvg') }}</div>
                     <div class="text-subtitle-1 font-weight-bold text-slate-800 font-mono">
-                      {{ formatCurrency(displayComponent.pricing.avgPrice) }}
+                      {{ formatCurrency(displayComponent.pricing.avgPrice, displayComponent.pricing?.defaultCurrency || currencyStore.defaultCurrency) }}
                     </div>
                     <div class="text-caption text-disabled text-truncate font-mono">
                       {{ t('componentDetailsModal.perUnit') }}
@@ -380,7 +359,7 @@
                   <v-card variant="outlined" class="pa-2 bg-slate-50 rounded-lg">
                     <div class="text-caption text-disabled text-truncate">{{ t('componentDetailsModal.totalSpent') }}</div>
                     <div class="text-subtitle-1 font-weight-bold text-slate-900 font-mono">
-                      {{ formatCurrency(displayComponent.pricing.totalSpent) }}
+                      {{ formatCurrency(displayComponent.pricing.totalSpent, displayComponent.pricing?.defaultCurrency || currencyStore.defaultCurrency) }}
                     </div>
                     <div class="text-caption text-disabled text-truncate font-mono">
                       {{ t('componentDetailsModal.allPurchases') }}
@@ -439,42 +418,68 @@
                             <v-icon start size="12">mdi-check-circle-outline</v-icon>
                             {{ t('componentDetailsModal.statusDelivered') }}
                           </v-chip>
-                          <v-btn
-                            icon="mdi-package-variant-closed-check"
-                            size="x-small"
-                            variant="text"
-                            color="success"
-                            :title="t('componentDetailsModal.confirmDeliveryTooltip')"
-                            :style="{
-                              visibility: order.status === 'pending' ? 'visible' : 'hidden',
-                              pointerEvents: order.status === 'pending' ? 'auto' : 'none'
-                            }"
-                            :tabindex="order.status === 'pending' ? 0 : -1"
-                            :aria-hidden="order.status !== 'pending'"
-                            @click="order.status === 'pending' && openDeliveryForOrder(order)"
-                          />
-                          <v-btn
-                            icon="mdi-cancel"
-                            size="x-small"
-                            variant="text"
-                            color="warning"
-                            :title="t('componentDetailsModal.cancelOrderTooltip')"
-                            :style="{
-                              visibility: order.status === 'pending' ? 'visible' : 'hidden',
-                              pointerEvents: order.status === 'pending' ? 'auto' : 'none'
-                            }"
-                            :tabindex="order.status === 'pending' ? 0 : -1"
-                            :aria-hidden="order.status !== 'pending'"
-                            @click="order.status === 'pending' && openCancelOrderForOrder(order)"
-                          />
+                          <template v-if="hasAnyPendingPurchases">
+                            <v-btn
+                              v-if="order.status === 'pending'"
+                              icon="mdi-package-variant-closed-check"
+                              size="x-small"
+                              variant="text"
+                              color="success"
+                              :title="t('componentDetailsModal.confirmDeliveryTooltip')"
+                              @click="openDeliveryForOrder(order)"
+                            />
+                            <v-btn
+                              v-else
+                              icon="mdi-package-variant-closed-check"
+                              size="x-small"
+                              variant="text"
+                              disabled
+                              color="slate-300"
+                              class="opacity-25"
+                              tabindex="-1"
+                              aria-hidden="true"
+                              style="pointer-events: none;"
+                            />
+
+                            <v-btn
+                              v-if="order.status === 'pending'"
+                              icon="mdi-cancel"
+                              size="x-small"
+                              variant="text"
+                              color="warning"
+                              :title="t('componentDetailsModal.cancelOrderTooltip')"
+                              @click="openCancelOrderForOrder(order)"
+                            />
+                            <v-btn
+                              v-else
+                              icon="mdi-cancel"
+                              size="x-small"
+                              variant="text"
+                              disabled
+                              color="slate-300"
+                              class="opacity-25"
+                              tabindex="-1"
+                              aria-hidden="true"
+                              style="pointer-events: none;"
+                            />
+                          </template>
                         </div>
                       </td>
                       <td class="text-right text-caption font-mono font-weight-bold text-primary">
-                        {{ formatCurrency(order.price) }}
+                        <div v-if="order.currency && order.currency !== (displayComponent.pricing?.defaultCurrency || currencyStore.defaultCurrency)">
+                          <div>{{ formatCurrency(order.originalPrice, order.currency) }}</div>
+                          <div class="text-caption text-slate-500 font-mono font-weight-regular">
+                            ≈ {{ formatCurrency(order.price, displayComponent.pricing?.defaultCurrency || currencyStore.defaultCurrency) }}
+                          </div>
+                        </div>
+                        <span v-else>{{ formatCurrency(order.price, displayComponent.pricing?.defaultCurrency || currencyStore.defaultCurrency) }}</span>
                       </td>
                       <td class="text-center text-caption font-mono">{{ order.qty }}</td>
                       <td class="text-right text-caption font-mono font-weight-medium">
-                        {{ formatCurrency(order.totalCost) }}
+                        <div>{{ formatCurrency(order.totalCost, displayComponent.pricing?.defaultCurrency || currencyStore.defaultCurrency) }}</div>
+                        <div v-if="order.currency && order.currency !== (displayComponent.pricing?.defaultCurrency || currencyStore.defaultCurrency)" class="text-caption text-slate-500 font-mono font-weight-regular">
+                          {{ formatCurrency(order.originalTotalCost, order.currency) }}
+                        </div>
                       </td>
                       <td class="text-caption text-truncate" style="max-width: 180px;" :title="order.details">
                         {{ order.details || '—' }}
@@ -788,6 +793,10 @@ const displayComponent = computed(() => {
     return detailedComponent.value;
   }
   return props.component || null;
+});
+
+const hasAnyPendingPurchases = computed(() => {
+  return displayComponent.value?.pricing?.orders?.some(o => o.status === 'pending') ?? false;
 });
 
 const projectList = computed(() => {

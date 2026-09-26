@@ -77,7 +77,7 @@
           <th class="text-left font-weight-bold">{{ t('projectFiles.colDescription') }}</th>
           <th class="text-center font-weight-bold" style="width: 110px;">{{ t('projectFiles.colSize') }}</th>
           <th class="text-center font-weight-bold" style="width: 140px;">{{ t('projectFiles.colUploaded') }}</th>
-          <th class="text-left font-weight-bold" style="width: 240px;">{{ t('projectFiles.colActions') }}</th>
+          <th class="text-left font-weight-bold" :style="{ width: hasAnyIbom ? '240px' : '90px', minWidth: hasAnyIbom ? '240px' : '90px' }">{{ t('projectFiles.colActions') }}</th>
         </tr>
       </thead>
       <tbody>
@@ -132,7 +132,7 @@
           </td>
 
           <!-- Actions -->
-          <td class="text-left">
+          <td class="text-left" :style="{ width: hasAnyIbom ? '240px' : '90px', minWidth: hasAnyIbom ? '240px' : '90px' }">
             <div class="d-flex align-center justify-start gap-1">
               <!-- Special iBOM Actions -->
               <template v-if="file.fileType === 'ibom'">
@@ -349,6 +349,10 @@ const fileTypeOptions = computed(() => [
 const currentTypeIcon = computed(() => {
   const opt = fileTypeOptions.value.find(o => o.value === selectedFileType.value);
   return opt ? opt.icon : 'mdi-file-outline';
+});
+
+const hasAnyIbom = computed(() => {
+  return files.value.some(f => f.fileType === 'ibom');
 });
 
 function getTypeMeta(type) {
