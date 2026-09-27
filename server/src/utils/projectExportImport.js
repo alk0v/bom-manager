@@ -188,7 +188,8 @@ async function exportProjectToZip(projectId, pool, mediaDir, res) {
       cat.category AS categoryName,
       pkg.package AS packageName,
       pkg.isSmd,
-      pkg.pinQuantity
+      pkg.pinQuantity,
+      pkg.drawingURL
      FROM t_bom b
      JOIN i_components c ON b.componentId = c.ID
      LEFT JOIN i_categories cat ON c.category_id = cat.ID
@@ -260,6 +261,7 @@ async function exportProjectToZip(projectId, pool, mediaDir, res) {
       package: r.packageName || '',
       isSmd: r.isSmd,
       pinQuantity: r.pinQuantity,
+      drawingURL: r.drawingURL || '',
       datasheetURL: r.datasheetURL || '',
       photoURL: r.photoURL || '',
       customFields: customFieldsByComp.get(r.componentId) || []
@@ -304,7 +306,7 @@ async function exportProjectToZip(projectId, pool, mediaDir, res) {
   zip.addFile('manifest.json', Buffer.from(JSON.stringify(manifest, null, 2), 'utf8'));
 
   // Append Project Photo if it exists on disk
-  if (project.photoUrl) {
+  if (project.photoUrl && !/^https?:\/\//i.test(project.photoUrl)) {
     const photoPath = path.join(mediaDir, 'projects', project.photoUrl);
     if (fs.existsSync(photoPath) && fs.statSync(photoPath).isFile()) {
       zip.addLocalFile(photoPath, 'photo');
@@ -316,6 +318,33 @@ async function exportProjectToZip(projectId, pool, mediaDir, res) {
     const filePath = path.join(mediaDir, 'projects', 'attachments', String(projectId), f.fileName);
     if (fs.existsSync(filePath) && fs.statSync(filePath).isFile()) {
       zip.addLocalFile(filePath, 'attachments');
+    }
+  }
+
+  // Append Component Photos
+  const compPhotos = [...new Set(bomRows.map(r => r.photoURL).filter(p => p && !/^https?:\/\//i.test(p)))];
+  for (const p of compPhotos) {
+    const pPath = path.join(mediaDir, 'components', p);
+    if (fs.existsSync(pPath) && fs.statSync(pPath).isFile()) {
+      zip.addLocalFile(pPath, 'components/photos');
+    }
+  }
+
+  // Append Component Datasheets
+  const compDatasheets = [...new Set(bomRows.map(r => r.datasheetURL).filter(d => d && !/^https?:\/\//i.test(d)))];
+  for (const d of compDatasheets) {
+    const dPath = path.join(mediaDir, 'datasheets', d);
+    if (fs.existsSync(dPath) && fs.statSync(dPath).isFile()) {
+      zip.addLocalFile(dPath, 'components/datasheets');
+    }
+  }
+
+  // Append Package Drawings
+  const pkgDrawings = [...new Set(bomRows.map(r => r.drawingURL).filter(dr => dr && !/^https?:\/\//i.test(dr)))];
+  for (const dr of pkgDrawings) {
+    const drPath = path.join(mediaDir, 'packages', dr);
+    if (fs.existsSync(drPath) && fs.statSync(drPath).isFile()) {
+      zip.addLocalFile(drPath, 'packages');
     }
   }
 
@@ -408,6 +437,27 @@ async function parseProjectExportPackage(fileBuffer, originalName, pool, mediaDi
 }
 
 /**
+ * Helper to extract a file from zip if present
+ */
+function extractZipEntryIfMissing(zip, possibleZipPaths, targetDir, targetFilename) {
+  if (!zip || !targetFilename) return false;
+  if (!fs.existsSync(targetDir)) {
+    fs.mkdirSync(targetDir, { recursive: true });
+  }
+  const destPath = path.join(targetDir, targetFilename);
+  if (fs.existsSync(destPath)) return true; // already exists
+
+  for (const zPath of possibleZipPaths) {
+    const entry = zip.getEntry(zPath);
+    if (entry) {
+      fs.writeFileSync(destPath, entry.getData());
+      return true;
+    }
+  }
+  return false;
+}
+
+/**
  * Execute the project import into the database
  */
 async function executeProjectImport(importData, pool, mediaDir) {
@@ -441,7 +491,7 @@ async function executeProjectImport(importData, pool, mediaDir) {
     let finalPhotoUrl = null;
 
     // If photo is present in ZIP archive, extract to media/projects/
-    if (zip && project.photoUrl) {
+    if (zip && project.photoUrl && !/^https?:\/\//i.test(project.photoUrl)) {
       const photoEntry = zip.getEntry(`photo/${project.photoUrl}`) || zip.getEntry(project.photoUrl);
       if (photoEntry) {
         const projectsDir = path.join(mediaDir, 'projects');
@@ -526,7 +576,7 @@ async function executeProjectImport(importData, pool, mediaDir) {
 
     // 4. Create New Components & Save BOM Rows
     const [categories] = await conn.query('SELECT ID, category FROM i_categories');
-    const [packages] = await conn.query('SELECT ID, package FROM i_packages');
+    const [packages] = await conn.query('SELECT ID, package, drawingURL FROM i_packages');
 
     let createdComponentsCount = 0;
     let importedBomCount = 0;
@@ -562,10 +612,54 @@ async function executeProjectImport(importData, pool, mediaDir) {
             pkgId = existingPkg.ID;
           } else {
             const isSmd = item.originalComponentData?.isSmd ?? 1;
-            const [newPkg] = await conn.query('INSERT INTO i_packages (package, isSmd, pinQuantity) VALUES (?, ?, ?)', [item.packageName.trim(), isSmd, 2]);
+            const pinQty = item.originalComponentData?.pinQuantity ?? 0;
+            let pkgDrawing = item.originalComponentData?.drawingURL || null;
+
+            // Extract package drawing from zip if present
+            if (zip && pkgDrawing && !/^https?:\/\//i.test(pkgDrawing)) {
+              const safeDrName = path.basename(pkgDrawing);
+              extractZipEntryIfMissing(
+                zip,
+                [`packages/${safeDrName}`, `packages/${pkgDrawing}`, safeDrName],
+                path.join(mediaDir, 'packages'),
+                safeDrName
+              );
+              pkgDrawing = safeDrName;
+            }
+
+            const [newPkg] = await conn.query(
+              'INSERT INTO i_packages (package, isSmd, pinQuantity, drawingURL) VALUES (?, ?, ?, ?)',
+              [item.packageName.trim(), isSmd, pinQty, pkgDrawing]
+            );
             pkgId = newPkg.insertId;
-            packages.push({ ID: pkgId, package: item.packageName.trim() });
+            packages.push({ ID: pkgId, package: item.packageName.trim(), drawingURL: pkgDrawing });
           }
+        }
+
+        // Extract component photo from zip if present
+        let compPhoto = nc.photoURL ? nc.photoURL.trim() : null;
+        if (zip && compPhoto && !/^https?:\/\//i.test(compPhoto)) {
+          const safePhotoName = path.basename(compPhoto);
+          extractZipEntryIfMissing(
+            zip,
+            [`components/photos/${safePhotoName}`, `components/${safePhotoName}`, `photo/${safePhotoName}`, safePhotoName],
+            path.join(mediaDir, 'components'),
+            safePhotoName
+          );
+          compPhoto = safePhotoName;
+        }
+
+        // Extract component datasheet from zip if present
+        let compDatasheet = nc.datasheetURL ? nc.datasheetURL.trim() : null;
+        if (zip && compDatasheet && !/^https?:\/\//i.test(compDatasheet)) {
+          const safeDsName = path.basename(compDatasheet);
+          extractZipEntryIfMissing(
+            zip,
+            [`components/datasheets/${safeDsName}`, `datasheets/${safeDsName}`, safeDsName],
+            path.join(mediaDir, 'datasheets'),
+            safeDsName
+          );
+          compDatasheet = safeDsName;
         }
 
         const [compResult] = await conn.query(
@@ -579,8 +673,8 @@ async function executeProjectImport(importData, pool, mediaDir) {
             nc.description ? nc.description.trim() : null,
             nc.shortDescription ? nc.shortDescription.trim() : null,
             nc.marking ? nc.marking.trim() : null,
-            nc.datasheetURL ? nc.datasheetURL.trim() : null,
-            nc.photoURL ? nc.photoURL.trim() : null,
+            compDatasheet,
+            compPhoto,
             parseInt(nc.qty || 0, 10)
           ]
         );
@@ -613,6 +707,26 @@ async function executeProjectImport(importData, pool, mediaDir) {
               );
             }
           }
+        }
+      } else if (zip && item.matchedComponent) {
+        // If matched component already exists, make sure any media files from package exist in local media dir if missing
+        if (item.matchedComponent.photoURL && !/^https?:\/\//i.test(item.matchedComponent.photoURL)) {
+          const photoBase = path.basename(item.matchedComponent.photoURL);
+          extractZipEntryIfMissing(
+            zip,
+            [`components/photos/${photoBase}`, `components/${photoBase}`, `photo/${photoBase}`, photoBase],
+            path.join(mediaDir, 'components'),
+            photoBase
+          );
+        }
+        if (item.matchedComponent.datasheetURL && !/^https?:\/\//i.test(item.matchedComponent.datasheetURL)) {
+          const dsBase = path.basename(item.matchedComponent.datasheetURL);
+          extractZipEntryIfMissing(
+            zip,
+            [`components/datasheets/${dsBase}`, `datasheets/${dsBase}`, dsBase],
+            path.join(mediaDir, 'datasheets'),
+            dsBase
+          );
         }
       }
 

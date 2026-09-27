@@ -2,13 +2,13 @@
   <!-- Main Project Import Dialog -->
   <v-dialog
     :model-value="modelValue"
-    max-width="1560"
-    width="96vw"
+    max-width="1180"
+    width="90vw"
     persistent
     scrollable
     @update:model-value="$emit('update:modelValue', $event)"
   >
-    <v-card class="rounded-0 border bg-white d-flex flex-column" style="max-height: 92vh;">
+    <v-card class="rounded-0 border bg-white d-flex flex-column" style="max-height: 90vh;">
       <!-- Dialog Header -->
       <v-card-item class="bg-slate-50 py-3 px-5 border-b flex-shrink-0">
         <div class="d-flex align-center justify-space-between">
@@ -39,7 +39,7 @@
             {{ t('importProjectModal.selectFileSubtitle') }}
           </p>
 
-          <v-card elevation="0" class="border rounded-0 pa-6 bg-slate-50" style="max-width: 640px;">
+          <v-card elevation="0" class="border rounded-0 pa-6 bg-slate-50 w-100">
             <div class="d-flex align-center mb-3">
               <v-icon color="primary" class="me-2" size="24">mdi-upload</v-icon>
               <span class="font-weight-bold text-subtitle-2 text-slate-900">
@@ -95,11 +95,11 @@
                 {{ projectForm.projectName || 'New Project' }}
               </v-chip>
               <v-chip size="small" color="info" variant="tonal" class="font-mono">
-                {{ totalPartsCount }} pcs total
+                {{ t('ibomImportModal.pcsTotal', { count: totalPartsCount }) }}
               </v-chip>
               <v-chip size="small" color="secondary" variant="tonal" v-if="attachmentsList.length > 0">
                 <v-icon start size="13">mdi-paperclip</v-icon>
-                {{ attachmentsList.length }} files
+                {{ t('importProjectModal.filesCount', { count: attachmentsList.length }) }}
               </v-chip>
             </div>
           </div>
@@ -118,7 +118,7 @@
                 >
                   <template #label>
                     <span class="text-caption font-weight-bold text-slate-800">
-                      {{ selectedCount }} of {{ mappedItems.length }} selected
+                      {{ t('ibomImportModal.selectedCount', { count: selectedCount, total: mappedItems.length }) }}
                     </span>
                   </template>
                 </v-checkbox>
@@ -148,7 +148,7 @@
               <!-- Filter Search -->
               <v-text-field
                 v-model="searchFilter"
-                placeholder="Filter by Value, Footprint, Ref..."
+                :placeholder="t('ibomImportModal.filterPlaceholder')"
                 prepend-inner-icon="mdi-magnify"
                 density="compact"
                 variant="outlined"
@@ -164,12 +164,12 @@
               <v-table density="comfortable" hover class="mapping-table">
                 <thead>
                   <tr class="bg-slate-50">
-                    <th style="width: 40px;" class="text-center">#</th>
-                    <th class="text-left font-weight-bold" style="width: 250px;">Exported Part & Package</th>
-                    <th class="text-center font-weight-bold" style="width: 60px;">Qty</th>
-                    <th class="text-left font-weight-bold" style="width: 120px;">Status</th>
-                    <th class="text-left font-weight-bold">Target Database Component & Package</th>
-                    <th class="text-center font-weight-bold" style="width: 140px;">Action</th>
+                    <th style="width: 40px;" class="text-center">{{ t('ibomImportModal.colNum') }}</th>
+                    <th class="text-left font-weight-bold" style="width: 250px;">{{ t('ibomImportModal.colPartFootprint') }}</th>
+                    <th class="text-center font-weight-bold" style="width: 60px;">{{ t('ibomImportModal.colQty') }}</th>
+                    <th class="text-left font-weight-bold" style="width: 120px;">{{ t('ibomImportModal.colStatus') }}</th>
+                    <th class="text-left font-weight-bold">{{ t('ibomImportModal.colDatabaseComp') }}</th>
+                    <th class="text-center font-weight-bold" style="width: 140px;">{{ t('ibomImportModal.colAction') }}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -191,7 +191,7 @@
                     <!-- Exported Part Details -->
                     <td>
                       <div class="font-mono font-weight-bold text-slate-900 text-body-2">
-                        {{ item.value || '(No Value)' }}
+                        {{ item.value || t('ibomImportModal.noValue') }}
                       </div>
                       <div class="d-flex align-center gap-1 mt-0.5 flex-wrap">
                         <v-chip
@@ -232,7 +232,7 @@
                         class="font-weight-bold"
                       >
                         <v-icon start size="12">mdi-plus-circle-outline</v-icon>
-                        New Part
+                        {{ t('ibomImportModal.statusNewPart') }}
                       </v-chip>
                       <v-chip
                         v-else-if="item.matchConfidence === 'exact'"
@@ -242,7 +242,7 @@
                         class="font-weight-bold"
                       >
                         <v-icon start size="12">mdi-check-circle-outline</v-icon>
-                        Exact Match
+                        {{ t('ibomImportModal.statusExact') }}
                       </v-chip>
                       <v-chip
                         v-else-if="item.matchConfidence === 'suggested'"
@@ -252,7 +252,7 @@
                         class="font-weight-bold"
                       >
                         <v-icon start size="12">mdi-lightbulb-outline</v-icon>
-                        Suggested
+                        {{ t('ibomImportModal.statusSuggested') }}
                       </v-chip>
                       <v-chip
                         v-else
@@ -261,7 +261,7 @@
                         variant="tonal"
                         class="font-weight-bold"
                       >
-                        Unmapped
+                        {{ t('ibomImportModal.statusUnmapped') }}
                       </v-chip>
                     </td>
 
@@ -271,7 +271,7 @@
                         <div
                           class="comp-box-outlined d-flex align-center justify-space-between px-3"
                           @click="item.createAsNew ? openNewCompModal(item) : openPickerFor(item)"
-                          :title="item.createAsNew ? 'Click to configure and add new component to catalog' : 'Click to map or change database component'"
+                          :title="item.createAsNew ? t('ibomImportModal.tooltipConfigureNew') : t('ibomImportModal.tooltipMapExisting')"
                         >
                           <!-- Left: Component Name -->
                           <div class="d-flex align-center gap-2 text-truncate me-2">
@@ -279,7 +279,7 @@
                               class="font-mono font-weight-bold text-truncate"
                               :class="getDisplayComponentName(item) ? 'text-slate-900' : 'text-slate-400 italic'"
                             >
-                              {{ getDisplayComponentName(item) || 'Click to select component...' }}
+                              {{ getDisplayComponentName(item) || t('ibomImportModal.clickToSelect') }}
                             </span>
                           </div>
 
@@ -303,7 +303,7 @@
                     <td class="text-center">
                       <div class="d-flex align-center justify-center gap-1">
                         <!-- Map to existing component button (magnify glass) -->
-                        <v-tooltip text="Map to existing component" location="top">
+                        <v-tooltip :text="t('ibomImportModal.tooltipMapButton')" location="top">
                           <template #activator="{ props: tipProps }">
                             <v-btn
                               v-bind="tipProps"
@@ -318,7 +318,7 @@
                         </v-tooltip>
 
                         <!-- Clone existing component to map (copy icon) -->
-                        <v-tooltip text="Find & clone existing component to map" location="top">
+                        <v-tooltip :text="t('ibomImportModal.tooltipCloneButton')" location="top">
                           <template #activator="{ props: tipProps }">
                             <v-btn
                               v-bind="tipProps"
@@ -333,7 +333,7 @@
                         </v-tooltip>
 
                         <!-- Add new button (+) -->
-                        <v-tooltip text="Configure as new component" location="top">
+                        <v-tooltip :text="t('ibomImportModal.tooltipAddNewButton')" location="top">
                           <template #activator="{ props: tipProps }">
                             <v-btn
                               v-bind="tipProps"
@@ -362,7 +362,7 @@
                 <v-card elevation="0" class="border rounded-0 pa-5 bg-slate-50 mb-4">
                   <div class="text-subtitle-2 font-weight-bold text-slate-900 mb-4 d-flex align-center gap-2">
                     <v-icon color="primary" size="20">mdi-information-outline</v-icon>
-                    <span>Project Properties</span>
+                    <span>{{ t('importProjectModal.projectProperties') }}</span>
                   </div>
 
                   <v-text-field
@@ -418,10 +418,10 @@
 
                     <div v-if="attachmentsList.length > 0" class="d-flex align-center gap-1">
                       <v-btn size="x-small" variant="text" color="primary" @click="attachmentsList.forEach(a => a.selected = true)">
-                        All
+                        {{ t('importProjectModal.all') }}
                       </v-btn>
                       <v-btn size="x-small" variant="text" color="slate-600" @click="attachmentsList.forEach(a => a.selected = false)">
-                        None
+                        {{ t('importProjectModal.none') }}
                       </v-btn>
                     </div>
                   </div>
@@ -600,14 +600,18 @@ const newCompDialogSubtitle = ref('');
 
 const pickerTitle = computed(() => {
   if (isClonePickerMode.value) {
-    return `Find Component to Clone for ${activeMapItem.value?.value || 'Project Part'}`;
+    return t('ibomImportModal.pickerTitleClone', { part: activeMapItem.value?.value || 'Project Part' });
   }
-  return `Map Component for ${activeMapItem.value?.value || 'Project Part'}`;
+  return t('ibomImportModal.pickerTitleMap', { part: activeMapItem.value?.value || 'Project Part' });
 });
 
 const pickerSubtitle = computed(() => {
   if (!activeMapItem.value) return '';
-  return `Row #${activeMapItem.value.index} · Package: ${activeMapItem.value.footprint || 'N/A'} · Qty: ${activeMapItem.value.quantity}`;
+  return t('ibomImportModal.pickerSubtitle', {
+    index: activeMapItem.value.index,
+    footprint: activeMapItem.value.footprint || 'N/A',
+    qty: activeMapItem.value.quantity
+  });
 });
 
 // Map of components by ID for O(1) lookups
@@ -861,8 +865,13 @@ function onComponentToClonePicked(comp) {
     qty: 0
   };
 
-  newCompDialogTitle.value = `Clone Component for ${targetItem.value}`;
-  newCompDialogSubtitle.value = `Cloning from #${comp.ID} ${comp.component}`;
+  newCompDialogTitle.value = t('ibomImportModal.cloneModalTitle', { index: targetItem.index });
+  newCompDialogSubtitle.value = t('ibomImportModal.cloneModalSubtitle', {
+    name: comp.component,
+    part: targetItem.value || 'Part',
+    qty: targetItem.quantity,
+    footprint: targetItem.footprint || 'Unknown'
+  });
 
   pickerDialogOpen.value = false;
   createCompDialogOpen.value = true;
@@ -889,8 +898,12 @@ function openNewCompModal(item) {
     qty: item.newCompData?.qty || 0
   };
 
-  newCompDialogTitle.value = `Configure Component: ${item.value}`;
-  newCompDialogSubtitle.value = `For Row #${item.index} · Package: ${item.footprint || 'N/A'}`;
+  newCompDialogTitle.value = t('ibomImportModal.addModalTitle', { index: item.index });
+  newCompDialogSubtitle.value = t('ibomImportModal.addModalSubtitle', {
+    part: item.value || 'Part',
+    qty: item.quantity,
+    footprint: item.footprint || 'Unknown'
+  });
 
   createCompDialogOpen.value = true;
 }
