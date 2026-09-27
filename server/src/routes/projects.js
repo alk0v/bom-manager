@@ -6,6 +6,7 @@ const fs = require('fs');
 const pool = require('../db');
 const projectFilesRouter = require('./projectFiles');
 const { parseIbomHtml, matchComponentsWithDb } = require('../utils/ibomParser');
+const { exportProjectToZip, parseProjectExportPackage, executeProjectImport } = require('../utils/projectExportImport');
 
 const upload = multer({
   storage: multer.memoryStorage(),
@@ -986,6 +987,71 @@ router.post('/:id/produce', async (req, res) => {
     res.status(500).json({ error: 'Failed to process project production', details: error.message });
   } finally {
     conn.release();
+  }
+});
+
+// ==========================================
+// PROJECT EXPORT & IMPORT (v0.3.4)
+// ==========================================
+
+// GET /api/projects/:id/export - Export project, BOM, components, and attachments as ZIP package
+router.get('/:id/export', async (req, res) => {
+  const projectId = parseInt(req.params.id, 10);
+  if (isNaN(projectId)) {
+    return res.status(400).json({ error: 'Invalid project ID' });
+  }
+
+  try {
+    await exportProjectToZip(projectId, pool, mediaDir, res);
+  } catch (error) {
+    console.error(`Error exporting project #${projectId}:`, error);
+    if (!res.headersSent) {
+      res.status(500).json({ error: 'Failed to export project', details: error.message });
+    }
+  }
+});
+
+// POST /api/projects/import/preview - Upload and parse a project export file (.zip / .json)
+router.post('/import/preview', (req, res) => {
+  upload.single('file')(req, res, async (err) => {
+    if (err) {
+      console.error('Project import upload error:', err);
+      return res.status(400).json({ error: err.message || 'File upload failed' });
+    }
+
+    if (!req.file) {
+      return res.status(400).json({ error: 'Please upload a project export .zip or .json file' });
+    }
+
+    try {
+      const previewData = await parseProjectExportPackage(
+        req.file.buffer,
+        req.file.originalname,
+        pool,
+        mediaDir
+      );
+      res.json(previewData);
+    } catch (parseError) {
+      console.error('Error parsing project export package:', parseError);
+      res.status(400).json({
+        error: 'Failed to parse project package',
+        details: parseError.message
+      });
+    }
+  });
+});
+
+// POST /api/projects/import/execute - Execute the project import into DB
+router.post('/import/execute', async (req, res) => {
+  try {
+    const result = await executeProjectImport(req.body, pool, mediaDir);
+    res.status(201).json(result);
+  } catch (importError) {
+    console.error('Error executing project import:', importError);
+    res.status(500).json({
+      error: 'Failed to import project',
+      details: importError.message
+    });
   }
 });
 

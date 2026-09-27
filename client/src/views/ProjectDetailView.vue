@@ -39,6 +39,17 @@
           variant="outlined"
           size="small"
           color="primary"
+          prepend-icon="mdi-package-up"
+          :loading="exporting"
+          @click="exportCurrentProject"
+        >
+          {{ t('importProjectModal.exportBtn') }}
+        </v-btn>
+
+        <v-btn
+          variant="outlined"
+          size="small"
+          color="primary"
           prepend-icon="mdi-pencil-outline"
           @click="showProjectDialog = true"
         >
@@ -480,6 +491,31 @@ const projectForDelete = computed(() => {
     filesCount: projectFilesList.value.length
   };
 });
+
+const exporting = ref(false);
+
+const exportCurrentProject = async () => {
+  if (!project.value || !project.value.id) return;
+  exporting.value = true;
+  try {
+    const res = await api.exportProject(project.value.id);
+    const blob = new Blob([res.data], { type: 'application/zip' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    const safeTitle = (project.value.projectName || `project_${project.value.id}`).replace(/[^a-zA-Z0-9._-]/g, '_');
+    link.download = `${safeTitle}_export.zip`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(link.href);
+    notify(t('importProjectModal.exportSuccess'));
+  } catch (err) {
+    console.error('Failed to export project:', err);
+    notify(t('importProjectModal.exportError') + ': ' + err.message, 'error');
+  } finally {
+    exporting.value = false;
+  }
+};
 
 function onProjectDeleted(deletedProj) {
   showDeleteDialog.value = false;

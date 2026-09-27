@@ -88,6 +88,14 @@ export const api = {
   }).then(res => res.data),
   deleteProjectFile: (projectId, fileId) => client.delete(`/projects/${projectId}/files/${fileId}`).then(res => res.data),
 
+  // Project Export & Import (v0.3.4)
+  exportProjectUrl: (id) => `/api/projects/${id}/export`,
+  exportProject: (id) => client.get(`/projects/${id}/export`, { responseType: 'blob' }),
+  parseProjectImport: (formData) => client.post('/projects/import/preview', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' }
+  }).then(res => res.data),
+  executeProjectImport: (payload) => client.post('/projects/import/execute', payload).then(res => res.data),
+
   // KiCAD iBOM Parsing and Import
   parseIbom: (projectId, data, isFormData = false) => client.post(
     `/projects/${projectId}/bom/parse-ibom`,

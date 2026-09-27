@@ -77,6 +77,17 @@
             </v-btn>
 
             <v-btn
+              variant="outlined"
+              size="small"
+              color="primary"
+              class="font-weight-bold"
+              prepend-icon="mdi-package-down"
+              @click="showImportDialog = true"
+            >
+              {{ t('importProjectModal.importBtn') }}
+            </v-btn>
+
+            <v-btn
               icon="mdi-refresh"
               variant="outlined"
               size="small"
@@ -266,6 +277,16 @@
                     :title="t('projects.produceTooltip')"
                     @click.stop="openProduceDialog(p)"
                   />
+                  <!-- Export Project button -->
+                  <v-btn
+                    icon="mdi-package-up"
+                    size="small"
+                    variant="text"
+                    color="slate-600"
+                    :title="t('importProjectModal.exportProjectTooltip')"
+                    :loading="exportingProjectId === p.id"
+                    @click.stop="exportProject(p)"
+                  />
                   <!-- Delete Project button -->
                   <v-btn
                     icon="mdi-delete-outline"
@@ -346,6 +367,12 @@
       @notify="notify"
     />
 
+    <!-- DIALOG: Import Project Package -->
+    <ImportProjectDialog
+      v-model="showImportDialog"
+      @imported="onProjectImported"
+    />
+
     <!-- FULL SIZE MEDIA LIGHTBOX DIALOG -->
     <MediaLightboxDialog
       v-model="lightbox.show"
@@ -375,6 +402,7 @@ import ComponentDetailsDialog from '../components/ComponentDetailsDialog.vue';
 import ProjectFormDialog from '../components/ProjectFormDialog.vue';
 import ProduceProjectDialog from '../components/ProduceProjectDialog.vue';
 import DeleteProjectDialog from '../components/DeleteProjectDialog.vue';
+import ImportProjectDialog from '../components/ImportProjectDialog.vue';
 import { formatCurrency, formatDate } from '../utils/formatters';
 
 // State
@@ -546,6 +574,41 @@ const loadProjects = async () => {
 const openBomModal = (project) => {
   activeProject.value = project;
   showBomDialog.value = true;
+};
+
+// Import Project Dialog State
+const showImportDialog = ref(false);
+const exportingProjectId = ref(null);
+
+const exportProject = async (proj) => {
+  if (!proj || !proj.id) return;
+  exportingProjectId.value = proj.id;
+  try {
+    const res = await api.exportProject(proj.id);
+    const blob = new Blob([res.data], { type: 'application/zip' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    const safeTitle = (proj.projectName || `project_${proj.id}`).replace(/[^a-zA-Z0-9._-]/g, '_');
+    link.download = `${safeTitle}_export.zip`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(link.href);
+    notify(t('importProjectModal.exportSuccess'));
+  } catch (err) {
+    console.error('Failed to export project:', err);
+    notify(t('importProjectModal.exportError') + ': ' + err.message, 'error');
+  } finally {
+    exportingProjectId.value = null;
+  }
+};
+
+const onProjectImported = (result) => {
+  notify(t('importProjectModal.importSuccess', { name: result.projectName }));
+  loadProjects();
+  if (result.projectId) {
+    navigateToProject(result.projectId);
+  }
 };
 
 // Automatically refresh projects whenever the project create/edit modal is closed

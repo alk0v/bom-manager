@@ -57,6 +57,18 @@
             {{ t('projects.produce') }}
           </v-btn>
 
+          <!-- Export Project Button -->
+          <v-btn
+            variant="outlined"
+            size="small"
+            color="primary"
+            prepend-icon="mdi-package-up"
+            :loading="exporting"
+            @click="exportCurrentProject"
+          >
+            {{ t('importProjectModal.exportBtn') }}
+          </v-btn>
+
           <!-- Edit Project Button (optional if showProjectActions) -->
           <v-btn
             v-if="showProjectActions"
@@ -345,6 +357,31 @@ const showEditDialog = ref(false);
 const showProduceDialog = ref(false);
 const showDetailsDialog = ref(false);
 const showAnalogsDialog = ref(false);
+
+const exporting = ref(false);
+
+const exportCurrentProject = async () => {
+  if (!props.project || !props.project.id) return;
+  exporting.value = true;
+  try {
+    const res = await api.exportProject(props.project.id);
+    const blob = new Blob([res.data], { type: 'application/zip' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    const safeTitle = (props.project.projectName || `project_${props.project.id}`).replace(/[^a-zA-Z0-9._-]/g, '_');
+    link.download = `${safeTitle}_export.zip`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(link.href);
+    emit('notify', t('importProjectModal.exportSuccess'), 'success');
+  } catch (err) {
+    console.error('Failed to export project:', err);
+    emit('notify', t('importProjectModal.exportError') + ': ' + err.message, 'error');
+  } finally {
+    exporting.value = false;
+  }
+};
 
 const editingBom = ref(null);
 const selectedDetailComponent = ref(null);
