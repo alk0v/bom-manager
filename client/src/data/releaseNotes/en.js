@@ -1,8 +1,46 @@
 export const releasesEn = [
   {
-    version: '0.3.3',
+    version: '0.3.4',
     date: '2026-09-27',
     isCurrent: true,
+    summary: 'Version 0.3.4 introduces complete Hardware Project Export & Import capabilities for sharing projects between users and environments, interactive component mapping, automated bundling of photos, datasheets, and drawings, and full localization for iBOM workflows.',
+    features: [
+      {
+        icon: 'mdi-package-down',
+        color: 'primary',
+        title: 'Project Export to ZIP Archive',
+        description: 'Export complete electronic hardware projects into portable ZIP packages containing project metadata, tags, full BOM requirements, custom technical specifications (t_component_field_values), project cover photo, attachments (t_project_files), component photos, datasheets, and package footprint drawings.'
+      },
+      {
+        icon: 'mdi-database-import-outline',
+        color: 'teal',
+        title: 'Intelligent Project Import & Component Mapping',
+        description: 'Import project export packages (.zip or .json) with an interactive preview workflow. Automatically matches BOM components against the local catalog by part name, footprint, or marking code with instant Exact/Suggested badges, and lets you re-use the Component Picker and Create/Clone dialogs on the fly.'
+      },
+      {
+        icon: 'mdi-paperclip',
+        color: 'indigo',
+        title: 'Complete Media Asset Packaging & Extraction',
+        description: 'Bundles all related component photos, datasheet PDFs, and package drawings into the export package, automatically extracting them into local media storage upon import for newly created or matched items.'
+      },
+      {
+        icon: 'mdi-translate',
+        color: 'blue-grey-darken-1',
+        title: 'KiCAD Interactive HTML BOM (iBOM) Localization',
+        description: 'Full bilingual localization (English & Ukrainian) for the KiCAD iBOM import dialog, streamlined table columns, and polished compact dialog sizing across import modals.'
+      },
+      {
+        icon: 'mdi-swap-horizontal-bold',
+        color: 'amber-darken-3',
+        title: 'Category Change Specification Mapping',
+        description: 'Automatic mapping and data preservation of custom field values when changing component categories individually or in bulk, with safety warnings for unmapped discarded fields.'
+      }
+    ]
+  },
+  {
+    version: '0.3.3',
+    date: '2026-09-27',
+    isCurrent: false,
     summary: 'Version 0.3.3 introduces Category Groups (Supercategories) for organizing component taxonomy, adds dedicated support for Mechanical & Non-Electrical parts (MECH mounting type with nullable pin counts), and delivers UI and workflow enhancements across dictionaries and component creation.',
     features: [
       {
