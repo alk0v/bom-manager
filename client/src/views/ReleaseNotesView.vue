@@ -18,10 +18,10 @@
           class="bg-white rounded border"
         >
           <v-btn value="en" size="small" class="font-weight-bold px-3">
-            🇬🇧 English
+            English
           </v-btn>
           <v-btn value="uk" size="small" class="font-weight-bold px-3">
-            🇺🇦 Українська
+            Українська
           </v-btn>
         </v-btn-toggle>
       </div>

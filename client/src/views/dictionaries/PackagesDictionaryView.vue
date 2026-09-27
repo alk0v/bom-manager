@@ -40,6 +40,10 @@
               <v-icon start size="14">mdi-circle-slice-8</v-icon>
               THT
             </v-btn>
+            <v-btn value="mech" size="small" class="text-caption font-weight-bold">
+              <v-icon start size="14">mdi-wrench-outline</v-icon>
+              MECH
+            </v-btn>
           </v-btn-toggle>
         </div>
 
@@ -111,16 +115,18 @@
               <v-chip
                 size="x-small"
                 variant="tonal"
-                :color="pkg.isSmd ? 'primary' : 'teal'"
+                :color="pkg.isSmd === 1 ? 'teal-darken-1' : (pkg.isSmd === 2 ? 'blue-grey-darken-1' : 'indigo-darken-1')"
                 class="font-weight-bold"
               >
-                <v-icon start size="14">{{ pkg.isSmd ? 'mdi-chip' : 'mdi-circle-slice-8' }}</v-icon>
-                {{ pkg.isSmd ? 'SMD' : 'THT' }}
+                <v-icon start size="14">
+                  {{ pkg.isSmd === 1 ? 'mdi-chip' : (pkg.isSmd === 2 ? 'mdi-wrench-outline' : 'mdi-circle-slice-8') }}
+                </v-icon>
+                {{ pkg.isSmd === 1 ? 'SMD' : (pkg.isSmd === 2 ? 'MECH' : 'THT') }}
               </v-chip>
             </td>
             <!-- Pin Count -->
             <td class="text-center font-mono text-body-2 text-slate-800">
-              <span v-if="pkg.pinQuantity !== null && pkg.pinQuantity !== undefined" class="font-weight-bold">
+              <span v-if="pkg.isSmd !== 2 && pkg.pinQuantity !== null && pkg.pinQuantity !== undefined" class="font-weight-bold">
                 {{ pkg.pinQuantity }}
               </span>
               <span v-else class="text-disabled text-caption">—</span>
@@ -216,6 +222,10 @@
                   <v-btn :value="0" size="small" class="text-caption font-weight-bold">
                     <v-icon start size="14">mdi-circle-slice-8</v-icon>
                     THT
+                  </v-btn>
+                  <v-btn :value="2" size="small" class="text-caption font-weight-bold">
+                    <v-icon start size="14">mdi-wrench-outline</v-icon>
+                    MECH
                   </v-btn>
                 </v-btn-toggle>
               </div>
@@ -351,9 +361,11 @@ onMounted(() => {
 const filteredPackages = computed(() => {
   let list = packagesList.value;
   if (packageMountFilter.value === 'smd') {
-    list = list.filter(p => !!p.isSmd);
+    list = list.filter(p => Number(p.isSmd) === 1);
   } else if (packageMountFilter.value === 'tht') {
-    list = list.filter(p => !p.isSmd);
+    list = list.filter(p => Number(p.isSmd) === 0);
+  } else if (packageMountFilter.value === 'mech') {
+    list = list.filter(p => Number(p.isSmd) === 2);
   }
   if (!packageSearch.value.trim()) return list;
   const q = packageSearch.value.toLowerCase().trim();
@@ -366,7 +378,7 @@ const openPackageForm = (pkg = null) => {
   packageForm.value = {
     package: pkg ? pkg.package : '',
     pinQuantity: pkg && pkg.pinQuantity !== null && pkg.pinQuantity !== undefined ? pkg.pinQuantity : null,
-    isSmd: pkg ? (pkg.isSmd ? 1 : 0) : 1,
+    isSmd: pkg ? (pkg.isSmd !== undefined ? Number(pkg.isSmd) : 1) : 1,
     drawingURL: pkg && pkg.drawingURL ? pkg.drawingURL : ''
   };
   packageError.value = '';
@@ -406,8 +418,8 @@ const savePackage = async () => {
   try {
     const payload = {
       package: name,
-      pinQuantity: packageForm.value.pinQuantity !== null && packageForm.value.pinQuantity !== '' ? parseInt(packageForm.value.pinQuantity, 10) : null,
-      isSmd: packageForm.value.isSmd ? 1 : 0,
+      pinQuantity: Number(packageForm.value.isSmd) === 2 ? null : (packageForm.value.pinQuantity !== null && packageForm.value.pinQuantity !== '' ? parseInt(packageForm.value.pinQuantity, 10) : null),
+      isSmd: parseInt(packageForm.value.isSmd, 10) || 0,
       drawingURL: packageForm.value.drawingURL ? packageForm.value.drawingURL.trim() : null
     };
 

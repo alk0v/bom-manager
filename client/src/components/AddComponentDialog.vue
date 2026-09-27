@@ -56,20 +56,16 @@
           </v-col>
 
           <v-col cols="12" sm="6" md="4">
-            <v-autocomplete
+            <CategorySelect
               v-model="selectedCategories"
-              :items="categories"
-              item-title="category"
-              item-value="ID"
+              :categories="categories"
+              multiple
               :label="t('dialogs.categoriesMulti')"
               :placeholder="t('dialogs.allCategories')"
               density="compact"
               variant="outlined"
               hide-details
               clearable
-              multiple
-              chips
-              closable-chips
               rounded="lg"
               @update:model-value="onFilterChange"
             />
@@ -100,11 +96,11 @@
                     <template #append>
                       <v-chip
                         size="x-small"
-                        :color="item.raw.isSmd ? 'secondary' : 'default'"
+                        :color="item.raw.isSmd === 1 ? 'teal-darken-1' : (item.raw.isSmd === 2 ? 'blue-grey-darken-1' : 'indigo-darken-1')"
                         variant="flat"
                         class="ms-2 font-weight-bold"
                       >
-                        {{ item.raw.isSmd ? 'SMD' : 'THT' }}
+                        {{ item.raw.isSmd === 1 ? 'SMD' : (item.raw.isSmd === 2 ? 'MECH' : 'THT') }}
                       </v-chip>
                     </template>
                   </v-list-item>
@@ -125,6 +121,7 @@
                 <v-btn value="all" size="small" class="px-2 text-caption">{{ t('common.all') }}</v-btn>
                 <v-btn value="smd" size="small" class="px-2 text-caption">SMD</v-btn>
                 <v-btn value="tht" size="small" class="px-2 text-caption">THT</v-btn>
+                <v-btn value="mech" size="small" class="px-2 text-caption">MECH</v-btn>
               </v-btn-toggle>
             </div>
           </v-col>
@@ -540,6 +537,7 @@ import { useI18n } from 'vue-i18n';
 import api from '../services/api';
 import MediaImage from './MediaImage.vue';
 import PackageLink from './PackageLink.vue';
+import CategorySelect from './CategorySelect.vue';
 import ComponentDetailsDialog from './ComponentDetailsDialog.vue';
 import CreateComponentDialog from './CreateComponentDialog.vue';
 
@@ -633,10 +631,13 @@ const bomForm = ref({
 
 const filteredPackagesList = computed(() => {
   if (packageMountType.value === 'smd') {
-    return packages.value.filter(p => p.isSmd === 1);
+    return packages.value.filter(p => Number(p.isSmd) === 1);
   }
   if (packageMountType.value === 'tht') {
-    return packages.value.filter(p => p.isSmd === 0);
+    return packages.value.filter(p => Number(p.isSmd) === 0);
+  }
+  if (packageMountType.value === 'mech') {
+    return packages.value.filter(p => Number(p.isSmd) === 2);
   }
   return packages.value;
 });
@@ -695,7 +696,7 @@ const fetchComponents = async () => {
       search: search.value,
       categoryIds: selectedCategories.value,
       packageIds: selectedPackages.value,
-      isSmd: packageMountType.value === 'smd' ? 1 : (packageMountType.value === 'tht' ? 0 : undefined),
+      isSmd: packageMountType.value === 'smd' ? 1 : (packageMountType.value === 'tht' ? 0 : (packageMountType.value === 'mech' ? 2 : undefined)),
       minPins: minPins.value,
       maxPins: maxPins.value,
       limit: limit.value,

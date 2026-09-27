@@ -256,7 +256,7 @@ const isReportDetail = computed(() => {
 });
 
 const isDictionaryDetail = computed(() => {
-  return route.path === '/dictionaries/categories' || route.path === '/dictionaries/packages';
+  return route.path === '/dictionaries/groups' || route.path === '/dictionaries/categories' || route.path === '/dictionaries/packages';
 });
 
 const reportDetailTitle = computed(() => {
@@ -270,6 +270,9 @@ const reportDetailTitle = computed(() => {
 });
 
 const dictionaryDetailTitle = computed(() => {
+  if (route.path === '/dictionaries/groups') {
+    return t('dictionaries.groupsTitle');
+  }
   if (route.path === '/dictionaries/categories') {
     return t('dictionaries.categoriesTitle');
   }
@@ -288,6 +291,9 @@ const currentTitle = computed(() => {
   }
   if (route.path === '/reports/purchases') {
     return t('reports.purchasesReport');
+  }
+  if (route.path === '/dictionaries/groups') {
+    return t('dictionaries.groupsTitle');
   }
   if (route.path === '/dictionaries/categories') {
     return t('dictionaries.categoriesTitle');
@@ -322,6 +328,9 @@ const currentIcon = computed(() => {
   }
   if (route.path === '/reports/purchases') {
     return 'mdi-cart-arrow-down';
+  }
+  if (route.path === '/dictionaries/groups') {
+    return 'mdi-folder-table-outline';
   }
   if (route.path === '/dictionaries/categories') {
     return 'mdi-shape-outline';

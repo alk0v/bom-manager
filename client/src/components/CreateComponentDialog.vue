@@ -183,17 +183,14 @@
                 <v-checkbox-btn v-model="applyCategory" color="primary" density="compact" class="me-1" />
                 <span class="text-caption font-weight-bold text-slate-800">{{ t('components.updateCategory') }}</span>
               </div>
-              <v-autocomplete
+              <CategorySelect
                 v-model="form.category_id"
-                :items="availableCategories"
-                item-title="category"
-                item-value="ID"
+                :categories="availableCategories"
                 :label="t('dialogs.category') + (isBulkEdit ? '' : ' *')"
                 :placeholder="t('dialogs.categoryPlaceholder')"
                 density="compact"
                 variant="outlined"
                 rounded="lg"
-                prepend-inner-icon="mdi-shape-outline"
                 clearable
                 :disabled="isBulkEdit && !applyCategory"
                 :rules="isBulkEdit ? (applyCategory ? [rules.requiredSelection] : []) : [rules.requiredSelection]"
@@ -209,7 +206,7 @@
                     @click="openQuickCategory"
                   />
                 </template>
-              </v-autocomplete>
+              </CategorySelect>
             </v-col>
 
             <!-- Package / Footprint -->
@@ -258,6 +255,7 @@
                       <v-btn value="all" size="x-small" class="px-2">ALL</v-btn>
                       <v-btn value="smd" size="x-small" class="px-2">SMD</v-btn>
                       <v-btn value="tht" size="x-small" class="px-2">THT</v-btn>
+                      <v-btn value="mech" size="x-small" class="px-2">MECH</v-btn>
                     </v-btn-toggle>
                   </div>
                 </template>
@@ -267,13 +265,13 @@
                     <template #append>
                       <v-chip
                         size="x-small"
-                        :color="item.raw.isSmd ? 'teal-darken-1' : 'indigo-darken-1'"
+                        :color="item.raw.isSmd === 1 ? 'teal-darken-1' : (item.raw.isSmd === 2 ? 'blue-grey-darken-1' : 'indigo-darken-1')"
                         variant="flat"
                         class="ms-2 font-weight-bold font-mono"
                       >
-                        {{ item.raw.isSmd ? 'SMD' : 'THT' }}
+                        {{ item.raw.isSmd === 1 ? 'SMD' : (item.raw.isSmd === 2 ? 'MECH' : 'THT') }}
                       </v-chip>
-                      <span v-if="item.raw.pinQuantity" class="text-caption font-mono text-slate-500 ms-1">
+                      <span v-if="item.raw.isSmd !== 2 && item.raw.pinQuantity" class="text-caption font-mono text-slate-500 ms-1">
                         {{ item.raw.pinQuantity }}p
                       </span>
                       <v-icon
@@ -936,6 +934,7 @@ import { ref, reactive, computed, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import api from '../services/api';
 import MediaImage from './MediaImage.vue';
+import CategorySelect from './CategorySelect.vue';
 
 const { t } = useI18n();
 
@@ -1184,13 +1183,15 @@ const categoryAllowedPackages = computed(() => {
   return selectedCategoryObj.value?.packageIds || [];
 });
 
-// Packages filtered by SMD / THT toggle and Category associations
+// Packages filtered by SMD / THT / MECH toggle and Category associations
 const filteredPackagesList = computed(() => {
   let pkgs = availablePackages.value;
   if (packageMountType.value === 'smd') {
-    pkgs = pkgs.filter(p => p.isSmd === 1);
+    pkgs = pkgs.filter(p => Number(p.isSmd) === 1);
   } else if (packageMountType.value === 'tht') {
-    pkgs = pkgs.filter(p => p.isSmd === 0);
+    pkgs = pkgs.filter(p => Number(p.isSmd) === 0);
+  } else if (packageMountType.value === 'mech') {
+    pkgs = pkgs.filter(p => Number(p.isSmd) === 2);
   }
   if (!showAllPackagesForCategory.value && categoryAllowedPackages.value.length > 0) {
     pkgs = pkgs.filter(p => categoryAllowedPackages.value.includes(p.ID));

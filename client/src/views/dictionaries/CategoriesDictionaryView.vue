@@ -4,7 +4,7 @@
     <v-card elevation="1" class="rounded-0 border bg-white">
       <!-- Toolbar -->
       <div class="pa-4 border-b d-flex flex-wrap align-center justify-space-between gap-3 bg-slate-50">
-        <div class="d-flex align-center gap-3 flex-grow-1 flex-sm-grow-0" style="min-width: 280px; max-width: 420px;">
+        <div class="d-flex flex-wrap align-center gap-3 flex-grow-1 flex-sm-grow-0">
           <v-text-field
             v-model="categorySearch"
             density="compact"
@@ -15,14 +15,26 @@
             clearable
             rounded="lg"
             class="bg-white"
+            style="min-width: 240px; max-width: 320px;"
+          />
+
+          <!-- Group Filter -->
+          <v-select
+            v-model="selectedGroupFilter"
+            :items="groupFilterOptions"
+            item-title="name"
+            item-value="id"
+            density="compact"
+            variant="outlined"
+            hide-details
+            rounded="lg"
+            class="bg-white"
+            style="min-width: 200px; max-width: 260px;"
+            prepend-inner-icon="mdi-folder-outline"
           />
         </div>
 
         <div class="d-flex align-center gap-2">
-          <v-chip size="small" variant="tonal" color="primary" class="font-weight-bold font-mono">
-            {{ filteredCategories.length }} {{ t('manageCatalogModal.categoriesTab', { count: filteredCategories.length }).toLowerCase() }}
-          </v-chip>
-
           <v-btn
             icon="mdi-refresh"
             size="small"
@@ -51,10 +63,11 @@
           <tr class="bg-slate-50 text-caption font-weight-bold">
             <th style="width: 70px;" class="text-center font-weight-bold">ID</th>
             <th class="text-left font-weight-bold">{{ t('manageCatalogModal.categoryName') }}</th>
-            <th class="text-center font-weight-bold" style="width: 220px;">{{ t('manageCatalogModal.allowedPackages') }}</th>
-            <th class="text-center font-weight-bold" style="width: 240px;">{{ t('manageCatalogModal.customFields') }}</th>
-            <th class="text-center font-weight-bold" style="width: 140px;">{{ t('manageCatalogModal.componentsCount') }}</th>
-            <th class="text-right font-weight-bold" style="width: 120px;">{{ t('common.actions') }}</th>
+            <th class="text-center font-weight-bold" style="width: 170px;">{{ t('dictionaries.groupColumn') }}</th>
+            <th class="text-center font-weight-bold" style="width: 200px;">{{ t('manageCatalogModal.allowedPackages') }}</th>
+            <th class="text-center font-weight-bold" style="width: 220px;">{{ t('manageCatalogModal.customFields') }}</th>
+            <th class="text-center font-weight-bold" style="width: 130px;">{{ t('manageCatalogModal.componentsCount') }}</th>
+            <th class="text-right font-weight-bold pe-4" style="width: 140px;">{{ t('common.actions') }}</th>
           </tr>
         </thead>
         <tbody>
@@ -64,6 +77,18 @@
               <div class="font-weight-bold text-body-2 text-slate-900 cursor-pointer hover-underline" @click="openCategoryForm(cat)">
                 {{ cat.category }}
               </div>
+            </td>
+            <!-- Group -->
+            <td class="text-center">
+              <v-chip
+                size="x-small"
+                variant="tonal"
+                color="indigo-darken-1"
+                class="font-weight-bold"
+              >
+                <v-icon start size="13">mdi-folder-outline</v-icon>
+                {{ cat.groupName || 'Electronic' }}
+              </v-chip>
             </td>
             <!-- Allowed Packages -->
             <td class="text-center">
@@ -106,7 +131,7 @@
               </v-chip>
             </td>
             <!-- Actions -->
-            <td class="text-right">
+            <td class="text-right text-no-wrap pe-3">
               <v-btn
                 icon="mdi-pencil-outline"
                 size="small"
@@ -126,7 +151,7 @@
             </td>
           </tr>
           <tr v-if="filteredCategories.length === 0 && !loading">
-            <td colspan="6" class="text-center py-8 text-disabled">
+            <td colspan="7" class="text-center py-8 text-disabled">
               <v-icon size="40" class="mb-2">mdi-shape-outline</v-icon>
               <div>{{ t('manageCatalogModal.noCategoriesFound') }}</div>
             </td>
@@ -173,17 +198,34 @@
                 <div class="line-height-relaxed">{{ t('manageCatalogModal.footerNote') }}</div>
               </div>
 
-              <v-text-field
-                v-model="categoryForm.category"
-                :label="t('manageCatalogModal.categoryNameRequired')"
-                :placeholder="t('manageCatalogModal.categoryPlaceholder')"
-                variant="outlined"
-                density="comfortable"
-                class="font-weight-medium mb-3"
-                autofocus
-                :error-messages="categoryError"
-                @keyup.enter="saveCategory"
-              />
+              <v-row dense class="mb-2">
+                <v-col cols="12" md="7">
+                  <v-text-field
+                    v-model="categoryForm.category"
+                    :label="t('manageCatalogModal.categoryNameRequired')"
+                    :placeholder="t('manageCatalogModal.categoryPlaceholder')"
+                    variant="outlined"
+                    density="comfortable"
+                    class="font-weight-medium mb-3"
+                    autofocus
+                    :error-messages="categoryError"
+                    @keyup.enter="saveCategory"
+                  />
+                </v-col>
+                <v-col cols="12" md="5">
+                  <v-select
+                    v-model="categoryForm.groupId"
+                    :items="groupsList"
+                    item-title="name"
+                    item-value="id"
+                    :label="t('dictionaries.categoryGroup')"
+                    variant="outlined"
+                    density="comfortable"
+                    prepend-inner-icon="mdi-folder-outline"
+                    class="mb-3"
+                  />
+                </v-col>
+              </v-row>
             </v-window-item>
 
             <!-- TAB 2: Allowed Footprints / Packages -->
@@ -199,6 +241,9 @@
                   </v-btn>
                   <v-btn size="small" variant="outlined" color="primary" class="font-weight-bold" @click="selectAllThtPackages">
                     {{ t('manageCatalogModal.selectAllTht') }}
+                  </v-btn>
+                  <v-btn size="small" variant="outlined" color="primary" class="font-weight-bold" @click="selectAllMechPackages">
+                    + MECH
                   </v-btn>
                   <v-btn size="small" variant="text" color="slate-600" @click="categoryForm.packageIds = []">
                     {{ t('manageCatalogModal.clearAll') }}
@@ -221,16 +266,16 @@
                 clearable
               >
                 <template #chip="{ props, item }">
-                  <v-chip v-bind="props" size="small" variant="tonal" color="primary" class="font-mono font-weight-bold">
-                    <v-icon start size="14">{{ item.raw.isSmd ? 'mdi-chip' : 'mdi-circle-slice-8' }}</v-icon>
+                  <v-chip v-bind="props" size="small" variant="tonal" :color="item.raw.isSmd === 1 ? 'teal-darken-1' : (item.raw.isSmd === 2 ? 'blue-grey-darken-1' : 'indigo-darken-1')" class="font-mono font-weight-bold">
+                    <v-icon start size="14">{{ item.raw.isSmd === 1 ? 'mdi-chip' : (item.raw.isSmd === 2 ? 'mdi-wrench-outline' : 'mdi-circle-slice-8') }}</v-icon>
                     {{ item.raw.package }}
                   </v-chip>
                 </template>
                 <template #item="{ props, item }">
-                  <v-list-item v-bind="props" :title="item.raw.package" :subtitle="`${item.raw.isSmd ? 'SMD' : 'THT'} • ${item.raw.pinQuantity || '?'} pins`">
+                  <v-list-item v-bind="props" :title="item.raw.package" :subtitle="`${item.raw.isSmd === 1 ? 'SMD' : (item.raw.isSmd === 2 ? 'MECH' : 'THT')}${item.raw.isSmd !== 2 && item.raw.pinQuantity ? ` • ${item.raw.pinQuantity} pins` : ''}`">
                     <template #prepend>
-                      <v-icon size="small" :color="item.raw.isSmd ? 'primary' : 'teal'">
-                        {{ item.raw.isSmd ? 'mdi-chip' : 'mdi-circle-slice-8' }}
+                      <v-icon size="small" :color="item.raw.isSmd === 1 ? 'teal' : (item.raw.isSmd === 2 ? 'blue-grey' : 'indigo')">
+                        {{ item.raw.isSmd === 1 ? 'mdi-chip' : (item.raw.isSmd === 2 ? 'mdi-wrench-outline' : 'mdi-circle-slice-8') }}
                       </v-icon>
                     </template>
                   </v-list-item>
@@ -563,13 +608,16 @@ const loading = ref(false);
 const saving = ref(false);
 const categoriesList = ref([]);
 const packagesList = ref([]);
+const groupsList = ref([]);
 const categorySearch = ref('');
+const selectedGroupFilter = ref('all');
 
 const showCategoryDialog = ref(false);
 const editingCategory = ref(null);
 const categoryEditTab = ref('general');
 const categoryForm = ref({
   category: '',
+  groupId: 1,
   packageIds: [],
   customFields: []
 });
@@ -688,15 +736,25 @@ const sourceCategoryFields = computed(() => {
   return cat && Array.isArray(cat.customFields) ? cat.customFields : [];
 });
 
+const groupFilterOptions = computed(() => [
+  { id: 'all', name: `${t('manageCatalogModal.all')} (${categoriesList.value.length})` },
+  ...groupsList.value.map(g => ({
+    id: g.id,
+    name: `${g.name} (${categoriesList.value.filter(c => Number(c.groupId) === Number(g.id)).length})`
+  }))
+]);
+
 const loadCategories = async () => {
   loading.value = true;
   try {
-    const [cats, pkgs] = await Promise.all([
+    const [cats, pkgs, grps] = await Promise.all([
       api.getCategories(),
-      api.getPackages()
+      api.getPackages(),
+      api.getCategoryGroups()
     ]);
     categoriesList.value = cats || [];
     packagesList.value = pkgs || [];
+    groupsList.value = grps || [];
   } catch (err) {
     console.error('Failed to load categories:', err);
     notify(t('manageCatalogModal.loadError') + ': ' + err.message, 'error');
@@ -710,9 +768,18 @@ onMounted(() => {
 });
 
 const filteredCategories = computed(() => {
-  if (!categorySearch.value.trim()) return categoriesList.value;
-  const q = categorySearch.value.toLowerCase().trim();
-  return categoriesList.value.filter(c => c.category.toLowerCase().includes(q));
+  let list = [...categoriesList.value];
+  if (selectedGroupFilter.value && selectedGroupFilter.value !== 'all') {
+    list = list.filter(c => Number(c.groupId) === Number(selectedGroupFilter.value));
+  }
+  if (categorySearch.value.trim()) {
+    const q = categorySearch.value.toLowerCase().trim();
+    list = list.filter(c =>
+      (c.category && c.category.toLowerCase().includes(q)) ||
+      (c.groupName && c.groupName.toLowerCase().includes(q))
+    );
+  }
+  return list;
 });
 
 // Category Package Selection Helpers
@@ -723,8 +790,14 @@ const selectAllSmdPackages = () => {
 };
 
 const selectAllThtPackages = () => {
-  const thtIds = packagesList.value.filter(p => p.isSmd === 0).map(p => p.ID);
+  const thtIds = packagesList.value.filter(p => Number(p.isSmd) === 0).map(p => p.ID);
   const combined = new Set([...categoryForm.value.packageIds, ...thtIds]);
+  categoryForm.value.packageIds = Array.from(combined);
+};
+
+const selectAllMechPackages = () => {
+  const mechIds = packagesList.value.filter(p => Number(p.isSmd) === 2).map(p => p.ID);
+  const combined = new Set([...categoryForm.value.packageIds, ...mechIds]);
   categoryForm.value.packageIds = Array.from(combined);
 };
 
@@ -735,6 +808,7 @@ const openCategoryForm = async (cat = null, initialTab = 'general') => {
   deletedFieldIds.value = [];
   categoryForm.value = {
     category: cat ? cat.category : '',
+    groupId: cat?.groupId ? Number(cat.groupId) : (selectedGroupFilter.value !== 'all' ? Number(selectedGroupFilter.value) : 1),
     packageIds: cat && cat.packageIds ? [...cat.packageIds] : [],
     customFields: cat && cat.customFields ? JSON.parse(JSON.stringify(cat.customFields)) : []
   };
@@ -929,12 +1003,17 @@ const saveCategory = async () => {
   saving.value = true;
   categoryError.value = '';
   try {
+    const payload = {
+      category: name,
+      groupId: parseInt(categoryForm.value.groupId, 10) || 1
+    };
+
     let catId = null;
     if (editingCategory.value) {
       catId = editingCategory.value.ID;
-      await api.updateCategory(catId, { category: name });
+      await api.updateCategory(catId, payload);
     } else {
-      const res = await api.createCategory({ category: name });
+      const res = await api.createCategory(payload);
       catId = res.ID || res.id || res.insertId;
     }
 

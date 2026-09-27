@@ -13,6 +13,7 @@ router.get('/', async (req, res) => {
       packageId,
       packageIds,
       projectId,
+      groupId,
       isSmd,
       minPins,
       maxPins,
@@ -30,6 +31,15 @@ router.get('/', async (req, res) => {
       whereClauses.push('(c.component LIKE ? OR c.description LIKE ? OR c.marking LIKE ? OR c.shortDescription LIKE ?)');
       const term = `%${search.trim()}%`;
       params.push(term, term, term, term);
+    }
+
+    // Category Group filter
+    if (groupId) {
+      const parsedGroup = parseInt(groupId, 10);
+      if (!isNaN(parsedGroup)) {
+        whereClauses.push('cat.groupId = ?');
+        params.push(parsedGroup);
+      }
     }
 
     // Category filter (multi-choice supported)
@@ -79,10 +89,10 @@ router.get('/', async (req, res) => {
       }
     }
 
-    // SMD / THT filter
+    // SMD / THT / MECH filter
     if (isSmd !== undefined && isSmd !== null && isSmd !== '') {
       const parsedSmd = parseInt(isSmd, 10);
-      if (!isNaN(parsedSmd) && (parsedSmd === 0 || parsedSmd === 1)) {
+      if (!isNaN(parsedSmd) && (parsedSmd === 0 || parsedSmd === 1 || parsedSmd === 2)) {
         whereClauses.push('pkg.isSmd = ?');
         params.push(parsedSmd);
       }
@@ -176,6 +186,7 @@ router.get('/', async (req, res) => {
     const countQuery = `
       SELECT COUNT(DISTINCT c.ID) AS total 
       FROM i_components c
+      LEFT JOIN i_categories cat ON c.category_id = cat.ID
       LEFT JOIN i_packages pkg ON c.package_id = pkg.ID
       ${whereSql}
     `;
@@ -196,12 +207,15 @@ router.get('/', async (req, res) => {
         c.qty,
         COALESCE(c.minQty, 0) AS minQty,
         cat.category,
+        cat.groupId,
+        COALESCE(cg.name, 'Electronic') AS groupName,
         pkg.package,
         pkg.pinQuantity,
         pkg.isSmd,
         pkg.drawingURL
       FROM i_components c
       LEFT JOIN i_categories cat ON c.category_id = cat.ID
+      LEFT JOIN i_category_groups cg ON cat.groupId = cg.id
       LEFT JOIN i_packages pkg ON c.package_id = pkg.ID
       ${whereSql}
       ORDER BY c.component ASC

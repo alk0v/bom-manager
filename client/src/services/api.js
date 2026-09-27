@@ -120,7 +120,12 @@ export const api = {
   downloadComponentsTemplate: () => client.get('/components/template-csv', { responseType: 'blob' }).then(res => res.data),
   importComponentsCsv: (payload) => client.post('/components/import-csv', payload).then(res => res.data),
 
-  // Categories, Packages & Storages
+  // Category Groups, Categories, Packages & Storages
+  getCategoryGroups: () => client.get('/category-groups').then(res => res.data),
+  createCategoryGroup: (data) => client.post('/category-groups', data).then(res => res.data),
+  updateCategoryGroup: (id, data) => client.put(`/category-groups/${id}`, data).then(res => res.data),
+  deleteCategoryGroup: (id, reassignTo = null) => client.delete(`/category-groups/${id}`, { params: { reassignTo } }).then(res => res.data),
+
   getCategories: () => client.get('/categories').then(res => res.data),
   createCategory: (data) => client.post('/categories', data).then(res => res.data),
   updateCategory: (id, data) => client.put(`/categories/${id}`, data).then(res => res.data),

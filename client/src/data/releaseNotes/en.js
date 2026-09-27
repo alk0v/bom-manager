@@ -1,8 +1,46 @@
 export const releasesEn = [
   {
+    version: '0.3.3',
+    date: '2026-09-27',
+    isCurrent: true,
+    summary: 'Version 0.3.3 introduces Category Groups (Supercategories) for organizing component taxonomy, adds dedicated support for Mechanical & Non-Electrical parts (MECH mounting type with nullable pin counts), and delivers UI and workflow enhancements across dictionaries and component creation.',
+    features: [
+      {
+        icon: 'mdi-folder-table-outline',
+        color: 'primary',
+        title: 'Category Groups & Supercategories Taxonomy',
+        description: 'Organize component categories into top-level groups (e.g. Electronic, Mechanical, Fasteners, Optics, Cables). Includes a full dictionary management view (/dictionaries/groups) with CRUD, sort ordering, and safe deletion with category reassignment.'
+      },
+      {
+        icon: 'mdi-wrench-outline',
+        color: 'blue-grey-darken-1',
+        title: 'Mechanical & Non-Electrical Components Support',
+        description: 'Added "MECH" mounting technology alongside SMD and THT for non-electrical parts (screws, nuts, springs, plastic cases, enclosures, standoffs). Packages support nullable pin counts and omit pin badges when not applicable.'
+      },
+      {
+        icon: 'mdi-shape-outline',
+        color: 'indigo',
+        title: 'Category Group Assignment & Quick Filtering',
+        description: 'Assign categories to groups directly in the Categories Dictionary, filter categories by group in toolbars, and view group classification chips across dictionary views.'
+      },
+      {
+        icon: 'mdi-form-select',
+        color: 'teal',
+        title: 'Component Form Memory & Workflow Optimizations',
+        description: 'When "Add another component after saving" is enabled, all form fields (including Category, Package, Name, Storage, and Custom Specifications) are automatically preserved for rapid batch entry of component kits.'
+      },
+      {
+        icon: 'mdi-table-headers-eye',
+        color: 'amber-darken-3',
+        title: 'Dictionaries Table & Layout Refinements',
+        description: 'Expanded Actions column in Categories Dictionary for optimal usability, improved mounting technology toggles and filters across all dialogs, and streamlined storage section display.'
+      }
+    ]
+  },
+  {
     version: '0.3.2',
     date: '2026-09-26',
-    isCurrent: true,
+    isCurrent: false,
     summary: 'Version 0.3.2 brings Category ↔ Package associations to prevent invalid footprint selections, introduces dynamic category-specific Custom Specification Fields (e.g. Capacitance, Voltage, Current Gain hFE), and adds advanced technical specification filtering across the catalog.',
     features: [
       {

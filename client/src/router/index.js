@@ -38,6 +38,11 @@ const routes = [
     component: () => import('../views/DictionariesView.vue')
   },
   {
+    path: '/dictionaries/groups',
+    name: 'CategoryGroupsDictionary',
+    component: () => import('../views/dictionaries/CategoryGroupsDictionaryView.vue')
+  },
+  {
     path: '/dictionaries/categories',
     name: 'CategoriesDictionary',
     component: () => import('../views/dictionaries/CategoriesDictionaryView.vue')

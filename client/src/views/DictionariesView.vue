@@ -77,6 +77,19 @@ const { t } = useI18n();
 
 const dictionaryItems = computed(() => [
   {
+    title: t('dictionaries.groupsTitle'),
+    description: t('dictionaries.groupsDesc'),
+    icon: 'mdi-folder-multiple-outline',
+    avatarColor: 'indigo-darken-1',
+    route: '/dictionaries/groups',
+    btnText: t('dictionaries.openGroups'),
+    tags: [
+      t('dictionaries.tagSupercategories'),
+      t('dictionaries.tagClassification'),
+      t('dictionaries.tagTaxonomy')
+    ]
+  },
+  {
     title: t('dictionaries.categoriesTitle'),
     description: t('dictionaries.categoriesDesc'),
     icon: 'mdi-shape-outline',

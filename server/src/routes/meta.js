@@ -3,21 +3,152 @@ const router = express.Router();
 const pool = require('../db');
 
 // ==========================================
+// CATEGORY GROUPS CRUD
+// ==========================================
+
+// GET /api/category-groups - list all category groups with category counts
+router.get('/category-groups', async (req, res) => {
+  try {
+    const [rows] = await pool.query(`
+      SELECT 
+        cg.id, 
+        cg.name, 
+        cg.description, 
+        cg.sortOrder, 
+        cg.createdAt,
+        COUNT(c.ID) AS categoryCount
+      FROM i_category_groups cg
+      LEFT JOIN i_categories c ON cg.id = c.groupId
+      GROUP BY cg.id, cg.name, cg.description, cg.sortOrder, cg.createdAt
+      ORDER BY cg.sortOrder ASC, cg.name ASC
+    `);
+    res.json(rows.map(r => ({
+      ...r,
+      id: Number(r.id),
+      sortOrder: Number(r.sortOrder) || 0,
+      categoryCount: Number(r.categoryCount) || 0
+    })));
+  } catch (error) {
+    console.error('Error fetching category groups:', error);
+    res.status(500).json({ error: 'Failed to fetch category groups', details: error.message });
+  }
+});
+
+// POST /api/category-groups - create new category group
+router.post('/category-groups', async (req, res) => {
+  const { name, description, sortOrder = 0 } = req.body;
+  if (!name || !name.trim()) {
+    return res.status(400).json({ error: 'Group name is required' });
+  }
+  try {
+    const trimmed = name.trim();
+    const [existing] = await pool.query('SELECT id FROM i_category_groups WHERE LOWER(name) = LOWER(?)', [trimmed]);
+    if (existing.length > 0) {
+      return res.status(400).json({ error: 'A group with this name already exists', id: existing[0].id });
+    }
+    const [result] = await pool.query(
+      'INSERT INTO i_category_groups (name, description, sortOrder) VALUES (?, ?, ?)',
+      [trimmed, description ? description.trim() : null, parseInt(sortOrder, 10) || 0]
+    );
+    res.status(201).json({
+      id: result.insertId,
+      name: trimmed,
+      description: description ? description.trim() : null,
+      sortOrder: parseInt(sortOrder, 10) || 0,
+      categoryCount: 0
+    });
+  } catch (error) {
+    console.error('Error creating category group:', error);
+    res.status(500).json({ error: 'Failed to create category group', details: error.message });
+  }
+});
+
+// PUT /api/category-groups/:id - update category group
+router.put('/category-groups/:id', async (req, res) => {
+  const id = parseInt(req.params.id, 10);
+  const { name, description, sortOrder = 0 } = req.body;
+  if (isNaN(id)) {
+    return res.status(400).json({ error: 'Invalid group ID' });
+  }
+  if (!name || !name.trim()) {
+    return res.status(400).json({ error: 'Group name is required' });
+  }
+  try {
+    const trimmed = name.trim();
+    const [existing] = await pool.query('SELECT id FROM i_category_groups WHERE LOWER(name) = LOWER(?) AND id != ?', [trimmed, id]);
+    if (existing.length > 0) {
+      return res.status(400).json({ error: 'Another group with this name already exists' });
+    }
+    await pool.query(
+      'UPDATE i_category_groups SET name = ?, description = ?, sortOrder = ? WHERE id = ?',
+      [trimmed, description !== undefined ? (description ? description.trim() : null) : null, parseInt(sortOrder, 10) || 0, id]
+    );
+    res.json({
+      success: true,
+      id,
+      name: trimmed,
+      description: description ? description.trim() : null,
+      sortOrder: parseInt(sortOrder, 10) || 0
+    });
+  } catch (error) {
+    console.error('Error updating category group:', error);
+    res.status(500).json({ error: 'Failed to update category group', details: error.message });
+  }
+});
+
+// DELETE /api/category-groups/:id - delete category group (with usage safeguard)
+router.delete('/category-groups/:id', async (req, res) => {
+  const id = parseInt(req.params.id, 10);
+  const reassignToId = req.query.reassignTo ? parseInt(req.query.reassignTo, 10) : null;
+  if (isNaN(id)) {
+    return res.status(400).json({ error: 'Invalid group ID' });
+  }
+  if (id === 1) {
+    return res.status(400).json({ error: 'Cannot delete default primary group (Electronic)' });
+  }
+  try {
+    const [catRows] = await pool.query('SELECT COUNT(*) AS count FROM i_categories WHERE groupId = ?', [id]);
+    const count = catRows[0]?.count || 0;
+
+    if (count > 0 && !reassignToId) {
+      return res.status(409).json({
+        error: `Cannot delete group: ${count} category(ies) are assigned to it`,
+        categoryCount: count
+      });
+    }
+
+    if (count > 0 && reassignToId) {
+      await pool.query('UPDATE i_categories SET groupId = ? WHERE groupId = ?', [reassignToId, id]);
+    }
+
+    await pool.query('DELETE FROM i_category_groups WHERE id = ?', [id]);
+    res.json({ success: true, id, message: 'Category group deleted successfully' });
+  } catch (error) {
+    console.error('Error deleting category group:', error);
+    res.status(500).json({ error: 'Failed to delete category group', details: error.message });
+  }
+});
+
+// ==========================================
 // CATEGORIES CRUD
 // ==========================================
 
-// GET /api/categories - list all categories with components count, package mappings, and custom fields
+// GET /api/categories - list all categories with components count, package mappings, custom fields, and group info
 router.get('/categories', async (req, res) => {
   try {
     const [rows] = await pool.query(`
       SELECT 
         c.ID, 
         c.category, 
+        c.groupId,
+        COALESCE(cg.name, 'Electronic') AS groupName,
+        cg.sortOrder AS groupSortOrder,
         COUNT(comp.ID) AS componentCount
       FROM i_categories c
+      LEFT JOIN i_category_groups cg ON c.groupId = cg.id
       LEFT JOIN i_components comp ON c.ID = comp.category_id
-      GROUP BY c.ID, c.category
-      ORDER BY c.category ASC
+      GROUP BY c.ID, c.category, c.groupId, cg.name, cg.sortOrder
+      ORDER BY COALESCE(cg.sortOrder, 999) ASC, c.category ASC
     `);
 
     // Fetch package associations
@@ -62,6 +193,8 @@ router.get('/categories', async (req, res) => {
 
     res.json(rows.map(r => ({
       ...r,
+      groupId: Number(r.groupId) || 1,
+      groupName: r.groupName || 'Electronic',
       componentCount: Number(r.componentCount) || 0,
       packageIds: pkgMap.get(r.ID) || [],
       packageCount: (pkgMap.get(r.ID) || []).length,
@@ -118,18 +251,19 @@ router.get('/categories-fields-map', async (req, res) => {
 
 // POST /api/categories - create new category
 router.post('/categories', async (req, res) => {
-  const { category, packageIds, customFields } = req.body;
+  const { category, groupId = 1, packageIds, customFields } = req.body;
   if (!category || !category.trim()) {
     return res.status(400).json({ error: 'Category name is required' });
   }
   try {
     const trimmed = category.trim();
+    const grpId = parseInt(groupId, 10) || 1;
     // Check if duplicate
     const [existing] = await pool.query('SELECT ID FROM i_categories WHERE LOWER(category) = LOWER(?)', [trimmed]);
     if (existing.length > 0) {
       return res.status(400).json({ error: 'A category with this name already exists', id: existing[0].ID });
     }
-    const [result] = await pool.query('INSERT INTO i_categories (category) VALUES (?)', [trimmed]);
+    const [result] = await pool.query('INSERT INTO i_categories (category, groupId) VALUES (?, ?)', [trimmed, grpId]);
     const catId = result.insertId;
 
     // Save package mappings if provided
@@ -158,6 +292,7 @@ router.post('/categories', async (req, res) => {
     res.status(201).json({
       ID: catId,
       category: trimmed,
+      groupId: grpId,
       componentCount: 0,
       packageIds: packageIds || [],
       packageCount: (packageIds || []).length
@@ -170,7 +305,7 @@ router.post('/categories', async (req, res) => {
 
 // PUT /api/categories/:id - update category
 router.put('/categories/:id', async (req, res) => {
-  const { category, packageIds } = req.body;
+  const { category, groupId, packageIds } = req.body;
   const id = parseInt(req.params.id, 10);
   if (isNaN(id)) {
     return res.status(400).json({ error: 'Invalid category ID' });
@@ -180,11 +315,12 @@ router.put('/categories/:id', async (req, res) => {
   }
   try {
     const trimmed = category.trim();
+    const grpId = groupId !== undefined ? (parseInt(groupId, 10) || 1) : 1;
     const [existing] = await pool.query('SELECT ID FROM i_categories WHERE LOWER(category) = LOWER(?) AND ID != ?', [trimmed, id]);
     if (existing.length > 0) {
       return res.status(400).json({ error: 'Another category with this name already exists' });
     }
-    await pool.query('UPDATE i_categories SET category = ? WHERE ID = ?', [trimmed, id]);
+    await pool.query('UPDATE i_categories SET category = ?, groupId = ? WHERE ID = ?', [trimmed, grpId, id]);
 
     // Update package mappings if packageIds is explicitly provided in body
     if (Array.isArray(packageIds)) {
@@ -196,7 +332,7 @@ router.put('/categories/:id', async (req, res) => {
       }
     }
 
-    res.json({ success: true, ID: id, category: trimmed, packageIds: packageIds || [] });
+    res.json({ success: true, ID: id, category: trimmed, groupId: grpId, packageIds: packageIds || [] });
   } catch (error) {
     console.error('Error updating category:', error);
     res.status(500).json({ error: 'Failed to update category', details: error.message });
@@ -420,7 +556,7 @@ router.post('/packages', async (req, res) => {
       return res.status(400).json({ error: 'A package with this name already exists', id: existing[0].ID });
     }
     const pins = pinQuantity !== undefined && pinQuantity !== null && pinQuantity !== '' ? parseInt(pinQuantity, 10) : null;
-    const smdVal = isSmd ? 1 : 0;
+    const smdVal = isSmd !== undefined && isSmd !== null && isSmd !== '' ? parseInt(isSmd, 10) : 0;
     const drawing = drawingURL ? drawingURL.trim() : null;
 
     const [result] = await pool.query(
@@ -459,7 +595,7 @@ router.put('/packages/:id', async (req, res) => {
       return res.status(400).json({ error: 'Another package with this name already exists' });
     }
     const pins = pinQuantity !== undefined && pinQuantity !== null && pinQuantity !== '' ? parseInt(pinQuantity, 10) : null;
-    const smdVal = isSmd ? 1 : 0;
+    const smdVal = isSmd !== undefined && isSmd !== null && isSmd !== '' ? parseInt(isSmd, 10) : 0;
     const drawing = drawingURL !== undefined ? (drawingURL ? drawingURL.trim() : null) : null;
 
     await pool.query(
