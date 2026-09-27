@@ -229,6 +229,37 @@ async function ensureTables() {
     `);
     console.log('[Database:MySQL] Verified tables "t_category_packages", "t_category_fields", and "t_component_field_values" exist.');
 
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS i_category_groups (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        name VARCHAR(100) NOT NULL UNIQUE,
+        description VARCHAR(500) DEFAULT NULL,
+        sortOrder INT DEFAULT 0,
+        createdAt DATETIME DEFAULT CURRENT_TIMESTAMP,
+        INDEX idx_cg_sort (sortOrder),
+        INDEX idx_cg_name (name)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+    `);
+
+    // Ensure default primary group exists
+    const [groupCountRow] = await pool.query('SELECT COUNT(*) as cnt FROM i_category_groups');
+    if (groupCountRow[0]?.cnt === 0) {
+      await pool.query(
+        "INSERT INTO i_category_groups (id, name, description, sortOrder) VALUES (1, 'Electronic', 'Default category group', 1)"
+      );
+      console.log('[Database:MySQL] Seeded default "Electronic" category group in i_category_groups.');
+    }
+
+    // Ensure groupId column in i_categories
+    const [catGroupCols] = await pool.query("SHOW COLUMNS FROM i_categories LIKE 'groupId'");
+    if (catGroupCols.length === 0) {
+      await pool.query('ALTER TABLE i_categories ADD COLUMN groupId INT NOT NULL DEFAULT 1');
+      await pool.query('UPDATE i_categories SET groupId = 1 WHERE groupId IS NULL OR groupId = 0');
+      console.log('[Database:MySQL] Added "groupId" column to i_categories.');
+    } else {
+      console.log('[Database:MySQL] Verified column "groupId" exists in i_categories.');
+    }
+
     // Seed initial tags if t_tags is empty
     const [tagCountRow] = await pool.query('SELECT COUNT(*) as cnt FROM t_tags');
     if (tagCountRow[0]?.cnt === 0) {

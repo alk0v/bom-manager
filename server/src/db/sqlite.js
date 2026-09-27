@@ -50,9 +50,18 @@ function initSchema() {
       photoUrl TEXT
     );
 
+    CREATE TABLE IF NOT EXISTS i_category_groups (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      name TEXT NOT NULL UNIQUE,
+      description TEXT DEFAULT NULL,
+      sortOrder INTEGER DEFAULT 0,
+      createdAt TEXT DEFAULT (datetime('now', 'localtime'))
+    );
+
     CREATE TABLE IF NOT EXISTS i_categories (
       ID INTEGER PRIMARY KEY AUTOINCREMENT,
-      category TEXT
+      category TEXT,
+      groupId INTEGER DEFAULT 1
     );
 
     CREATE TABLE IF NOT EXISTS i_packages (
@@ -301,6 +310,23 @@ function initSchema() {
     }
   } catch (err) {
     console.warn('[Database:SQLite] Migration notice on t_busket:', err.message);
+  }
+
+  // Ensure migration column for i_categories and default i_category_groups seed
+  try {
+    const catCols = db.prepare("PRAGMA table_info(i_categories)").all();
+    if (!catCols.some(c => c.name === 'groupId')) {
+      db.prepare("ALTER TABLE i_categories ADD COLUMN groupId INTEGER DEFAULT 1").run();
+      db.prepare("UPDATE i_categories SET groupId = 1 WHERE groupId IS NULL").run();
+      console.log('[Database:SQLite] Added "groupId" column to i_categories.');
+    }
+    const grpCount = db.prepare('SELECT COUNT(*) as count FROM i_category_groups').get()?.count || 0;
+    if (grpCount === 0) {
+      db.prepare("INSERT INTO i_category_groups (id, name, description, sortOrder) VALUES (1, 'Electronic', 'Default category group', 1)").run();
+      console.log('[Database:SQLite] Seeded default "Electronic" category group into i_category_groups.');
+    }
+  } catch (err) {
+    console.warn('[Database:SQLite] Migration notice on i_category_groups / i_categories:', err.message);
   }
 
   // Seed default t_config if empty
