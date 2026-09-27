@@ -169,7 +169,22 @@ router.get('/categories', async (req, res) => {
     // Fetch custom fields
     let fieldRows = [];
     try {
-      const [fRows] = await pool.query('SELECT id, categoryId, fieldName, fieldLabel, fieldType, unit, options, sortOrder FROM t_category_fields ORDER BY sortOrder ASC, id ASC');
+      const [fRows] = await pool.query(`
+        SELECT 
+          f.id, 
+          f.categoryId, 
+          f.fieldName, 
+          f.fieldLabel, 
+          f.fieldType, 
+          f.unit, 
+          f.options, 
+          f.sortOrder,
+          COUNT(DISTINCT cfv.componentId) AS componentsCount
+        FROM t_category_fields f
+        LEFT JOIN t_component_field_values cfv ON f.id = cfv.fieldId AND (cfv.fieldValue IS NOT NULL AND TRIM(cfv.fieldValue) != '')
+        GROUP BY f.id, f.categoryId, f.fieldName, f.fieldLabel, f.fieldType, f.unit, f.options, f.sortOrder
+        ORDER BY f.sortOrder ASC, f.id ASC
+      `);
       fieldRows = fRows;
     } catch (e) {
       // Table might not exist yet
@@ -187,7 +202,8 @@ router.get('/categories', async (req, res) => {
         unit: r.unit,
         options: r.options ? (typeof r.options === 'string' ? r.options.split(',').map(s => s.trim()).filter(Boolean) : r.options) : [],
         rawOptions: r.options || '',
-        sortOrder: r.sortOrder
+        sortOrder: r.sortOrder,
+        componentsCount: Number(r.componentsCount) || 0
       });
     });
 
@@ -226,7 +242,22 @@ router.get('/categories-packages-map', async (req, res) => {
 // GET /api/categories-fields-map - get all custom fields grouped by categoryId
 router.get('/categories-fields-map', async (req, res) => {
   try {
-    const [rows] = await pool.query('SELECT id, categoryId, fieldName, fieldLabel, fieldType, unit, options, sortOrder FROM t_category_fields ORDER BY sortOrder ASC, id ASC');
+    const [rows] = await pool.query(`
+      SELECT 
+        f.id, 
+        f.categoryId, 
+        f.fieldName, 
+        f.fieldLabel, 
+        f.fieldType, 
+        f.unit, 
+        f.options, 
+        f.sortOrder,
+        COUNT(DISTINCT cfv.componentId) AS componentsCount
+      FROM t_category_fields f
+      LEFT JOIN t_component_field_values cfv ON f.id = cfv.fieldId AND (cfv.fieldValue IS NOT NULL AND TRIM(cfv.fieldValue) != '')
+      GROUP BY f.id, f.categoryId, f.fieldName, f.fieldLabel, f.fieldType, f.unit, f.options, f.sortOrder
+      ORDER BY f.sortOrder ASC, f.id ASC
+    `);
     const map = {};
     rows.forEach(r => {
       if (!map[r.categoryId]) map[r.categoryId] = [];
@@ -239,7 +270,8 @@ router.get('/categories-fields-map', async (req, res) => {
         unit: r.unit,
         options: r.options ? (typeof r.options === 'string' ? r.options.split(',').map(s => s.trim()).filter(Boolean) : r.options) : [],
         rawOptions: r.options || '',
-        sortOrder: r.sortOrder
+        sortOrder: r.sortOrder,
+        componentsCount: Number(r.componentsCount) || 0
       });
     });
     res.json(map);
@@ -370,10 +402,23 @@ router.get('/categories/:id/fields', async (req, res) => {
     return res.status(400).json({ error: 'Invalid category ID' });
   }
   try {
-    const [rows] = await pool.query(
-      'SELECT id, categoryId, fieldName, fieldLabel, fieldType, unit, options, sortOrder FROM t_category_fields WHERE categoryId = ? ORDER BY sortOrder ASC, id ASC',
-      [id]
-    );
+    const [rows] = await pool.query(`
+      SELECT 
+        f.id, 
+        f.categoryId, 
+        f.fieldName, 
+        f.fieldLabel, 
+        f.fieldType, 
+        f.unit, 
+        f.options, 
+        f.sortOrder,
+        COUNT(DISTINCT cfv.componentId) AS componentsCount
+      FROM t_category_fields f
+      LEFT JOIN t_component_field_values cfv ON f.id = cfv.fieldId AND (cfv.fieldValue IS NOT NULL AND TRIM(cfv.fieldValue) != '')
+      WHERE f.categoryId = ?
+      GROUP BY f.id, f.categoryId, f.fieldName, f.fieldLabel, f.fieldType, f.unit, f.options, f.sortOrder
+      ORDER BY f.sortOrder ASC, f.id ASC
+    `, [id]);
     res.json(rows.map(r => ({
       id: r.id,
       categoryId: r.categoryId,
@@ -383,11 +428,31 @@ router.get('/categories/:id/fields', async (req, res) => {
       unit: r.unit,
       options: r.options ? (typeof r.options === 'string' ? r.options.split(',').map(s => s.trim()).filter(Boolean) : r.options) : [],
       rawOptions: r.options || '',
-      sortOrder: r.sortOrder
+      sortOrder: r.sortOrder,
+      componentsCount: Number(r.componentsCount) || 0
     })));
   } catch (error) {
     console.error('Error fetching category fields:', error);
     res.status(500).json({ error: 'Failed to fetch category fields', details: error.message });
+  }
+});
+
+// GET /api/categories/:id/fields/:fieldId/usage - get component usage count for field
+router.get('/categories/:id/fields/:fieldId/usage', async (req, res) => {
+  const { id, fieldId } = req.params;
+  try {
+    const [rows] = await pool.query(
+      'SELECT COUNT(DISTINCT componentId) AS count FROM t_component_field_values WHERE fieldId = ? AND fieldValue IS NOT NULL AND TRIM(fieldValue) != ""',
+      [fieldId]
+    );
+    res.json({
+      fieldId: Number(fieldId),
+      categoryId: Number(id),
+      componentsCount: Number(rows[0]?.count) || 0
+    });
+  } catch (error) {
+    console.error('Error fetching category field usage:', error);
+    res.status(500).json({ error: 'Failed to fetch category field usage', details: error.message });
   }
 });
 

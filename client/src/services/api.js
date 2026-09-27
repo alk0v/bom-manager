@@ -133,6 +133,7 @@ export const api = {
   getCategoryPackages: (id) => client.get(`/categories/${id}/packages`).then(res => res.data),
   updateCategoryPackages: (id, packageIds) => client.put(`/categories/${id}/packages`, { packageIds }).then(res => res.data),
   getCategoryFields: (id) => client.get(`/categories/${id}/fields`).then(res => res.data),
+  getCategoryFieldUsage: (id, fieldId) => client.get(`/categories/${id}/fields/${fieldId}/usage`).then(res => res.data),
   addCategoryField: (id, data) => client.post(`/categories/${id}/fields`, data).then(res => res.data),
   updateCategoryField: (id, fieldId, data) => client.put(`/categories/${id}/fields/${fieldId}`, data).then(res => res.data),
   deleteCategoryField: (id, fieldId) => client.delete(`/categories/${id}/fields/${fieldId}`).then(res => res.data),

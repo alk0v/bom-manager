@@ -460,9 +460,10 @@
                 <thead>
                   <tr class="bg-slate-50 text-caption font-weight-bold">
                     <th class="text-left py-2 font-weight-bold">{{ t('manageCatalogModal.fieldLabel') }}</th>
-                    <th class="text-center py-2 font-weight-bold" style="width: 160px;">{{ t('manageCatalogModal.fieldType') }}</th>
-                    <th class="text-center py-2 font-weight-bold" style="width: 160px;">{{ t('manageCatalogModal.unit') }}</th>
-                    <th class="text-right py-2 font-weight-bold pe-4" style="width: 140px;">{{ t('common.actions') }}</th>
+                    <th class="text-center py-2 font-weight-bold" style="width: 140px;">{{ t('manageCatalogModal.fieldType') }}</th>
+                    <th class="text-center py-2 font-weight-bold" style="width: 120px;">{{ t('manageCatalogModal.unit') }}</th>
+                    <th class="text-center py-2 font-weight-bold" style="width: 140px;">{{ t('manageCatalogModal.componentsWithValues') }}</th>
+                    <th class="text-right py-2 font-weight-bold pe-4" style="width: 120px;">{{ t('common.actions') }}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -477,6 +478,18 @@
                     </td>
                     <td class="text-center font-mono text-body-2 text-slate-800 py-2">
                       {{ f.unit || '—' }}
+                    </td>
+                    <td class="text-center py-2">
+                      <v-chip
+                        size="x-small"
+                        :color="(f.componentsCount || 0) > 0 ? 'amber-darken-3' : 'slate-500'"
+                        variant="tonal"
+                        class="font-mono font-weight-bold"
+                        :title="(f.componentsCount || 0) > 0 ? `${f.componentsCount} components have values` : 'No components have values'"
+                      >
+                        <v-icon start size="12" icon="mdi-chip" />
+                        {{ f.componentsCount || 0 }}
+                      </v-chip>
                     </td>
                     <td class="text-right py-2 pe-3">
                       <div class="d-inline-flex align-center justify-end gap-1">
@@ -886,6 +899,21 @@
       </v-card>
     </v-dialog>
 
+    <!-- CONFIRM DELETE CUSTOM FIELD DIALOG -->
+    <DeleteCustomFieldDialog
+      v-model="showDeleteFieldConfirmDialog"
+      :field="fieldPendingDelete"
+      @confirm="confirmDeleteField"
+    />
+
+    <!-- CONFIRM DELETE CATEGORY DIALOG -->
+    <DeleteCategoryDialog
+      v-model="showDeleteCategoryDialog"
+      :category="categoryPendingDelete"
+      :loading="deletingCategory"
+      @confirm="executeDeleteCategory"
+    />
+
     <!-- Notification Snackbar inside Dialog -->
     <v-snackbar v-model="snackbar.show" :color="snackbar.color" timeout="3000" location="bottom right">
       {{ snackbar.text }}
@@ -898,6 +926,8 @@ import { ref, computed, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import api from '../services/api';
 import MediaImage from './MediaImage.vue';
+import DeleteCustomFieldDialog from './dialogs/DeleteCustomFieldDialog.vue';
+import DeleteCategoryDialog from './dialogs/DeleteCategoryDialog.vue';
 
 const { t } = useI18n();
 
@@ -935,6 +965,16 @@ const categoryForm = ref({
 });
 const deletedFieldIds = ref([]);
 const categoryError = ref('');
+
+// Category deletion confirmation dialog
+const showDeleteCategoryDialog = ref(false);
+const categoryPendingDelete = ref(null);
+const deletingCategory = ref(false);
+
+// Field deletion confirmation dialog
+const showDeleteFieldConfirmDialog = ref(false);
+const fieldPendingDelete = ref(null);
+const fieldPendingDeleteIdx = ref(-1);
 
 // Standard Electronics Technical Presets for quick selection
 const STANDARD_FIELD_PRESETS = [
@@ -1317,10 +1357,25 @@ const saveFieldEditor = () => {
 };
 
 const removeField = (field, idx) => {
-  if (field.id) {
-    deletedFieldIds.value.push(field.id);
+  if (!field.id) {
+    categoryForm.value.customFields.splice(idx, 1);
+    return;
   }
-  categoryForm.value.customFields.splice(idx, 1);
+  fieldPendingDelete.value = field;
+  fieldPendingDeleteIdx.value = idx;
+  showDeleteFieldConfirmDialog.value = true;
+};
+
+const confirmDeleteField = () => {
+  if (fieldPendingDelete.value && fieldPendingDeleteIdx.value >= 0) {
+    if (fieldPendingDelete.value.id) {
+      deletedFieldIds.value.push(fieldPendingDelete.value.id);
+    }
+    categoryForm.value.customFields.splice(fieldPendingDeleteIdx.value, 1);
+  }
+  showDeleteFieldConfirmDialog.value = false;
+  fieldPendingDelete.value = null;
+  fieldPendingDeleteIdx.value = -1;
 };
 
 const saveCategory = async () => {
@@ -1383,20 +1438,25 @@ const saveCategory = async () => {
   }
 };
 
-const confirmDeleteCategory = async (cat) => {
-  if (cat.componentCount > 0) {
-    alert(t('manageCatalogModal.categoryDeleteInUse', { name: cat.category, count: cat.componentCount }));
-    return;
-  }
-  if (confirm(t('manageCatalogModal.categoryDeleteConfirm', { name: cat.category }))) {
-    try {
-      await api.deleteCategory(cat.ID);
-      notify(t('manageCatalogModal.categoryDeleted', { name: cat.category }));
-      await loadCatalogData();
-      emit('updated');
-    } catch (err) {
-      notify(t('manageCatalogModal.categoryDeleteError') + ': ' + (err.response?.data?.error || err.message), 'error');
-    }
+const confirmDeleteCategory = (cat) => {
+  categoryPendingDelete.value = cat;
+  showDeleteCategoryDialog.value = true;
+};
+
+const executeDeleteCategory = async (cat) => {
+  if (!cat || !cat.ID) return;
+  deletingCategory.value = true;
+  try {
+    await api.deleteCategory(cat.ID);
+    notify(t('manageCatalogModal.categoryDeleted', { name: cat.category }));
+    showDeleteCategoryDialog.value = false;
+    categoryPendingDelete.value = null;
+    await loadCatalogData();
+    emit('updated');
+  } catch (err) {
+    notify(t('manageCatalogModal.categoryDeleteError') + ': ' + (err.response?.data?.error || err.message), 'error');
+  } finally {
+    deletingCategory.value = false;
   }
 };
 
