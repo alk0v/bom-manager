@@ -1024,5 +1024,28 @@
     "confirmCancel": "Cancel Order",
     "success": "Order #{id} for {component} has been cancelled.",
     "error": "Failed to cancel order: {error}"
+  },
+  "categoryMapping": {
+    "dialogTitle": "Map Specifications & Custom Fields",
+    "dialogSubtitleSingle": "Transferring specifications to category \"{target}\"",
+    "dialogSubtitleBulk": "Transferring specifications for {count} components to category \"{target}\"",
+    "description": "The recipient category has different custom specifications. Choose how to handle existing specification values:",
+    "sourceField": "Source Specification",
+    "targetAction": "Action in Target Category",
+    "actionCreate": "Create field in target category",
+    "actionMap": "Map to existing field",
+    "actionDelete": "Delete / Discard value",
+    "selectTargetField": "Select target field...",
+    "autoMatched": "Auto-matched",
+    "unmapped": "Unmapped",
+    "deleteWarningTitle": "Data Deletion Warning",
+    "deleteWarningTextSingle": "The following specifications will be permanently deleted because they are not created in the recipient category: {fields}",
+    "deleteWarningTextBulk": "Specifications for {count} components will be permanently deleted for the following unmapped fields: {fields}",
+    "applyBtn": "Apply & Transfer",
+    "cancelBtn": "Cancel",
+    "componentsCount": "{count} component(s) have values",
+    "sampleValue": "Value: {value}",
+    "creatingField": "Creating field \"{name}\" in category \"{cat}\"...",
+    "mappingApplied": "Specifications successfully mapped"
   }
 }

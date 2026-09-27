@@ -812,7 +812,27 @@ async function saveComponentCustomFields(executor, componentId, customFields) {
     }
   }
 
+  // Deduplicate by fieldId to prevent unique key violation
+  const uniqueMap = new Map();
   for (const entry of entries) {
+    uniqueMap.set(entry.fieldId, entry);
+  }
+
+  if (uniqueMap.size === 0) return;
+
+  // Validate that fieldIds actually exist in t_category_fields
+  const fieldIds = Array.from(uniqueMap.keys());
+  const placeholders = fieldIds.map(() => '?').join(', ');
+  const [validFields] = await executor.query(
+    `SELECT id FROM t_category_fields WHERE id IN (${placeholders})`,
+    fieldIds
+  );
+  const validFieldIds = new Set((validFields || []).map(f => Number(f.id)));
+
+  for (const entry of uniqueMap.values()) {
+    if (!validFieldIds.has(Number(entry.fieldId))) {
+      continue;
+    }
     await executor.query(
       'INSERT INTO t_component_field_values (componentId, fieldId, fieldValue, numValue) VALUES (?, ?, ?, ?)',
       [componentId, entry.fieldId, entry.fieldValue, entry.numValue]
@@ -904,7 +924,7 @@ router.post('/', async (req, res) => {
 
 // POST /api/components/bulk-update - Bulk update multiple components
 router.post('/bulk-update', async (req, res) => {
-  const { componentIds, updates = {}, applyFields = {} } = req.body;
+  const { componentIds, updates = {}, applyFields = {}, fieldMappings = [] } = req.body;
 
   if (!Array.isArray(componentIds) || componentIds.length === 0) {
     return res.status(400).json({ error: 'componentIds must be a non-empty array' });
@@ -946,6 +966,40 @@ router.post('/bulk-update', async (req, res) => {
       const placeholders = validIds.map(() => '?').join(', ');
       const sql = `UPDATE i_components SET ${setClauses.join(', ')} WHERE ID IN (${placeholders})`;
       await conn.query(sql, [...params, ...validIds]);
+    }
+
+    // Custom field migrations when category changes
+    if (applyFields.category && updates.category_id !== undefined && Array.isArray(fieldMappings) && fieldMappings.length > 0) {
+      const placeholders = validIds.map(() => '?').join(', ');
+      for (const mapping of fieldMappings) {
+        const sourceFieldId = parseInt(mapping.sourceFieldId, 10);
+        const targetFieldId = mapping.targetFieldId ? parseInt(mapping.targetFieldId, 10) : null;
+        const action = mapping.action;
+
+        if (action === 'map' && targetFieldId && !isNaN(sourceFieldId) && !isNaN(targetFieldId)) {
+          const [rowsWithSource] = await conn.query(
+            `SELECT componentId FROM t_component_field_values WHERE fieldId = ? AND componentId IN (${placeholders})`,
+            [sourceFieldId, ...validIds]
+          );
+          if (rowsWithSource.length > 0) {
+            const compIdsWithSource = rowsWithSource.map(r => r.componentId);
+            const subPlaceholders = compIdsWithSource.map(() => '?').join(', ');
+            await conn.query(
+              `DELETE FROM t_component_field_values WHERE fieldId = ? AND componentId IN (${subPlaceholders})`,
+              [targetFieldId, ...compIdsWithSource]
+            );
+            await conn.query(
+              `UPDATE t_component_field_values SET fieldId = ? WHERE fieldId = ? AND componentId IN (${subPlaceholders})`,
+              [targetFieldId, sourceFieldId, ...compIdsWithSource]
+            );
+          }
+        } else if (action === 'delete' && !isNaN(sourceFieldId)) {
+          await conn.query(
+            `DELETE FROM t_component_field_values WHERE fieldId = ? AND componentId IN (${placeholders})`,
+            [sourceFieldId, ...validIds]
+          );
+        }
+      }
     }
 
     // Custom specification fields
@@ -1014,22 +1068,67 @@ router.put('/:id', async (req, res) => {
   } = req.body;
 
   try {
-    const parsedMinQty = minQty !== undefined && minQty !== null ? parseInt(minQty, 10) : null;
-    await pool.query(
-      `UPDATE i_components SET
-        component = COALESCE(?, component),
-        category_id = COALESCE(?, category_id),
-        package_id = COALESCE(?, package_id),
-        description = COALESCE(?, description),
-        shortDescription = COALESCE(?, shortDescription),
-        marking = COALESCE(?, marking),
-        datasheetURL = COALESCE(?, datasheetURL),
-        photoURL = COALESCE(?, photoURL),
-        qty = COALESCE(?, qty),
-        minQty = COALESCE(?, minQty)
-       WHERE ID = ?`,
-      [component, category_id, package_id, description, shortDescription, marking, datasheetURL, photoURL, qty, parsedMinQty, req.params.id]
-    );
+    const parsedId = parseInt(req.params.id, 10);
+    if (isNaN(parsedId)) {
+      return res.status(400).json({ error: 'Invalid component ID' });
+    }
+
+    const parsedMinQty = minQty !== undefined && minQty !== null ? (parseInt(minQty, 10) || 0) : 0;
+    const parsedQty = qty !== undefined && qty !== null ? (parseInt(qty, 10) || 0) : 0;
+    const parsedCategoryId = category_id !== undefined ? (category_id ? parseInt(category_id, 10) : null) : undefined;
+    const parsedPackageId = package_id !== undefined ? (package_id ? parseInt(package_id, 10) : 28) : undefined;
+
+    let updateFields = [];
+    let updateParams = [];
+
+    if (component !== undefined) {
+      updateFields.push('component = ?');
+      updateParams.push(component ? component.trim() : '');
+    }
+    if (parsedCategoryId !== undefined) {
+      updateFields.push('category_id = ?');
+      updateParams.push(parsedCategoryId);
+    }
+    if (parsedPackageId !== undefined) {
+      updateFields.push('package_id = ?');
+      updateParams.push(parsedPackageId);
+    }
+    if (description !== undefined) {
+      updateFields.push('description = ?');
+      updateParams.push(description ? description.trim() : '');
+    }
+    if (shortDescription !== undefined) {
+      updateFields.push('shortDescription = ?');
+      updateParams.push(shortDescription ? shortDescription.trim() : '');
+    }
+    if (marking !== undefined) {
+      updateFields.push('marking = ?');
+      updateParams.push(marking ? marking.trim() : '');
+    }
+    if (datasheetURL !== undefined) {
+      updateFields.push('datasheetURL = ?');
+      updateParams.push(datasheetURL ? datasheetURL.trim() : null);
+    }
+    if (photoURL !== undefined) {
+      updateFields.push('photoURL = ?');
+      updateParams.push(photoURL ? photoURL.trim() : null);
+    }
+    if (qty !== undefined) {
+      updateFields.push('qty = ?');
+      updateParams.push(parsedQty);
+    }
+    if (minQty !== undefined) {
+      updateFields.push('minQty = ?');
+      updateParams.push(parsedMinQty);
+    }
+
+    if (updateFields.length > 0) {
+      updateParams.push(parsedId);
+      await pool.query(
+        `UPDATE i_components SET ${updateFields.join(', ')} WHERE ID = ?`,
+        updateParams
+      );
+    }
 
     // If storageId is provided, update or create t_warehouse entry
     if (storageId !== undefined && storageId !== null) {
@@ -1037,7 +1136,7 @@ router.put('/:id', async (req, res) => {
       if (!isNaN(parsedStorageId)) {
         const [existingWarehouse] = await pool.query(
           'SELECT id FROM t_warehouse WHERE componentId = ? LIMIT 1',
-          [req.params.id]
+          [parsedId]
         );
         if (existingWarehouse.length > 0) {
           await pool.query(
@@ -1047,7 +1146,7 @@ router.put('/:id', async (req, res) => {
         } else {
           await pool.query(
             'INSERT INTO t_warehouse (componentId, storageId, quantity) VALUES (?, ?, ?)',
-            [req.params.id, parsedStorageId, qty !== undefined ? parseInt(qty, 10) || 0 : 0]
+            [parsedId, parsedStorageId, parsedQty]
           );
         }
       }
@@ -1055,10 +1154,10 @@ router.put('/:id', async (req, res) => {
 
     // Save custom fields if provided
     if (customFields !== undefined) {
-      await saveComponentCustomFields(pool, req.params.id, customFields);
+      await saveComponentCustomFields(pool, parsedId, customFields);
     }
 
-    res.json({ success: true, id: req.params.id, minQty: parsedMinQty });
+    res.json({ success: true, id: parsedId, minQty: parsedMinQty });
   } catch (error) {
     console.error('Error updating component:', error);
     res.status(500).json({ error: 'Failed to update component', details: error.message });

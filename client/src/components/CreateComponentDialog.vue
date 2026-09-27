@@ -927,6 +927,20 @@
       </v-card-actions>
     </v-card>
   </v-dialog>
+
+  <!-- CATEGORY FIELD MAPPING & MIGRATION DIALOG -->
+  <CategoryFieldMappingDialog
+    v-model="showFieldMappingDialog"
+    :source-category-name="mappingSourceCatName"
+    :target-category-name="mappingTargetCatName"
+    :target-category-id="mappingTargetCatId || 0"
+    :target-fields="mappingTargetFields"
+    :source-fields="mappingSourceFields"
+    :is-bulk="mappingIsBulk"
+    :component-count="mappingBulkComponentCount"
+    @confirm="handleFieldMappingConfirmed"
+    @cancel="handleFieldMappingCancelled"
+  />
 </template>
 
 <script setup>
@@ -935,6 +949,7 @@ import { useI18n } from 'vue-i18n';
 import api from '../services/api';
 import MediaImage from './MediaImage.vue';
 import CategorySelect from './CategorySelect.vue';
+import CategoryFieldMappingDialog from './CategoryFieldMappingDialog.vue';
 
 const { t } = useI18n();
 
@@ -1004,15 +1019,111 @@ const applyPhoto = ref(false);
 const applyDatasheet = ref(false);
 const applyCustomFields = reactive({});
 
+// Custom field category mapping & migration state
+const showFieldMappingDialog = ref(false);
+const mappingSourceFields = ref([]);
+const mappingTargetFields = ref([]);
+const mappingTargetCatId = ref(null);
+const mappingTargetCatName = ref('');
+const mappingSourceCatName = ref('');
+const mappingIsBulk = ref(false);
+const mappingBulkComponentCount = ref(1);
+const pendingBulkFieldMappings = ref([]);
+const previousCategoryId = ref(null);
+const previousCategoryFields = ref([]);
+const isSwitchingCategoryProgrammatically = ref(false);
+
 const checkAllSpecs = (val) => {
   categoryCustomFields.value.forEach(f => {
     applyCustomFields[f.id] = val;
   });
 };
 
-const onCategoryChangeInForm = (val) => {
+const onCategoryChangeInForm = async (val) => {
+  if (isSwitchingCategoryProgrammatically.value) return;
+
   if (props.isBulkEdit && val) {
     applyCategory.value = true;
+    return;
+  }
+
+  // Single Edit Mode Category Change
+  if (isEditMode.value && !props.isBulkEdit && val && previousCategoryId.value && Number(val) !== Number(previousCategoryId.value)) {
+    const filledSourceFieldIds = Object.keys(form.customFields).filter(k => {
+      const v = form.customFields[k];
+      return v !== '' && v !== null && v !== undefined;
+    });
+
+    if (filledSourceFieldIds.length > 0) {
+      let targetFields = [];
+      const cat = availableCategories.value.find(c => Number(c.ID || c.id) === Number(val));
+      if (cat && Array.isArray(cat.customFields) && cat.customFields.length > 0) {
+        targetFields = cat.customFields;
+      } else {
+        targetFields = await api.getCategoryFields(val) || [];
+      }
+
+      const sourceFieldObjs = filledSourceFieldIds.map(fId => {
+        const def = (previousCategoryFields.value || []).find(f => Number(f.id) === Number(fId)) ||
+                    (categoryCustomFields.value || []).find(f => Number(f.id) === Number(fId)) ||
+                    (props.component?.customFields?.find(f => Number(f.fieldId || f.id) === Number(fId)));
+        return {
+          id: Number(fId),
+          fieldName: def?.fieldName || `field_${fId}`,
+          fieldLabel: def?.fieldLabel || `Field #${fId}`,
+          fieldType: def?.fieldType || 'text',
+          unit: def?.unit || null,
+          options: def?.options || null,
+          sampleValue: String(form.customFields[fId])
+        };
+      });
+
+      const normalize = (s) => s ? String(s).toLowerCase().trim().replace(/[\s_\-]+/g, '') : '';
+      const allMatched = sourceFieldObjs.every(src => {
+        const sn = normalize(src.fieldName);
+        const sl = normalize(src.fieldLabel);
+        return targetFields.some(tf => {
+          const tn = normalize(tf.fieldName);
+          const tl = normalize(tf.fieldLabel);
+          return (sn && tn && sn === tn) || (sl && tl && sl === tl) || (sn && tl && sn === tl) || (sl && tn && sl === tn);
+        });
+      });
+
+      if (allMatched) {
+        const newCustomFields = {};
+        for (const src of sourceFieldObjs) {
+          const sn = normalize(src.fieldName);
+          const sl = normalize(src.fieldLabel);
+          const tf = targetFields.find(t => {
+            const tn = normalize(t.fieldName);
+            const tl = normalize(t.fieldLabel);
+            return (sn && tn && sn === tn) || (sl && tl && sl === tl) || (sn && tl && sn === tl) || (sl && tn && sl === tn);
+          });
+          if (tf) {
+            newCustomFields[tf.id] = form.customFields[src.id];
+          }
+        }
+        form.customFields = newCustomFields;
+        previousCategoryId.value = val;
+        previousCategoryFields.value = targetFields;
+        categoryCustomFields.value = targetFields;
+      } else {
+        mappingSourceFields.value = sourceFieldObjs;
+        mappingTargetFields.value = targetFields;
+        mappingTargetCatId.value = val;
+        mappingTargetCatName.value = availableCategories.value.find(c => Number(c.ID || c.id) === Number(val))?.category || '';
+        mappingSourceCatName.value = availableCategories.value.find(c => Number(c.ID || c.id) === Number(previousCategoryId.value))?.category || '';
+        mappingIsBulk.value = false;
+        mappingBulkComponentCount.value = 1;
+        showFieldMappingDialog.value = true;
+      }
+    } else {
+      previousCategoryId.value = val;
+      previousCategoryFields.value = [...categoryCustomFields.value];
+    }
+  } else if (val) {
+    previousCategoryId.value = val;
+    previousCategoryFields.value = [...categoryCustomFields.value];
   }
 };
 
@@ -1220,6 +1331,8 @@ const loadCategoryCustomFields = async (catId) => {
 };
 
 watch(() => form.category_id, async (newCatId) => {
+  if (isSwitchingCategoryProgrammatically.value) return;
+
   await loadCategoryCustomFields(newCatId);
 
   // If newly selected category restricts packages and current package is invalid, select the first allowed package
@@ -1235,6 +1348,102 @@ const selectedPackageObj = computed(() => {
   if (!form.package_id) return null;
   return availablePackages.value.find(p => p.ID === form.package_id) || null;
 });
+
+// Category Field Mapping & Migration Handlers
+const handleFieldMappingCancelled = () => {
+  if (!mappingIsBulk.value) {
+    isSwitchingCategoryProgrammatically.value = true;
+    form.category_id = previousCategoryId.value;
+    setTimeout(() => {
+      isSwitchingCategoryProgrammatically.value = false;
+    }, 50);
+  }
+  showFieldMappingDialog.value = false;
+};
+
+const handleFieldMappingConfirmed = async ({ targetCategoryId, mappings }) => {
+  try {
+    submitting.value = true;
+    errorMessage.value = '';
+
+    // 1. Create fields in target category if action is 'create'
+    for (const m of mappings) {
+      if (m.action === 'create' && m.newFieldData) {
+        const created = await api.addCategoryField(targetCategoryId, m.newFieldData);
+        m.targetFieldId = created.id;
+        m.action = 'map';
+      }
+    }
+
+    if (!mappingIsBulk.value) {
+      // Single edit mapping: Remap form.customFields to new targetFieldIds
+      const newCustomFields = {};
+      for (const m of mappings) {
+        if (m.action === 'map' && m.targetFieldId && form.customFields[m.sourceFieldId] !== undefined) {
+          newCustomFields[m.targetFieldId] = form.customFields[m.sourceFieldId];
+        }
+      }
+      form.customFields = newCustomFields;
+      previousCategoryId.value = targetCategoryId;
+      const refreshedFields = await api.getCategoryFields(targetCategoryId);
+      categoryCustomFields.value = refreshedFields || [];
+      previousCategoryFields.value = refreshedFields || [];
+      showFieldMappingDialog.value = false;
+      emit('catalog-updated');
+    } else {
+      // Bulk edit mapping: execute bulk update
+      const finalMappings = mappings.map(m => ({
+        sourceFieldId: m.sourceFieldId,
+        targetFieldId: m.targetFieldId,
+        action: m.action
+      }));
+      pendingBulkFieldMappings.value = finalMappings;
+      showFieldMappingDialog.value = false;
+      await executeBulkSave(finalMappings);
+    }
+  } catch (err) {
+    console.error('Failed to apply field mappings:', err);
+    errorMessage.value = err.response?.data?.error || err.message;
+  } finally {
+    submitting.value = false;
+  }
+};
+
+const executeBulkSave = async (fieldMappings = []) => {
+  try {
+    submitting.value = true;
+    errorMessage.value = '';
+
+    const payload = {
+      componentIds: props.bulkComponents.map(c => c.ID || c.id),
+      updates: {
+        category_id: form.category_id,
+        package_id: form.package_id,
+        photoURL: form.photoURL,
+        datasheetURL: form.datasheetURL,
+        customFields: form.customFields
+      },
+      applyFields: {
+        category: applyCategory.value,
+        package: applyPackage.value,
+        photo: applyPhoto.value,
+        datasheet: applyDatasheet.value,
+        customFields: Object.keys(applyCustomFields).filter(id => !!applyCustomFields[id])
+      },
+      fieldMappings
+    };
+
+    await api.bulkUpdateComponents(payload);
+    emit('saved', { isBulk: true, count: props.bulkComponents.length });
+    emit('catalog-updated');
+    close();
+  } catch (err) {
+    console.error('Failed to bulk update components:', err);
+    errorMessage.value = err.response?.data?.error || err.message;
+  } finally {
+    submitting.value = false;
+  }
+};
 
 // Quick Category State & Functions
 const showQuickCategory = ref(false);
@@ -1353,6 +1562,7 @@ const loadStorages = async () => {
 };
 
 const applyInitialDataOrDefaults = async () => {
+  pendingBulkFieldMappings.value = [];
   if (props.isBulkEdit) {
     applyCategory.value = false;
     applyPackage.value = false;
@@ -1375,10 +1585,14 @@ const applyInitialDataOrDefaults = async () => {
       const allSameCat = firstCat && props.bulkComponents.every(c => Number(c.category_id) === Number(firstCat));
       if (allSameCat) {
         form.category_id = Number(firstCat);
+        previousCategoryId.value = Number(firstCat);
         await loadCategoryCustomFields(form.category_id);
+        previousCategoryFields.value = [...categoryCustomFields.value];
       } else {
         form.category_id = null;
+        previousCategoryId.value = null;
         categoryCustomFields.value = [];
+        previousCategoryFields.value = [];
       }
 
       const firstPkg = props.bulkComponents[0].package_id;
@@ -1399,18 +1613,17 @@ const applyInitialDataOrDefaults = async () => {
     form.component = source.component || '';
     form.marking = source.marking || '';
     form.category_id = source.category_id ? Number(source.category_id) : null;
+    previousCategoryId.value = form.category_id;
     form.package_id = source.package_id ? Number(source.package_id) : null;
     form.shortDescription = source.shortDescription || '';
     form.description = source.description || '';
     form.qty = source.qty !== undefined && source.qty !== null ? source.qty : 0;
     form.minQty = source.minQty !== undefined && source.minQty !== null ? source.minQty : 0;
-    // Look up storage from warehouse allocations if available
     const warehouseStorageId = source.warehouse?.[0]?.storageId;
     form.storageId = source.storageId || source.storage_id || warehouseStorageId || null;
     form.datasheetURL = source.datasheetURL || '';
     form.photoURL = source.photoURL || '';
 
-    // Populate custom fields
     form.customFields = {};
     if (Array.isArray(source.customFields)) {
       for (const cf of source.customFields) {
@@ -1425,12 +1638,12 @@ const applyInitialDataOrDefaults = async () => {
 
     if (form.category_id) {
       await loadCategoryCustomFields(form.category_id);
+      previousCategoryFields.value = [...categoryCustomFields.value];
     }
   } else {
     resetFormFields();
   }
 
-  // Ensure a default package if still null
   if (!form.package_id && props.packages.length > 0) {
     const defaultPkg = props.packages.find(p => p.ID === 28) || props.packages[0];
     if (defaultPkg) form.package_id = defaultPkg.ID;
@@ -1461,6 +1674,9 @@ const resetFormFields = () => {
   Object.keys(defaults).forEach(key => {
     form[key] = defaults[key];
   });
+  previousCategoryId.value = null;
+  previousCategoryFields.value = [];
+  pendingBulkFieldMappings.value = [];
   if (props.packages.length > 0) {
     const defaultPkg = props.packages.find(p => p.ID === 28) || props.packages[0];
     if (defaultPkg) form.package_id = defaultPkg.ID;
@@ -1511,38 +1727,78 @@ const submitForm = async () => {
       return;
     }
 
-    try {
-      submitting.value = true;
-      errorMessage.value = '';
-
-      const payload = {
-        componentIds: props.bulkComponents.map(c => c.ID || c.id),
-        updates: {
-          category_id: form.category_id,
-          package_id: form.package_id,
-          photoURL: form.photoURL,
-          datasheetURL: form.datasheetURL,
-          customFields: form.customFields
-        },
-        applyFields: {
-          category: applyCategory.value,
-          package: applyPackage.value,
-          photo: applyPhoto.value,
-          datasheet: applyDatasheet.value,
-          customFields: Object.keys(applyCustomFields).filter(id => !!applyCustomFields[id])
+    // Check if components have custom fields that need migration
+    if (applyCategory.value && form.category_id && props.bulkComponents?.length > 0) {
+      const fieldMap = new Map();
+      for (const comp of props.bulkComponents) {
+        if (Array.isArray(comp.customFields)) {
+          for (const cf of comp.customFields) {
+            const val = cf.fieldValue !== undefined ? cf.fieldValue : cf.value;
+            if (val !== undefined && val !== null && String(val).trim() !== '') {
+              const fId = Number(cf.fieldId || cf.id);
+              if (!fieldMap.has(fId)) {
+                fieldMap.set(fId, {
+                  id: fId,
+                  fieldName: cf.fieldName || `field_${fId}`,
+                  fieldLabel: cf.fieldLabel || `Field #${fId}`,
+                  fieldType: cf.fieldType || 'text',
+                  unit: cf.unit || null,
+                  options: cf.options || null,
+                  valuesCount: 0
+                });
+              }
+              fieldMap.get(fId).valuesCount++;
+            }
+          }
         }
-      };
+      }
 
-      await api.bulkUpdateComponents(payload);
-      emit('saved', { isBulk: true, count: props.bulkComponents.length });
-      emit('catalog-updated');
-      close();
-    } catch (err) {
-      console.error('Failed to bulk update components:', err);
-      errorMessage.value = err.response?.data?.error || err.message;
-    } finally {
-      submitting.value = false;
+      if (fieldMap.size > 0 && pendingBulkFieldMappings.value.length === 0) {
+        const targetFields = await api.getCategoryFields(form.category_id) || [];
+        const normalize = (s) => s ? String(s).toLowerCase().trim().replace(/[\s_\-]+/g, '') : '';
+        const allMatched = [...fieldMap.values()].every(src => {
+          const sn = normalize(src.fieldName);
+          const sl = normalize(src.fieldLabel);
+          return targetFields.some(tf => {
+            const tn = normalize(tf.fieldName);
+            const tl = normalize(tf.fieldLabel);
+            return (sn && tn && sn === tn) || (sl && tl && sl === tl) || (sn && tl && sn === tl) || (sl && tn && sl === tn);
+          });
+        });
+
+        if (allMatched) {
+          const autoMappings = [...fieldMap.values()].map(src => {
+            const sn = normalize(src.fieldName);
+            const sl = normalize(src.fieldLabel);
+            const tf = targetFields.find(t => {
+              const tn = normalize(t.fieldName);
+              const tl = normalize(t.fieldLabel);
+              return (sn && tn && sn === tn) || (sl && tl && sl === tl) || (sn && tl && sn === tl) || (sl && tn && sl === tn);
+            });
+            return {
+              sourceFieldId: src.id,
+              targetFieldId: tf.id,
+              action: 'map'
+            };
+          });
+          await executeBulkSave(autoMappings);
+          return;
+        } else {
+          // Open mapping dialog
+          mappingSourceFields.value = [...fieldMap.values()];
+          mappingTargetFields.value = targetFields;
+          mappingTargetCatId.value = form.category_id;
+          mappingTargetCatName.value = availableCategories.value.find(c => Number(c.ID || c.id) === Number(form.category_id))?.category || '';
+          mappingSourceCatName.value = '';
+          mappingIsBulk.value = true;
+          mappingBulkComponentCount.value = props.bulkComponents.length;
+          showFieldMappingDialog.value = true;
+          return;
+        }
+      }
     }
+
+    await executeBulkSave(pendingBulkFieldMappings.value || []);
     return;
   }
 
