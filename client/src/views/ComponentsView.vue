@@ -204,6 +204,18 @@
 
             <v-btn
               variant="outlined"
+              color="secondary"
+              size="small"
+              prepend-icon="mdi-import"
+              class="font-weight-bold"
+              @click="showImportPackageDialog = true"
+              :title="t('components.importPackageTooltip')"
+            >
+              {{ t('components.importPackage') }}
+            </v-btn>
+
+            <v-btn
+              variant="outlined"
               color="primary"
               size="small"
               prepend-icon="mdi-file-delimited-outline"
@@ -373,6 +385,18 @@
               color="primary"
               variant="flat"
               size="small"
+              prepend-icon="mdi-export"
+              class="font-weight-bold px-3"
+              :loading="exporting"
+              @click="exportComponents"
+              :title="t('components.exportSelected', { count: selectedCount })"
+            >
+              {{ t('components.exportSelected', { count: selectedCount }) }}
+            </v-btn>
+            <v-btn
+              color="primary"
+              variant="outlined"
+              size="small"
               prepend-icon="mdi-table-edit"
               class="font-weight-bold px-4"
               @click="openBulkEditDialog"
@@ -406,13 +430,13 @@
                 :title="isAllSelected ? t('components.deselectAll') : t('components.selectAll')"
               />
             </th>
-            <th class="text-left font-weight-bold" style="width: 50px;">Photo</th>
+            <th class="text-left font-weight-bold" style="width: 50px;">{{ t('components.colPhoto') }}</th>
             <th class="text-left font-weight-bold">{{ t('components.colPart') }}</th>
             <th class="text-left font-weight-bold">{{ t('components.colCategory') }}</th>
             <th class="text-left font-weight-bold">{{ t('components.colPackage') }}</th>
             <th class="text-left font-weight-bold">{{ t('common.description') }}</th>
             <th class="text-center font-weight-bold" style="width: 100px;">{{ t('components.colStock') }}</th>
-            <th class="text-center font-weight-bold" style="width: 100px;">Min</th>
+            <th class="text-center font-weight-bold" style="width: 100px;">{{ t('components.colMin') }}</th>
             <th class="text-left font-weight-bold" style="width: 175px;">{{ t('common.actions') }}</th>
           </tr>
         </thead>
@@ -437,9 +461,16 @@
               />
             </td>
 
-            <!-- Photo Thumbnail -->
+            <!-- Photo Thumbnail (clickable preview) -->
             <td>
-              <v-avatar rounded="lg" size="38" class="border">
+              <v-avatar
+                rounded="lg"
+                size="38"
+                class="border bg-slate-50"
+                :class="{ 'cursor-pointer hover-zoom': !!c.photoURL }"
+                :title="c.photoURL ? t('dialogs.viewFullSize') : ''"
+                @click.stop="c.photoURL ? openPhotoPreview(c) : viewDetails(c)"
+              >
                 <MediaImage
                   type="component"
                   :src="c.photoURL"
@@ -702,6 +733,20 @@
       @notify="notify"
     />
 
+    <!-- IMPORT COMPONENTS & PACKAGES FROM ZIP/JSON ARCHIVE DIALOG -->
+    <ImportComponentsPackageDialog
+      v-model="showImportPackageDialog"
+      @imported="onComponentsPackageImported"
+    />
+
+    <!-- MEDIA LIGHTBOX FOR COMPONENT PHOTO PREVIEW -->
+    <MediaLightboxDialog
+      v-model="photoLightbox.show"
+      type="component"
+      :src="photoLightbox.src"
+      :title="photoLightbox.title"
+    />
+
     <v-snackbar v-model="snackbar.show" :color="snackbar.color" timeout="3000">
       {{ snackbar.text }}
     </v-snackbar>
@@ -715,6 +760,7 @@ import api, { resolveMediaUrl } from '../services/api';
 
 const { t } = useI18n();
 import MediaImage from '../components/MediaImage.vue';
+import MediaLightboxDialog from '../components/MediaLightboxDialog.vue';
 import PackageLink from '../components/PackageLink.vue';
 import CategorySelect from '../components/CategorySelect.vue';
 import CreateComponentDialog from '../components/CreateComponentDialog.vue';
@@ -722,6 +768,7 @@ import ComponentDetailsDialog from '../components/ComponentDetailsDialog.vue';
 import PurchaseConfirmDialog from '../components/PurchaseConfirmDialog.vue';
 import DeleteComponentDialog from '../components/DeleteComponentDialog.vue';
 import ImportComponentsDialog from '../components/ImportComponentsDialog.vue';
+import ImportComponentsPackageDialog from '../components/ImportComponentsPackageDialog.vue';
 import { useComponentsStore } from '../stores/components';
 
 const componentsStore = useComponentsStore();
@@ -740,6 +787,7 @@ const selectedComponentForEdit = ref(null);
 const selectedComponentIds = ref(new Set());
 const showDeleteDialog = ref(false);
 const showImportDialog = ref(false);
+const showImportPackageDialog = ref(false);
 const componentToDelete = ref(null);
 const loading = ref(false);
 
@@ -780,6 +828,52 @@ const toggleSelectAll = () => {
 
 const clearSelection = () => {
   selectedComponentIds.value = new Set();
+};
+
+// Photo Preview Lightbox
+const photoLightbox = ref({
+  show: false,
+  src: '',
+  title: ''
+});
+
+const openPhotoPreview = (c) => {
+  if (!c?.photoURL) return;
+  photoLightbox.value = {
+    show: true,
+    src: c.photoURL,
+    title: c.component || ''
+  };
+};
+
+// Export Components
+const exporting = ref(false);
+
+const exportComponents = async () => {
+  exporting.value = true;
+  try {
+    const ids = selectedComponentIds.value.size > 0 ? Array.from(selectedComponentIds.value) : [];
+    const res = await api.exportComponents(ids);
+    const blob = new Blob([res.data], { type: 'application/zip' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    const dateStr = new Date().toISOString().slice(0, 10);
+    link.download = ids.length === 1 && components.value.find(c => c.ID === ids[0])
+      ? `${(components.value.find(c => c.ID === ids[0]).component || 'component').replace(/[^a-zA-Z0-9._-]/g, '_')}_export_${dateStr}.zip`
+      : (ids.length > 0
+        ? `components_selected_${ids.length}_${dateStr}.zip`
+        : `components_all_${dateStr}.zip`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(link.href);
+    notify(t('components.exportSuccess'));
+  } catch (err) {
+    console.error('Failed to export components:', err);
+    notify(t('components.exportError') + ': ' + (err.response?.data?.error || err.message), 'error');
+  } finally {
+    exporting.value = false;
+  }
 };
 
 const selectedComponentsList = computed(() => {
@@ -1166,6 +1260,17 @@ const handleImportedComponents = async () => {
   fetchComponents();
 };
 
+const onComponentsPackageImported = async (result) => {
+  notify(t('importComponentsPackageModal.importSuccess', {
+    count: result.totalProcessed,
+    created: result.createdCount,
+    updated: result.updatedCount
+  }));
+  clearSelection();
+  await loadMeta();
+  fetchComponents();
+};
+
 onMounted(async () => {
   await loadMeta();
   fetchComponents();
@@ -1226,5 +1331,13 @@ onMounted(async () => {
 
 .hover-underline:hover {
   text-decoration: underline;
+}
+
+.hover-zoom {
+  transition: transform 0.15s ease;
+}
+
+.hover-zoom:hover {
+  transform: scale(1.1);
 }
 </style>

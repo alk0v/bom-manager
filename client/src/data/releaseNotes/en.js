@@ -1,8 +1,40 @@
 export const releasesEn = [
   {
-    version: '0.3.5',
+    version: '0.3.6',
     date: '2026-11-02',
     isCurrent: true,
+    summary: 'Version 0.3.6 introduces complete Component & Package ZIP Export/Import workflows with smart catalog matching, a 3-step interactive component and footprint mapping wizard, full media bundling (photos, datasheets, package drawings), and clickable component photo previews across the Components table.',
+    features: [
+      {
+        icon: 'mdi-export',
+        color: 'primary',
+        title: 'Component Export to Portable ZIP Archive',
+        description: 'Export selected components from the bulk actions bar or individual components from the Component Details modal into a portable ZIP archive containing manifest.json, custom category specifications (t_component_field_values), warehouse stock distributions, component photos, PDF datasheets, and package drawings.'
+      },
+      {
+        icon: 'mdi-database-import-outline',
+        color: 'teal',
+        title: '3-Step Smart Component & Package Import Wizard',
+        description: 'Import component archives (.zip or .json) via a guided 3-step workflow: (1) Upload archive, (2) Pick & map components with smart matching against existing catalog entries by part name, footprint, or marking code, and (3) Match or create packages used by the selected components.'
+      },
+      {
+        icon: 'mdi-link-variant',
+        color: 'indigo',
+        title: 'Interactive Existing Component & Footprint Mapping',
+        description: 'Automatically detects "Exact match", "Suggested match", and "New component" statuses. Easily map imported entries to any existing database component or package via searchable autocomplete selectors, or create them as new catalog records with optional stock quantity import.'
+      },
+      {
+        icon: 'mdi-image-search-outline',
+        color: 'amber-darken-3',
+        title: 'Clickable Component Photo Previews & Archive Lightbox',
+        description: 'Component thumbnails in the Components table (/components) and inside the Import Wizard are now interactive with hover zoom effects, opening full-resolution previews in the Media Lightbox dialog.'
+      }
+    ]
+  },
+  {
+    version: '0.3.5',
+    date: '2026-11-02',
+    isCurrent: false,
     summary: 'Version 0.3.5 introduces complete Package & Footprint Export/Import workflows with technical drawing image bundling, adds an interactive Gallery Mode with full-size lightbox previews, enables sortable table columns across the Packages dictionary, and resolves media URL pathing.',
     features: [
       {

@@ -136,6 +136,13 @@ export const api = {
   deleteComponent: (id, force = false) => client.delete(`/components/${id}`, { params: { force } }).then(res => res.data),
   downloadComponentsTemplate: () => client.get('/components/template-csv', { responseType: 'blob' }).then(res => res.data),
   importComponentsCsv: (payload) => client.post('/components/import-csv', payload).then(res => res.data),
+  // Component Export & Import
+  exportComponentsUrl: (ids = []) => `/api/components/export?ids=${ids.join(',')}`,
+  exportComponents: (ids = []) => client.post('/components/export', { ids }, { responseType: 'blob' }),
+  parseComponentsImport: (formData) => client.post('/components/import/preview', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' }
+  }).then(res => res.data),
+  executeComponentsImport: (payload) => client.post('/components/import/execute', payload).then(res => res.data),
 
   // Category Groups, Categories, Packages & Storages
   getCategoryGroups: () => client.get('/category-groups').then(res => res.data),

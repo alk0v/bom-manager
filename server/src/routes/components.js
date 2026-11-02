@@ -1,6 +1,22 @@
 const express = require('express');
 const router = express.Router();
 const pool = require('../db');
+const path = require('path');
+const multer = require('multer');
+const {
+  exportComponentsToZip,
+  parseComponentsExportPackage,
+  executeComponentsImport
+} = require('../utils/componentsExportImport');
+
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 100 * 1024 * 1024 }
+});
+
+const mediaDir = process.env.MEDIA_DIR
+  ? path.resolve(process.env.MEDIA_DIR)
+  : path.resolve(__dirname, '../../../media');
 const currencyService = require('../services/currencyService');
 
 // GET /api/components - list components with optional search & filtering
@@ -603,6 +619,76 @@ router.post('/import-csv', async (req, res) => {
     res.status(500).json({ error: 'Failed to import components', details: error.message });
   } finally {
     conn.release();
+  }
+});
+
+// POST /api/components/export - export components and media to ZIP
+router.post('/export', async (req, res) => {
+  try {
+    const ids = req.body?.ids || [];
+    await exportComponentsToZip(ids, pool, mediaDir, res);
+  } catch (error) {
+    console.error('Error exporting components:', error);
+    if (!res.headersSent) {
+      res.status(500).json({ error: 'Failed to export components', details: error.message });
+    }
+  }
+});
+
+// GET /api/components/export - export components and media to ZIP via query params
+router.get('/export', async (req, res) => {
+  try {
+    const rawIds = req.query?.ids ? req.query.ids.split(',') : [];
+    await exportComponentsToZip(rawIds, pool, mediaDir, res);
+  } catch (error) {
+    console.error('Error exporting components:', error);
+    if (!res.headersSent) {
+      res.status(500).json({ error: 'Failed to export components', details: error.message });
+    }
+  }
+});
+
+// POST /api/components/import/preview - upload and parse components export package (.zip / .json)
+router.post('/import/preview', (req, res) => {
+  upload.single('file')(req, res, async (err) => {
+    if (err) {
+      console.error('Components import upload error:', err);
+      return res.status(400).json({ error: err.message || 'File upload failed' });
+    }
+
+    if (!req.file) {
+      return res.status(400).json({ error: 'Please upload a components export .zip or .json file' });
+    }
+
+    try {
+      const previewData = await parseComponentsExportPackage(
+        req.file.buffer,
+        req.file.originalname,
+        pool,
+        mediaDir
+      );
+      res.json(previewData);
+    } catch (parseError) {
+      console.error('Error parsing components export package:', parseError);
+      res.status(400).json({
+        error: 'Failed to parse components package',
+        details: parseError.message
+      });
+    }
+  });
+});
+
+// POST /api/components/import/execute - execute components and packages import
+router.post('/import/execute', async (req, res) => {
+  try {
+    const result = await executeComponentsImport(req.body, pool, mediaDir);
+    res.status(201).json(result);
+  } catch (importError) {
+    console.error('Error executing components import:', importError);
+    res.status(500).json({
+      error: 'Failed to import components',
+      details: importError.message
+    });
   }
 });
 

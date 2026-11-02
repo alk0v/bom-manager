@@ -617,6 +617,20 @@
           {{ t('components.quickAddToBasket') }}
         </v-btn>
 
+        <!-- Export Component -->
+        <v-btn
+          color="primary"
+          variant="outlined"
+          size="small"
+          prepend-icon="mdi-export"
+          class="font-weight-medium me-2"
+          :loading="exporting"
+          @click="exportThisComponent"
+          :title="t('components.exportComponents')"
+        >
+          {{ t('components.exportComponents') }}
+        </v-btn>
+
         <!-- Buy Component -->
         <v-btn
           color="primary"
@@ -901,6 +915,33 @@ const addToShoppingList = async () => {
     notify(t('componentDetailsModal.failedShoppingList', { error: (err.response?.data?.error || err.message) }), 'error');
   } finally {
     addingToShoppingList.value = false;
+  }
+};
+
+const exporting = ref(false);
+
+const exportThisComponent = async () => {
+  if (!displayComponent.value?.ID) return;
+  exporting.value = true;
+  try {
+    const comp = displayComponent.value;
+    const res = await api.exportComponents([comp.ID]);
+    const blob = new Blob([res.data], { type: 'application/zip' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    const dateStr = new Date().toISOString().slice(0, 10);
+    const safeTitle = (comp.component || 'component').replace(/[^a-zA-Z0-9._-]/g, '_');
+    link.download = `${safeTitle}_export_${dateStr}.zip`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(link.href);
+    notify(t('components.exportSuccess'));
+  } catch (err) {
+    console.error('Failed to export component:', err);
+    notify(t('components.exportError') + ': ' + (err.response?.data?.error || err.message), 'error');
+  } finally {
+    exporting.value = false;
   }
 };
 
