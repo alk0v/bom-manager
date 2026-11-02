@@ -29,7 +29,7 @@ export const fetchMediaConfig = async () => {
 // Build URL for photos and datasheets
 export const resolveMediaUrl = (type, filename) => {
   if (!filename) return null;
-  if (filename.startsWith('http://') || filename.startsWith('https://')) {
+  if (filename.startsWith('http://') || filename.startsWith('https://') || filename.startsWith('data:')) {
     return filename;
   }
   if (filename.startsWith('/media/')) {
@@ -44,22 +44,31 @@ export const resolveMediaUrl = (type, filename) => {
 
   switch (type) {
     case 'project':
+    case 'projects':
       folder = mediaConfig.projectPhotoFolder || 'projects/';
       break;
     case 'component':
+    case 'components':
       folder = mediaConfig.componentPhotoFolder || 'components/';
       break;
     case 'package':
+    case 'packages':
       folder = mediaConfig.packagePhotoFolder || 'packages/';
       break;
     case 'datasheet':
+    case 'datasheets':
       folder = mediaConfig.datasheetFolder || 'datasheets/';
       break;
   }
 
   const cleanFolder = folder.replace(/^\/+/, '').replace(/\/+$/, '');
   const cleanFile = filename.replace(/^\/+/, '');
-  return `${base}/${cleanFolder}/${cleanFile}`;
+
+  if (cleanFolder && cleanFile.startsWith(`${cleanFolder}/`)) {
+    return `${base}/${cleanFile}`;
+  }
+
+  return cleanFolder ? `${base}/${cleanFolder}/${cleanFile}` : `${base}/${cleanFile}`;
 };
 
 export const api = {
@@ -152,6 +161,13 @@ export const api = {
   createPackage: (data) => client.post('/packages', data).then(res => res.data),
   updatePackage: (id, data) => client.put(`/packages/${id}`, data).then(res => res.data),
   deletePackage: (id, force = false) => client.delete(`/packages/${id}`, { params: { force } }).then(res => res.data),
+  // Package Export & Import
+  exportPackagesUrl: (ids = []) => `/api/packages/export?ids=${ids.join(',')}`,
+  exportPackages: (ids = []) => client.post('/packages/export', { ids }, { responseType: 'blob' }),
+  parsePackagesImport: (formData) => client.post('/packages/import/preview', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' }
+  }).then(res => res.data),
+  executePackagesImport: (payload) => client.post('/packages/import/execute', payload).then(res => res.data),
 
   getStorages: () => client.get('/storages').then(res => res.data),
 

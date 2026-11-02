@@ -283,7 +283,7 @@ async function exportProjectToZip(projectId, pool, mediaDir, res) {
   const manifest = {
     format: 'bommanager-project-export',
     version: '1.0',
-    appVersion: '0.3.4',
+    appVersion: '0.3.5',
     exportedAt: new Date().toISOString(),
     project: {
       projectName: project.projectName,

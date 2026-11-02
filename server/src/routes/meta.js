@@ -1,6 +1,22 @@
 const express = require('express');
 const router = express.Router();
 const pool = require('../db');
+const path = require('path');
+const multer = require('multer');
+const {
+  exportPackagesToZip,
+  parsePackagesExportPackage,
+  executePackagesImport
+} = require('../utils/packagesExportImport');
+
+const mediaDir = process.env.MEDIA_DIR
+  ? path.resolve(process.env.MEDIA_DIR)
+  : path.resolve(__dirname, '../../../media');
+
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 50 * 1024 * 1024 }
+});
 
 // ==========================================
 // CATEGORY GROUPS CRUD
@@ -581,6 +597,76 @@ router.delete('/categories/:id', async (req, res) => {
 // ==========================================
 // PACKAGES CRUD
 // ==========================================
+
+// POST /api/packages/export - export packages and drawings to ZIP
+router.post('/packages/export', async (req, res) => {
+  try {
+    const ids = req.body?.ids || [];
+    await exportPackagesToZip(ids, pool, mediaDir, res);
+  } catch (error) {
+    console.error('Error exporting packages:', error);
+    if (!res.headersSent) {
+      res.status(500).json({ error: 'Failed to export packages', details: error.message });
+    }
+  }
+});
+
+// GET /api/packages/export
+router.get('/packages/export', async (req, res) => {
+  try {
+    const rawIds = req.query?.ids ? req.query.ids.split(',') : [];
+    await exportPackagesToZip(rawIds, pool, mediaDir, res);
+  } catch (error) {
+    console.error('Error exporting packages:', error);
+    if (!res.headersSent) {
+      res.status(500).json({ error: 'Failed to export packages', details: error.message });
+    }
+  }
+});
+
+// POST /api/packages/import/preview - upload and parse packages export package (.zip / .json)
+router.post('/packages/import/preview', (req, res) => {
+  upload.single('file')(req, res, async (err) => {
+    if (err) {
+      console.error('Packages import upload error:', err);
+      return res.status(400).json({ error: err.message || 'File upload failed' });
+    }
+
+    if (!req.file) {
+      return res.status(400).json({ error: 'Please upload a packages export .zip or .json file' });
+    }
+
+    try {
+      const previewData = await parsePackagesExportPackage(
+        req.file.buffer,
+        req.file.originalname,
+        pool,
+        mediaDir
+      );
+      res.json(previewData);
+    } catch (parseError) {
+      console.error('Error parsing packages export package:', parseError);
+      res.status(400).json({
+        error: 'Failed to parse packages package',
+        details: parseError.message
+      });
+    }
+  });
+});
+
+// POST /api/packages/import/execute - execute packages import
+router.post('/packages/import/execute', async (req, res) => {
+  try {
+    const result = await executePackagesImport(req.body, pool, mediaDir);
+    res.status(201).json(result);
+  } catch (importError) {
+    console.error('Error executing packages import:', importError);
+    res.status(500).json({
+      error: 'Failed to import packages',
+      details: importError.message
+    });
+  }
+});
 
 // GET /api/packages
 router.get('/packages', async (req, res) => {

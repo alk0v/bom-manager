@@ -1,8 +1,46 @@
 export const releasesEn = [
   {
+    version: '0.3.5',
+    date: '2026-11-02',
+    isCurrent: true,
+    summary: 'Version 0.3.5 introduces complete Package & Footprint Export/Import workflows with technical drawing image bundling, adds an interactive Gallery Mode with full-size lightbox previews, enables sortable table columns across the Packages dictionary, and resolves media URL pathing.',
+    features: [
+      {
+        icon: 'mdi-package-down',
+        color: 'primary',
+        title: 'Packages Export to ZIP Archive',
+        description: 'Export package footprints into portable ZIP archives containing manifest.json metadata and bundled technical drawing image files from media/packages/. Supports exporting either all footprints or a customized checkbox selection.'
+      },
+      {
+        icon: 'mdi-database-import-outline',
+        color: 'teal',
+        title: 'Intelligent Package Import & Name Mapping',
+        description: 'Import package archive files (.zip or .json) with an interactive preview modal. Automatically matches footprints against existing database entries by name with "Exact match" and "New footprint" detection, inline target remapping, and batch "Map Exact" / "Create All New" actions.'
+      },
+      {
+        icon: 'mdi-view-grid-outline',
+        color: 'indigo',
+        title: 'Gallery Mode for Package Drawings',
+        description: 'Added interactive Table / Gallery view switching in the Packages Dictionary (/dictionaries/packages). Gallery cards showcase large 280px drawing previews, footprint metadata, mount technology, pin counts, and hover zoom lightbox overlays.'
+      },
+      {
+        icon: 'mdi-sort-alphabetical-ascending',
+        color: 'blue-grey-darken-1',
+        title: 'Interactive Sortable Table Columns',
+        description: 'All data columns in the Packages dictionary (ID, Footprint Name, Mount Type, Pin Count, Drawing File, and Component Usage) are now fully interactive with ascending/descending natural alphanumeric sorting.'
+      },
+      {
+        icon: 'mdi-image-check-outline',
+        color: 'amber-darken-3',
+        title: 'Drawing Filename Display & Lightbox Previews',
+        description: 'Replaced bulky table image thumbnails with clean, clickable monospace drawing filenames that open the full-size media lightbox dialog, and normalized package media path resolution across client and server.'
+      }
+    ]
+  },
+  {
     version: '0.3.4',
     date: '2026-09-27',
-    isCurrent: true,
+    isCurrent: false,
     summary: 'Version 0.3.4 introduces complete Hardware Project Export & Import capabilities for sharing projects between users and environments, interactive component mapping, automated bundling of photos, datasheets, and drawings, and full localization for iBOM workflows.',
     features: [
       {
