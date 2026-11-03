@@ -14,8 +14,8 @@ export const releasesEn = [
       {
         icon: 'mdi-cash-plus',
         color: 'teal',
-        title: '1-Click Quick Buy from Saved Supplier Links',
-        description: 'Each saved supplier link includes a Quick Buy action that opens the Purchase Confirmation dialog pre-populated with that supplier’s unit price, currency, product URL, and notes, plus automatic currency conversion previews.'
+        title: 'Quick Pickup in Purchase Dialog (Where to Buy & Past Orders)',
+        description: 'The "Confirm Purchase & Create Order" dialog now automatically displays interactive quick-pickup chips for any saved "Where to Buy" supplier links and previous purchases of that component, pre-filling unit price, currency, product URL, and notes in 1 click.'
       },
       {
         icon: 'mdi-file-pdf-box',

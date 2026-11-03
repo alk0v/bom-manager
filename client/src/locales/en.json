@@ -1109,6 +1109,7 @@
     "notes": "Notes",
     "notesPlaceholder": "e.g. Supplier / store, tracking number, order notes...",
     "supplierUrl": "Supplier Link / Product URL",
+    "urlPlaceholder": "https://...",
     "deliveryStatus": "Delivery Status",
     "statusPending": "Awaiting Delivery",
     "statusDelivered": "Delivered",
@@ -1121,7 +1122,11 @@
     "kitValuesCleared": "Remembered kit values cleared",
     "invalidQty": "Please enter a valid quantity of at least 1",
     "orderSuccess": "Order #{orderId} created for {qty} pcs of {component}!",
-    "orderSuccessStock": "Order #{orderId} created for {qty} pcs of {component}! Stock updated to {newStock} pcs."
+    "orderSuccessStock": "Order #{orderId} created for {qty} pcs of {component}! Stock updated to {newStock} pcs.",
+    "quickPickupTitle": "Quick Pickup: Where to Buy & Past Orders",
+    "quickPickupHint": "Click any entry to pre-fill price, currency, URL, and notes",
+    "fromWhereToBuy": "Where to Buy",
+    "fromPastOrders": "Previous Purchases"
   },
   "confirmDeliveryModal": {
     "title": "Confirm Delivery",

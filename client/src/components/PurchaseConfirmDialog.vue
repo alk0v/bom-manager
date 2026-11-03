@@ -53,7 +53,146 @@
           </div>
         </div>
 
+        <!-- Quick Pickup Table: "Where to Buy / Supplier Links" & Previous Purchases -->
+        <div
+          v-if="quickSupplierLinks.length > 0 || quickPastOrders.length > 0"
+          class="mb-4"
+        >
+          <div class="d-flex align-center justify-space-between flex-wrap gap-1 mb-1.5">
+            <div class="text-caption font-weight-bold text-uppercase text-slate-800 d-flex align-center gap-1">
+              <v-icon size="16" color="primary">mdi-store-outline</v-icon>
+              <span>{{ t('componentDetailsModal.supplierLinksTitle') }}</span>
+              <v-chip
+                size="x-small"
+                color="primary"
+                variant="tonal"
+                class="font-mono font-weight-bold ms-1"
+              >
+                {{ quickSupplierLinks.length + quickPastOrders.length }}
+              </v-chip>
+            </div>
+            <span class="text-caption text-slate-500">{{ t('purchaseModal.quickPickupHint') }}</span>
+          </div>
 
+          <div class="border rounded-lg overflow-hidden" style="max-height: 190px; overflow-y: auto;">
+            <v-table density="compact" class="bg-white quick-pickup-table">
+              <thead>
+                <tr class="bg-slate-50 text-caption font-weight-bold">
+                  <th class="text-left py-1.5 font-weight-bold">{{ t('componentDetailsModal.colSupplier') }}</th>
+                  <th class="text-right py-1.5 font-weight-bold text-no-wrap">{{ t('componentDetailsModal.colUnitPrice') }}</th>
+                  <th class="text-left py-1.5 font-weight-bold">{{ t('componentDetailsModal.colComment') }}</th>
+                  <th class="text-center py-1.5 font-weight-bold" style="width: 52px;">{{ t('componentDetailsModal.colLink') }}</th>
+                </tr>
+              </thead>
+              <tbody>
+                <!-- 1. Rows from "Where to Buy / Supplier Links" -->
+                <tr
+                  v-for="link in quickSupplierLinks"
+                  :key="'link-' + link.id"
+                  class="quick-pickup-row cursor-pointer"
+                  :class="{ 'selected-pickup-row': selectedSourceKey === 'link-' + link.id }"
+                  @click="applySupplierLink(link)"
+                >
+                  <td class="py-1.5">
+                    <div class="d-flex align-center gap-1.5 font-weight-bold text-body-2 text-slate-800 text-no-wrap">
+                      <v-icon
+                        size="15"
+                        :color="selectedSourceKey === 'link-' + link.id ? 'primary' : 'slate-400'"
+                      >
+                        {{ selectedSourceKey === 'link-' + link.id ? 'mdi-radiobox-marked' : 'mdi-radiobox-blank' }}
+                      </v-icon>
+                      <v-icon size="15" color="primary">mdi-store-outline</v-icon>
+                      <span>{{ link.supplier }}</span>
+                    </div>
+                  </td>
+                  <td class="text-right py-1.5 font-mono text-caption font-weight-bold text-primary text-no-wrap">
+                    <template v-if="link.price > 0">
+                      <span>{{ formatCurrency(link.price, link.currency || currencyStore.defaultCurrency) }}</span>
+                      <span
+                        v-if="link.currency && link.currency !== currencyStore.defaultCurrency"
+                        class="text-caption text-slate-500 font-mono font-weight-regular ms-1"
+                      >
+                        (≈ {{ formatCurrency(getNormalizedLinkPrice(link), currencyStore.defaultCurrency) }})
+                      </span>
+                    </template>
+                    <span v-else class="text-disabled">—</span>
+                  </td>
+                  <td class="py-1.5 text-caption text-slate-700 text-truncate" style="max-width: 240px;" :title="link.comment">
+                    {{ link.comment || '—' }}
+                  </td>
+                  <td class="text-center py-1.5">
+                    <v-btn
+                      v-if="extractUrlFromLink(link)"
+                      :href="extractUrlFromLink(link)"
+                      target="_blank"
+                      icon="mdi-open-in-new"
+                      size="x-small"
+                      variant="text"
+                      color="primary"
+                      :title="extractUrlFromLink(link)"
+                      @click.stop
+                    />
+                    <span v-else class="text-disabled text-caption">—</span>
+                  </td>
+                </tr>
+
+                <!-- 2. Rows from Previous Purchases -->
+                <tr
+                  v-for="ord in quickPastOrders"
+                  :key="'ord-' + ord.id"
+                  class="quick-pickup-row cursor-pointer"
+                  :class="{ 'selected-pickup-row': selectedSourceKey === 'ord-' + ord.id }"
+                  @click="applyPreviousOrder(ord)"
+                >
+                  <td class="py-1.5">
+                    <div class="d-flex align-center gap-1.5 text-body-2 text-slate-800 text-no-wrap">
+                      <v-icon
+                        size="15"
+                        :color="selectedSourceKey === 'ord-' + ord.id ? 'primary' : 'slate-400'"
+                      >
+                        {{ selectedSourceKey === 'ord-' + ord.id ? 'mdi-radiobox-marked' : 'mdi-radiobox-blank' }}
+                      </v-icon>
+                      <v-icon size="15" color="teal">mdi-history</v-icon>
+                      <span class="font-mono text-caption font-weight-bold">{{ formatDate(ord.date) }}</span>
+                      <v-chip size="x-small" color="teal" variant="tonal" class="font-weight-medium">
+                        {{ t('purchaseModal.fromPastOrders') }}
+                      </v-chip>
+                    </div>
+                  </td>
+                  <td class="text-right py-1.5 font-mono text-caption font-weight-bold text-primary text-no-wrap">
+                    <template v-if="(ord.originalPrice ?? ord.price) > 0">
+                      <span>{{ formatCurrency(ord.originalPrice ?? ord.price, ord.currency || currencyStore.defaultCurrency) }}</span>
+                      <span
+                        v-if="ord.currency && ord.currency !== currencyStore.defaultCurrency"
+                        class="text-caption text-slate-500 font-mono font-weight-regular ms-1"
+                      >
+                        (≈ {{ formatCurrency(ord.price, currencyStore.defaultCurrency) }})
+                      </span>
+                    </template>
+                    <span v-else class="text-disabled">—</span>
+                  </td>
+                  <td class="py-1.5 text-caption text-slate-700 text-truncate" style="max-width: 240px;" :title="ord.details">
+                    {{ ord.details || '—' }}
+                  </td>
+                  <td class="text-center py-1.5">
+                    <v-btn
+                      v-if="extractUrlFromOrder(ord)"
+                      :href="extractUrlFromOrder(ord)"
+                      target="_blank"
+                      icon="mdi-open-in-new"
+                      size="x-small"
+                      variant="text"
+                      color="primary"
+                      :title="extractUrlFromOrder(ord)"
+                      @click.stop
+                    />
+                    <span v-else class="text-disabled text-caption">—</span>
+                  </td>
+                </tr>
+              </tbody>
+            </v-table>
+          </div>
+        </div>
 
         <v-form @submit.prevent="submitPurchase" ref="formRef">
           <v-row dense>
@@ -332,7 +471,7 @@ import { ref, computed, watch, onMounted } from 'vue';
 import { useI18n } from 'vue-i18n';
 import api from '../services/api';
 import MediaImage from './MediaImage.vue';
-import { formatCurrency } from '../utils/formatters';
+import { formatCurrency, formatDate } from '../utils/formatters';
 import { useCurrencyStore } from '../stores/currency';
 
 const { t } = useI18n();
@@ -353,6 +492,123 @@ const emit = defineEmits(['update:modelValue', 'purchased', 'notify']);
 
 const submitting = ref(false);
 const storages = ref([]);
+const quickSupplierLinks = ref([]);
+const quickPastOrders = ref([]);
+const selectedSourceKey = ref(null);
+
+const loadComponentQuickSources = async () => {
+  const compId = props.item?.componentId || props.item?.ID || props.item?.id;
+  if (!compId) {
+    quickSupplierLinks.value = [];
+    quickPastOrders.value = [];
+    return;
+  }
+  try {
+    const comp = await api.getComponent(compId);
+    const links = comp?.supplierLinks || [];
+    const orders = (comp?.pricing?.orders || []).slice(0, 8);
+    quickSupplierLinks.value = links;
+    quickPastOrders.value = orders;
+
+    // If opened via Quick Buy on a specific supplier link, highlight and apply it
+    if (props.item?.prefillFromSupplierLink && props.item?.prefillSupplierLinkId) {
+      const matched = links.find(l => l.id === props.item.prefillSupplierLinkId);
+      if (matched) {
+        applySupplierLink(matched);
+        return;
+      }
+    }
+
+    // If prefillUrl or prefillSupplier matches a supplier link, apply it
+    if (links.length > 0 && (props.item?.prefillUrl || props.item?.prefillSupplier)) {
+      const matchedByUrlOrSupplier = links.find(
+        l => (props.item.prefillUrl && l.url === props.item.prefillUrl) ||
+             (props.item.prefillSupplier && l.supplier === props.item.prefillSupplier)
+      );
+      if (matchedByUrlOrSupplier) {
+        applySupplierLink(matchedByUrlOrSupplier);
+        return;
+      }
+    }
+
+    // If the component has "Where to Buy" supplier links, automatically pre-fill from the first link
+    if (links.length > 0) {
+      applySupplierLink(links[0]);
+    } else if (orders.length > 0 && !form.value.url) {
+      applyPreviousOrder(orders[0]);
+    }
+  } catch (err) {
+    console.warn('Failed to load quick pickup sources for purchase dialog:', err);
+  }
+};
+
+const extractUrlFromLink = (link) => {
+  if (link?.url && String(link.url).trim()) {
+    return String(link.url).trim();
+  }
+  const urlRegex = /(https?:\/\/[^\s]+)/i;
+  const commentMatch = link?.comment ? String(link.comment).match(urlRegex) : null;
+  if (commentMatch) return commentMatch[1];
+  const supplierMatch = link?.supplier ? String(link.supplier).match(urlRegex) : null;
+  if (supplierMatch) return supplierMatch[1];
+  return '';
+};
+
+const extractUrlFromOrder = (ord) => {
+  if (ord?.url && String(ord.url).trim()) {
+    return String(ord.url).trim();
+  }
+  const urlRegex = /(https?:\/\/[^\s]+)/i;
+  const detailsMatch = ord?.details ? String(ord.details).match(urlRegex) : null;
+  if (detailsMatch) return detailsMatch[1];
+  return '';
+};
+
+const getNormalizedLinkPrice = (link) => {
+  if (link?.convertedPrice != null && Number(link.convertedPrice) > 0) {
+    return Number(link.convertedPrice);
+  }
+  const rawPrice = Number(link?.price) || 0;
+  const linkCurr = link?.currency || currencyStore.defaultCurrency;
+  if (linkCurr === currencyStore.defaultCurrency) return rawPrice;
+  const rateInfo = currencyStore.getNearestRate(linkCurr, currencyStore.defaultCurrency, form.value.date);
+  return Math.round(rawPrice * (rateInfo?.rate || 1) * 10000) / 10000;
+};
+
+const applySupplierLink = (link) => {
+  selectedSourceKey.value = 'link-' + link.id;
+  const qty = Number(form.value.qty) || 1;
+  const unitPrice = link.price != null ? Number(link.price) : 0;
+  const detailsStr = [link.supplier, link.comment].filter(Boolean).join(' — ');
+  const resolvedUrl = extractUrlFromLink(link);
+
+  form.value = {
+    ...form.value,
+    currency: link.currency || currencyStore.defaultCurrency,
+    price: unitPrice,
+    totalSum: Math.round((qty * unitPrice + Number.EPSILON) * 100) / 100,
+    url: resolvedUrl,
+    details: detailsStr
+  };
+  lastEdited.value = 'price';
+};
+
+const applyPreviousOrder = (ord) => {
+  selectedSourceKey.value = 'ord-' + ord.id;
+  const qty = Number(form.value.qty) || 1;
+  const unitPrice = ord.originalPrice != null ? Number(ord.originalPrice) : (ord.price != null ? Number(ord.price) : 0);
+  const resolvedUrl = extractUrlFromOrder(ord);
+
+  form.value = {
+    ...form.value,
+    currency: ord.currency || currencyStore.defaultCurrency,
+    price: unitPrice,
+    totalSum: Math.round((qty * unitPrice + Number.EPSILON) * 100) / 100,
+    url: resolvedUrl,
+    details: ord.details || ''
+  };
+  lastEdited.value = 'price';
+};
 
 const form = ref({
   currency: currencyStore.defaultCurrency,
@@ -482,6 +738,7 @@ const close = () => {
 const clearForm = () => {
   clearLastPurchase();
   hasRestoredValues.value = false;
+  selectedSourceKey.value = null;
 
   const initialQty = props.item?.isComponentDirect
     ? (props.item?.quantity || props.item?.directQty || 1)
@@ -508,9 +765,36 @@ const clearForm = () => {
 const initForm = () => {
   if (!props.item) return;
 
+  if (props.item.prefillFromSupplierLink) {
+    hasRestoredValues.value = false;
+    const initialQty = props.item.isComponentDirect
+      ? (props.item.quantity || props.item.directQty || 1)
+      : (props.item.qty || 1);
+    const initialPrice = props.item.prefillPrice != null
+      ? Number(props.item.prefillPrice)
+      : (props.item.latestPrice != null ? Number(props.item.latestPrice) : 0);
+    const initialTotal = Math.round((initialQty * initialPrice + Number.EPSILON) * 100) / 100;
+    const detailsStr = [props.item.prefillSupplier, props.item.prefillComment].filter(Boolean).join(' — ');
+
+    form.value = {
+      currency: props.item.prefillCurrency || props.item.activeOrderCurrency || currencyStore.defaultCurrency,
+      qty: initialQty,
+      price: initialPrice,
+      totalSum: initialTotal,
+      date: new Date().toISOString().slice(0, 10),
+      details: detailsStr || props.item.latestOrderDetails || '',
+      url: props.item.prefillUrl ? String(props.item.prefillUrl).trim() : '',
+      deliveryStatus: 'pending',
+      addToStock: true,
+      storageId: null
+    };
+    lastEdited.value = 'price';
+    return;
+  }
+
   const last = getLastPurchase();
 
-  if (last && !props.item.prefillFromSupplierLink) {
+  if (last) {
     hasRestoredValues.value = true;
     lastEdited.value = last.lastEdited || 'price';
 
@@ -528,7 +812,7 @@ const initForm = () => {
       totalSum: restoredTotal,
       date: last.date || new Date().toISOString().slice(0, 10),
       details: last.details || '',
-      url: last.url || '',
+      url: props.item.latestOrderUrl || '',
       deliveryStatus: last.deliveryStatus || 'pending',
       addToStock: last.addToStock !== undefined ? last.addToStock : true,
       storageId: last.storageId !== undefined ? last.storageId : null
@@ -559,16 +843,22 @@ const initForm = () => {
 
 watch(() => props.modelValue, (isOpen) => {
   if (isOpen) {
+    selectedSourceKey.value = null;
     initForm();
+    loadComponentQuickSources();
     if (storages.value.length === 0) {
       loadStorages();
     }
   }
 });
 
-watch(() => props.item, () => {
-  if (props.modelValue) {
+watch(() => props.item, (newItem, oldItem) => {
+  const newId = newItem?.componentId || newItem?.ID || newItem?.id;
+  const oldId = oldItem?.componentId || oldItem?.ID || oldItem?.id;
+  if (props.modelValue && (newId !== oldId || newItem?.prefillSupplierLinkId !== oldItem?.prefillSupplierLinkId)) {
+    selectedSourceKey.value = null;
     initForm();
+    loadComponentQuickSources();
   }
 });
 
@@ -673,5 +963,14 @@ onMounted(() => {
 }
 .border-b {
   border-bottom: 1px solid #e2e8f0 !important;
+}
+.quick-pickup-row {
+  transition: background-color 0.15s ease;
+}
+.quick-pickup-row:hover {
+  background-color: #f1f5f9 !important;
+}
+.selected-pickup-row {
+  background-color: #eff6ff !important;
 }
 </style>

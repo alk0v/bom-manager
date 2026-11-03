@@ -1302,6 +1302,7 @@ const purchaseDialogItem = computed(() => {
     return {
       isComponentDirect: true,
       prefillFromSupplierLink: true,
+      prefillSupplierLinkId: l.id,
       componentId: c.ID || c.id,
       component: c.component,
       marking: c.marking,

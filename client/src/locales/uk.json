@@ -1109,6 +1109,7 @@
     "notes": "Примітки",
     "notesPlaceholder": "наприклад, постачальник / магазин, номер відстеження, примітки до замовлення...",
     "supplierUrl": "Посилання на товар / Магазин",
+    "urlPlaceholder": "https://...",
     "deliveryStatus": "Статус доставки",
     "statusPending": "Очікує доставки",
     "statusDelivered": "Доставлено",
@@ -1121,7 +1122,11 @@
     "kitValuesCleared": "Збережені значення комплекту очищено",
     "invalidQty": "Будь ласка, вкажіть дійсну кількість не менше 1",
     "orderSuccess": "Замовлення #{orderId} створено на {qty} шт. {component}!",
-    "orderSuccessStock": "Замовлення #{orderId} створено на {qty} шт. {component}! Залишок оновлено до {newStock} шт."
+    "orderSuccessStock": "Замовлення #{orderId} створено на {qty} шт. {component}! Залишок оновлено до {newStock} шт.",
+    "quickPickupTitle": "Швидке заповнення: Постачальники та попередні покупки",
+    "quickPickupHint": "Натисніть на запис, щоб автоматично заповнити ціну, валюту, URL та примітки",
+    "fromWhereToBuy": "Де купити",
+    "fromPastOrders": "Попередні покупки"
   },
   "confirmDeliveryModal": {
     "title": "Підтвердити доставку",
