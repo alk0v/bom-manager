@@ -219,6 +219,18 @@ function initSchema() {
       UNIQUE(componentId, fieldId)
     );
 
+    CREATE TABLE IF NOT EXISTS t_component_links (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      componentId INTEGER NOT NULL,
+      supplier TEXT NOT NULL,
+      price REAL DEFAULT 0,
+      currency TEXT NOT NULL DEFAULT 'USD',
+      url TEXT DEFAULT '',
+      comment TEXT DEFAULT '',
+      createdAt TEXT DEFAULT (datetime('now', 'localtime')),
+      FOREIGN KEY (componentId) REFERENCES i_components(ID) ON DELETE CASCADE
+    );
+
     -- Create indexes
     CREATE INDEX IF NOT EXISTS idx_pf_project ON t_project_files (projectId);
     CREATE INDEX IF NOT EXISTS idx_pr_project ON t_production_runs (projectId);
@@ -240,6 +252,7 @@ function initSchema() {
     CREATE INDEX IF NOT EXISTS idx_cfv_comp ON t_component_field_values (componentId);
     CREATE INDEX IF NOT EXISTS idx_cfv_field ON t_component_field_values (fieldId);
     CREATE INDEX IF NOT EXISTS idx_cfv_num ON t_component_field_values (numValue);
+    CREATE INDEX IF NOT EXISTS idx_cl_comp ON t_component_links (componentId);
   `);
 
   // Ensure migration columns for t_orders

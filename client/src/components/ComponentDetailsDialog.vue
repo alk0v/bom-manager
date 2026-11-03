@@ -1,7 +1,7 @@
 <template>
   <v-dialog
     :model-value="modelValue"
-    max-width="850"
+    max-width="1020"
     scrollable
     @update:model-value="val => emit('update:modelValue', val)"
   >
@@ -52,8 +52,8 @@
           <v-icon start size="18">mdi-cash-multiple</v-icon>
           {{ t('componentDetailsModal.tabOrders') }}
           <v-badge
-            v-if="displayComponent.pricing?.orderCount > 0"
-            :content="displayComponent.pricing.orderCount"
+            v-if="(displayComponent.pricing?.orderCount || 0) + supplierLinks.length > 0"
+            :content="(displayComponent.pricing?.orderCount || 0) + supplierLinks.length"
             inline
             color="primary"
             class="ms-2"
@@ -527,22 +527,248 @@
               </div>
             </div>
 
-            <div v-else class="text-caption text-disabled italic py-8 text-center">
-              <v-icon size="44" class="mb-2 text-disabled">mdi-cash-remove</v-icon>
-              <div class="text-body-2 font-weight-medium text-slate-700">{{ t('componentDetailsModal.noOrdersFound') }}</div>
-              <div class="text-caption text-disabled mt-1 mb-3">
-                {{ t('componentDetailsModal.noOrdersHint') }}
+            <div v-else class="text-caption text-disabled italic py-4 px-4 text-center border border-dashed rounded-lg bg-slate-50 mb-2">
+              <div class="d-flex align-center justify-space-between flex-wrap gap-2">
+                <div class="d-flex align-center gap-2 text-left">
+                  <v-icon size="24" class="text-disabled">mdi-cash-remove</v-icon>
+                  <div>
+                    <div class="text-body-2 font-weight-medium text-slate-700" style="font-style: normal;">{{ t('componentDetailsModal.noOrdersFound') }}</div>
+                    <div class="text-caption text-disabled" style="font-style: normal;">
+                      {{ t('componentDetailsModal.noOrdersHint') }}
+                    </div>
+                  </div>
+                </div>
+                <v-btn
+                  color="primary"
+                  variant="outlined"
+                  size="small"
+                  prepend-icon="mdi-cash-plus"
+                  class="font-weight-bold"
+                  @click="openPurchaseDialog"
+                >
+                  {{ t('componentDetailsModal.btnBuyRecord') }}
+                </v-btn>
               </div>
-              <v-btn
-                color="primary"
-                variant="outlined"
-                size="small"
-                prepend-icon="mdi-cash-plus"
-                class="font-weight-bold"
-                @click="openPurchaseDialog"
-              >
-                {{ t('componentDetailsModal.btnBuyRecord') }}
-              </v-btn>
+            </div>
+
+            <v-divider class="my-4" />
+
+            <!-- WHERE TO BUY / SUPPLIER LINKS SECTION -->
+            <div>
+              <div class="d-flex align-center justify-space-between mb-3">
+                <div class="text-subtitle-2 font-weight-bold text-slate-800 d-flex align-center gap-1">
+                  <v-icon size="18" color="primary">mdi-store-outline</v-icon>
+                  <span>{{ t('componentDetailsModal.supplierLinksTitle') }}</span>
+                  <v-chip
+                    v-if="supplierLinks.length > 0"
+                    size="x-small"
+                    color="primary"
+                    variant="tonal"
+                    class="font-mono font-weight-bold ms-1"
+                  >
+                    {{ supplierLinks.length }}
+                  </v-chip>
+                </div>
+                <v-btn
+                  v-if="!showLinkForm"
+                  color="primary"
+                  variant="tonal"
+                  size="small"
+                  prepend-icon="mdi-plus"
+                  class="font-weight-bold"
+                  @click="openAddLinkForm"
+                >
+                  {{ t('componentDetailsModal.addSupplierLink') }}
+                </v-btn>
+              </div>
+
+              <!-- Add / Edit Supplier Link Inline Form -->
+              <div v-if="showLinkForm" class="border rounded-lg bg-slate-50 pa-3 mb-3">
+                <div class="text-caption font-weight-bold text-uppercase text-slate-700 mb-2 d-flex align-center gap-1">
+                  <v-icon size="15" color="primary">{{ editingLinkId ? 'mdi-pencil-outline' : 'mdi-plus-circle-outline' }}</v-icon>
+                  <span>{{ editingLinkId ? t('componentDetailsModal.editSupplierLink') : t('componentDetailsModal.addSupplierLink') }}</span>
+                </div>
+                <v-row dense>
+                  <v-col cols="12" sm="4">
+                    <v-text-field
+                      v-model="linkForm.supplier"
+                      :label="t('componentDetailsModal.supplierName') + ' *'"
+                      :placeholder="t('componentDetailsModal.supplierNamePlaceholder')"
+                      density="compact"
+                      variant="outlined"
+                      bg-color="white"
+                      hide-details
+                      prepend-inner-icon="mdi-store-outline"
+                    />
+                  </v-col>
+                  <v-col cols="6" sm="2">
+                    <v-text-field
+                      v-model.number="linkForm.price"
+                      type="number"
+                      min="0"
+                      step="0.0001"
+                      :label="t('componentDetailsModal.supplierPrice')"
+                      :prefix="currencyStore.getSymbol(linkForm.currency)"
+                      density="compact"
+                      variant="outlined"
+                      bg-color="white"
+                      hide-details
+                      class="font-mono"
+                    />
+                  </v-col>
+                  <v-col cols="6" sm="2">
+                    <v-select
+                      v-model="linkForm.currency"
+                      :items="currencyStore.currencyOptions"
+                      item-title="code"
+                      item-value="code"
+                      :label="t('componentDetailsModal.supplierCurrency')"
+                      density="compact"
+                      variant="outlined"
+                      bg-color="white"
+                      hide-details
+                    />
+                  </v-col>
+                  <v-col cols="12" sm="4">
+                    <v-text-field
+                      v-model="linkForm.url"
+                      :label="t('componentDetailsModal.supplierUrl')"
+                      :placeholder="t('componentDetailsModal.supplierUrlPlaceholder')"
+                      density="compact"
+                      variant="outlined"
+                      bg-color="white"
+                      hide-details
+                      prepend-inner-icon="mdi-link-variant"
+                      clearable
+                    />
+                  </v-col>
+                  <v-col cols="12" class="mt-1">
+                    <v-text-field
+                      v-model="linkForm.comment"
+                      :label="t('componentDetailsModal.supplierComment')"
+                      :placeholder="t('componentDetailsModal.supplierCommentPlaceholder')"
+                      density="compact"
+                      variant="outlined"
+                      bg-color="white"
+                      hide-details
+                      prepend-inner-icon="mdi-comment-text-outline"
+                      clearable
+                      @keyup.enter="saveSupplierLink"
+                    />
+                  </v-col>
+                </v-row>
+                <div class="d-flex justify-end gap-2 mt-3">
+                  <v-btn
+                    size="small"
+                    variant="text"
+                    color="slate-600"
+                    :disabled="savingLink"
+                    @click="cancelLinkForm"
+                  >
+                    {{ t('common.cancel') }}
+                  </v-btn>
+                  <v-btn
+                    size="small"
+                    color="primary"
+                    variant="flat"
+                    prepend-icon="mdi-content-save-outline"
+                    class="font-weight-bold"
+                    :disabled="!linkForm.supplier || !linkForm.supplier.trim()"
+                    :loading="savingLink"
+                    @click="saveSupplierLink"
+                  >
+                    {{ t('common.save') }}
+                  </v-btn>
+                </div>
+              </div>
+
+              <!-- Saved Supplier Links Table -->
+              <div v-if="supplierLinks.length > 0" class="border rounded-lg overflow-hidden">
+                <v-table density="compact" class="bg-white">
+                  <thead>
+                    <tr class="bg-slate-50 text-caption font-weight-bold">
+                      <th class="text-left py-2 font-weight-bold">{{ t('componentDetailsModal.colSupplier') }}</th>
+                      <th class="text-right py-2 font-weight-bold" style="width: 140px;">{{ t('componentDetailsModal.colUnitPrice') }}</th>
+                      <th class="text-left py-2 font-weight-bold">{{ t('componentDetailsModal.colComment') }}</th>
+                      <th class="text-center py-2 font-weight-bold" style="width: 60px;">{{ t('componentDetailsModal.colLink') }}</th>
+                      <th class="text-right py-2 font-weight-bold" style="width: 110px;">{{ t('common.actions') }}</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr v-for="link in supplierLinks" :key="link.id">
+                      <td class="py-2">
+                        <div class="d-flex align-center gap-1.5 font-weight-bold text-body-2 text-slate-800">
+                          <v-icon size="15" color="primary">mdi-store-outline</v-icon>
+                          <span>{{ link.supplier }}</span>
+                        </div>
+                      </td>
+                      <td class="text-right py-2 font-mono text-caption font-weight-bold text-primary">
+                        <template v-if="link.price > 0">
+                          <div v-if="link.currency && link.currency !== (displayComponent.pricing?.defaultCurrency || currencyStore.defaultCurrency)">
+                            <div>{{ formatCurrency(link.price, link.currency) }}</div>
+                            <div class="text-caption text-slate-500 font-mono font-weight-regular">
+                              ≈ {{ formatCurrency(link.convertedPrice, displayComponent.pricing?.defaultCurrency || currencyStore.defaultCurrency) }}
+                            </div>
+                          </div>
+                          <span v-else>{{ formatCurrency(link.price, link.currency || currencyStore.defaultCurrency) }}</span>
+                        </template>
+                        <span v-else class="text-disabled">—</span>
+                      </td>
+                      <td class="py-2 text-caption text-slate-700" style="max-width: 260px;">
+                        {{ link.comment || '—' }}
+                      </td>
+                      <td class="text-center py-2">
+                        <v-btn
+                          v-if="link.url"
+                          :href="link.url"
+                          target="_blank"
+                          icon="mdi-open-in-new"
+                          size="x-small"
+                          variant="text"
+                          color="primary"
+                          :title="link.url"
+                        />
+                        <span v-else class="text-disabled text-caption">—</span>
+                      </td>
+                      <td class="text-right py-2">
+                        <div class="d-inline-flex align-center gap-0.5">
+                          <v-btn
+                            icon="mdi-cash-plus"
+                            size="x-small"
+                            variant="text"
+                            color="primary"
+                            :title="t('componentDetailsModal.buyFromSupplierTooltip')"
+                            @click="buyFromSupplierLink(link)"
+                          />
+                          <v-btn
+                            icon="mdi-pencil-outline"
+                            size="x-small"
+                            variant="text"
+                            color="slate-700"
+                            :title="t('common.edit')"
+                            @click="openEditLinkForm(link)"
+                          />
+                          <v-btn
+                            icon="mdi-delete-outline"
+                            size="x-small"
+                            variant="text"
+                            color="error"
+                            :loading="deletingLinkId === link.id"
+                            :title="t('common.delete')"
+                            @click="removeSupplierLink(link)"
+                          />
+                        </div>
+                      </td>
+                    </tr>
+                  </tbody>
+                </v-table>
+              </div>
+
+              <div v-else-if="!showLinkForm" class="border border-dashed rounded-lg bg-slate-50 pa-4 text-center">
+                <v-icon size="32" class="text-disabled mb-1">mdi-link-variant-plus</v-icon>
+                <div class="text-body-2 font-weight-medium text-slate-700">{{ t('componentDetailsModal.noSupplierLinks') }}</div>
+                <div class="text-caption text-disabled mt-0.5">{{ t('componentDetailsModal.noSupplierLinksHint') }}</div>
+              </div>
             </div>
           </v-window-item>
         </v-window>
@@ -551,110 +777,112 @@
       <v-divider />
 
       <!-- Footer Actions -->
-      <v-card-actions class="pa-3 px-4 bg-slate-50 d-flex align-center flex-shrink-0">
-        <!-- Datasheet Link -->
-        <v-btn
-          v-if="displayComponent.datasheetURL"
-          color="red-darken-1"
-          variant="tonal"
-          size="small"
-          prepend-icon="mdi-file-pdf-box"
-          class="font-weight-medium me-2"
-          :href="getDatasheetUrl(displayComponent.datasheetURL)"
-          target="_blank"
-        >
-          {{ t('componentDetailsModal.openDatasheet') }}
-        </v-btn>
+      <v-card-actions class="pa-3 px-4 bg-slate-50 d-flex align-center justify-space-between flex-wrap gap-2 flex-shrink-0">
+        <div class="d-flex align-center flex-wrap gap-1">
+          <!-- Datasheet Link -->
+          <v-btn
+            v-if="displayComponent.datasheetURL"
+            color="red-darken-1"
+            variant="tonal"
+            size="small"
+            prepend-icon="mdi-file-pdf-box"
+            class="font-weight-medium me-1"
+            :href="getDatasheetUrl(displayComponent.datasheetURL)"
+            target="_blank"
+          >
+            {{ t('componentDetailsModal.openDatasheet') }}
+          </v-btn>
 
-        <!-- Edit Component Button -->
-        <v-btn
-          color="slate-700"
-          variant="text"
-          size="small"
-          prepend-icon="mdi-pencil-outline"
-          class="font-weight-medium me-1"
-          @click="openEditDialog"
-        >
-          {{ t('common.edit') }}
-        </v-btn>
+          <!-- Edit Component Button -->
+          <v-btn
+            color="slate-700"
+            variant="text"
+            size="small"
+            prepend-icon="mdi-pencil-outline"
+            class="font-weight-medium"
+            @click="openEditDialog"
+          >
+            {{ t('common.edit') }}
+          </v-btn>
 
-        <!-- Clone Component Button -->
-        <v-btn
-          color="slate-700"
-          variant="text"
-          size="small"
-          prepend-icon="mdi-content-copy"
-          class="font-weight-medium me-1"
-          @click="openCloneDialog"
-        >
-          {{ t('componentDetailsModal.clone') }}
-        </v-btn>
+          <!-- Clone Component Button -->
+          <v-btn
+            color="slate-700"
+            variant="text"
+            size="small"
+            prepend-icon="mdi-content-copy"
+            class="font-weight-medium"
+            @click="openCloneDialog"
+          >
+            {{ t('componentDetailsModal.clone') }}
+          </v-btn>
 
-        <!-- Delete Component Button -->
-        <v-btn
-          color="error"
-          variant="text"
-          size="small"
-          prepend-icon="mdi-delete-outline"
-          class="font-weight-medium"
-          @click="showDeleteDialog = true"
-        >
-          {{ t('common.delete') }}
-        </v-btn>
+          <!-- Delete Component Button -->
+          <v-btn
+            color="error"
+            variant="text"
+            size="small"
+            prepend-icon="mdi-delete-outline"
+            class="font-weight-medium"
+            @click="showDeleteDialog = true"
+          >
+            {{ t('common.delete') }}
+          </v-btn>
+        </div>
 
-        <v-spacer />
+        <div class="d-flex align-center flex-wrap gap-2 ms-auto">
+          <!-- Add to Shopping List -->
+          <v-btn
+            color="amber-darken-3"
+            variant="tonal"
+            size="small"
+            prepend-icon="mdi-cart-plus"
+            class="font-weight-medium"
+            :loading="addingToShoppingList"
+            @click="addToShoppingList"
+          >
+            {{ t('components.quickAddToBasket') }}
+          </v-btn>
 
-        <!-- Add to Shopping List -->
-        <v-btn
-          color="amber-darken-3"
-          variant="tonal"
-          size="small"
-          prepend-icon="mdi-cart-plus"
-          class="font-weight-medium me-2"
-          :loading="addingToShoppingList"
-          @click="addToShoppingList"
-        >
-          {{ t('components.quickAddToBasket') }}
-        </v-btn>
+          <!-- Export Component -->
+          <v-btn
+            color="primary"
+            variant="outlined"
+            size="small"
+            prepend-icon="mdi-export"
+            class="font-weight-medium"
+            :loading="exporting"
+            @click="exportThisComponent"
+            :title="t('components.exportComponents')"
+          >
+            {{ t('components.exportComponents') }}
+          </v-btn>
 
-        <!-- Export Component -->
-        <v-btn
-          color="primary"
-          variant="outlined"
-          size="small"
-          prepend-icon="mdi-export"
-          class="font-weight-medium me-2"
-          :loading="exporting"
-          @click="exportThisComponent"
-          :title="t('components.exportComponents')"
-        >
-          {{ t('components.exportComponents') }}
-        </v-btn>
+          <!-- Buy Component -->
+          <v-btn
+            color="primary"
+            variant="flat"
+            size="small"
+            prepend-icon="mdi-cash-check"
+            class="font-weight-bold"
+            @click="openPurchaseDialog"
+          >
+            {{ t('components.buyComponent') }}
+          </v-btn>
 
-        <!-- Buy Component -->
-        <v-btn
-          color="primary"
-          variant="flat"
-          size="small"
-          prepend-icon="mdi-cash-check"
-          class="font-weight-bold me-2"
-          @click="openPurchaseDialog"
-        >
-          {{ t('components.buyComponent') }}
-        </v-btn>
-
-        <!-- Optional Select Button (e.g. inside AddComponentDialog) -->
-        <v-btn
-          v-if="showSelectButton"
-          color="primary"
-          variant="flat"
-          size="small"
-          prepend-icon="mdi-check"
-          class="font-weight-bold"
-          @click="selectAndClose"
-        >
-          {{ selectButtonText || t('componentDetailsModal.selectComponent') }}
-        </v-btn>
+          <!-- Optional Select Button (e.g. inside AddComponentDialog) -->
+          <v-btn
+            v-if="showSelectButton"
+            color="primary"
+            variant="flat"
+            size="small"
+            prepend-icon="mdi-check"
+            class="font-weight-bold"
+            @click="selectAndClose"
+          >
+            {{ selectButtonText || t('componentDetailsModal.selectComponent') }}
+          </v-btn>
+        </div>
       </v-card-actions>
     </v-card>
 
@@ -731,8 +959,10 @@ import CancelOrderDialog from './CancelOrderDialog.vue';
 import DeleteComponentDialog from './DeleteComponentDialog.vue';
 import CreateComponentDialog from './CreateComponentDialog.vue';
 import { formatCurrency, formatDate } from '../utils/formatters';
+import { useCurrencyStore } from '../stores/currency';
 
 const router = useRouter();
+const currencyStore = useCurrencyStore();
 const showPhotoLightbox = ref(false);
 const showEditDialog = ref(false);
 const isEditMode = ref(true);
@@ -840,6 +1070,109 @@ const hasAnyPendingPurchases = computed(() => {
 const projectList = computed(() => {
   return detailedComponent.value?.projects || [];
 });
+
+const supplierLinks = computed(() => {
+  return detailedComponent.value?.supplierLinks || [];
+});
+
+// Supplier Links Form State & Handlers
+const showLinkForm = ref(false);
+const editingLinkId = ref(null);
+const savingLink = ref(false);
+const deletingLinkId = ref(null);
+const prefillSupplierLink = ref(null);
+
+const linkForm = ref({
+  supplier: '',
+  price: 0,
+  currency: currencyStore.defaultCurrency,
+  url: '',
+  comment: ''
+});
+
+const openAddLinkForm = () => {
+  editingLinkId.value = null;
+  linkForm.value = {
+    supplier: '',
+    price: 0,
+    currency: displayComponent.value?.pricing?.defaultCurrency || currencyStore.defaultCurrency,
+    url: '',
+    comment: ''
+  };
+  showLinkForm.value = true;
+};
+
+const openEditLinkForm = (link) => {
+  editingLinkId.value = link.id;
+  linkForm.value = {
+    supplier: link.supplier || '',
+    price: link.price != null ? Number(link.price) : 0,
+    currency: link.currency || currencyStore.defaultCurrency,
+    url: link.url || '',
+    comment: link.comment || ''
+  };
+  showLinkForm.value = true;
+};
+
+const cancelLinkForm = () => {
+  showLinkForm.value = false;
+  editingLinkId.value = null;
+};
+
+const saveSupplierLink = async () => {
+  const compId = displayComponent.value?.ID || displayComponent.value?.id;
+  if (!compId || !linkForm.value.supplier || !linkForm.value.supplier.trim()) return;
+
+  savingLink.value = true;
+  try {
+    const payload = {
+      supplier: linkForm.value.supplier.trim(),
+      price: parseFloat(linkForm.value.price) || 0,
+      currency: linkForm.value.currency || currencyStore.defaultCurrency,
+      url: linkForm.value.url ? linkForm.value.url.trim() : '',
+      comment: linkForm.value.comment ? linkForm.value.comment.trim() : ''
+    };
+
+    if (editingLinkId.value) {
+      await api.updateComponentLink(compId, editingLinkId.value, payload);
+      notify(t('componentDetailsModal.supplierLinkUpdated'));
+    } else {
+      await api.addComponentLink(compId, payload);
+      notify(t('componentDetailsModal.supplierLinkAdded'));
+    }
+
+    showLinkForm.value = false;
+    editingLinkId.value = null;
+    await loadFullDetails();
+  } catch (err) {
+    console.error('Failed to save supplier link:', err);
+    notify(t('componentDetailsModal.supplierLinkError', { error: err.response?.data?.error || err.message }), 'error');
+  } finally {
+    savingLink.value = false;
+  }
+};
+
+const removeSupplierLink = async (link) => {
+  const compId = displayComponent.value?.ID || displayComponent.value?.id;
+  if (!compId || !link?.id) return;
+
+  deletingLinkId.value = link.id;
+  try {
+    await api.deleteComponentLink(compId, link.id);
+    notify(t('componentDetailsModal.supplierLinkDeleted'));
+    await loadFullDetails();
+  } catch (err) {
+    console.error('Failed to delete supplier link:', err);
+    notify(t('componentDetailsModal.supplierLinkError', { error: err.response?.data?.error || err.message }), 'error');
+  } finally {
+    deletingLinkId.value = null;
+  }
+};
+
+const buyFromSupplierLink = (link) => {
+  prefillSupplierLink.value = link;
+  showPurchaseDialog.value = true;
+};
 
 const getDatasheetUrl = (url) => {
   return resolveMediaUrl('datasheet', url);
@@ -963,6 +1296,27 @@ const loadFullDetails = async () => {
 const purchaseDialogItem = computed(() => {
   if (!displayComponent.value) return null;
   const c = displayComponent.value;
+  if (prefillSupplierLink.value) {
+    const l = prefillSupplierLink.value;
+    const detailsStr = [l.supplier, l.comment].filter(Boolean).join(' — ');
+    return {
+      isComponentDirect: true,
+      prefillFromSupplierLink: true,
+      componentId: c.ID || c.id,
+      component: c.component,
+      marking: c.marking,
+      category: c.category,
+      package: c.package,
+      photoURL: c.photoURL,
+      directQty: 1,
+      qty: 1,
+      stockQuantity: c.qty ?? 0,
+      activeOrderCurrency: l.currency || currencyStore.defaultCurrency,
+      latestPrice: l.price != null ? Number(l.price) : 0,
+      latestOrderDetails: detailsStr,
+      latestOrderUrl: l.url || ''
+    };
+  }
   return {
     isComponentDirect: true,
     componentId: c.ID || c.id,
@@ -981,6 +1335,7 @@ const purchaseDialogItem = computed(() => {
 });
 
 const openPurchaseDialog = () => {
+  prefillSupplierLink.value = null;
   showPurchaseDialog.value = true;
 };
 
@@ -1057,9 +1412,15 @@ watch(() => props.modelValue, (isOpen) => {
   if (isOpen) {
     activeTab.value = 'overview';
     detailedComponent.value = null;
+    showLinkForm.value = false;
+    editingLinkId.value = null;
+    prefillSupplierLink.value = null;
     loadFullDetails();
   } else {
     detailedComponent.value = null;
+    showLinkForm.value = false;
+    editingLinkId.value = null;
+    prefillSupplierLink.value = null;
   }
 });
 

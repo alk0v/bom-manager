@@ -852,6 +852,33 @@ router.get('/:id', async (req, res) => {
 
     component.customFields = customFieldRows;
 
+    // Fetch supplier purchase links (where to buy)
+    const [linkRows] = await pool.query(`
+      SELECT id, componentId, supplier, price, currency, url, comment, createdAt
+      FROM t_component_links
+      WHERE componentId = ?
+      ORDER BY id DESC
+    `, [req.params.id]);
+
+    const todayStr = new Date().toISOString().slice(0, 10);
+    component.supplierLinks = (linkRows || []).map(l => {
+      const rawPrice = l.price != null ? Number(l.price) : 0;
+      const linkCurr = (l.currency || defaultCurrency).toUpperCase();
+      const rateInfo = currencyService.findNearestRate(allRates, linkCurr, defaultCurrency, todayStr);
+      const convertedPrice = Math.round(rawPrice * rateInfo.rate * 10000) / 10000;
+      return {
+        id: l.id,
+        componentId: l.componentId,
+        supplier: l.supplier || '',
+        price: rawPrice,
+        currency: linkCurr,
+        convertedPrice,
+        url: l.url || '',
+        comment: l.comment || '',
+        createdAt: l.createdAt
+      };
+    });
+
     res.json(component);
   } catch (error) {
     console.error('Error fetching component:', error);
@@ -2004,6 +2031,7 @@ router.delete('/:id', async (req, res) => {
       await conn.query('DELETE FROM t_busket WHERE componentId = ?', [componentId]);
       await conn.query('DELETE FROM t_warehouse WHERE componentId = ?', [componentId]);
       await conn.query('DELETE FROM t_orders WHERE componentId = ?', [componentId]);
+      await conn.query('DELETE FROM t_component_links WHERE componentId = ?', [componentId]);
       await conn.query('DELETE FROM t_production_items WHERE componentId = ?', [componentId]);
       await conn.query('DELETE FROM i_components WHERE ID = ?', [componentId]);
 
@@ -2024,6 +2052,180 @@ router.delete('/:id', async (req, res) => {
   } catch (error) {
     console.error('Error deleting component:', error);
     res.status(500).json({ error: 'Failed to delete component', details: error.message });
+  }
+});
+
+// GET /api/components/:id/links - list supplier links for a component
+router.get('/:id/links', async (req, res) => {
+  try {
+    const componentId = parseInt(req.params.id, 10);
+    if (isNaN(componentId)) {
+      return res.status(400).json({ error: 'Invalid component ID' });
+    }
+
+    const defaultCurrency = await currencyService.getDefaultCurrency();
+    const allRates = await currencyService.getAllRates();
+    const todayStr = new Date().toISOString().slice(0, 10);
+
+    const [rows] = await pool.query(`
+      SELECT id, componentId, supplier, price, currency, url, comment, createdAt
+      FROM t_component_links
+      WHERE componentId = ?
+      ORDER BY id DESC
+    `, [componentId]);
+
+    const links = (rows || []).map(l => {
+      const rawPrice = l.price != null ? Number(l.price) : 0;
+      const linkCurr = (l.currency || defaultCurrency).toUpperCase();
+      const rateInfo = currencyService.findNearestRate(allRates, linkCurr, defaultCurrency, todayStr);
+      const convertedPrice = Math.round(rawPrice * rateInfo.rate * 10000) / 10000;
+      return {
+        id: l.id,
+        componentId: l.componentId,
+        supplier: l.supplier || '',
+        price: rawPrice,
+        currency: linkCurr,
+        convertedPrice,
+        url: l.url || '',
+        comment: l.comment || '',
+        createdAt: l.createdAt
+      };
+    });
+
+    res.json(links);
+  } catch (error) {
+    console.error('Error fetching supplier links:', error);
+    res.status(500).json({ error: 'Failed to fetch supplier links', details: error.message });
+  }
+});
+
+// POST /api/components/:id/links - add a supplier link for a component
+router.post('/:id/links', async (req, res) => {
+  try {
+    const componentId = parseInt(req.params.id, 10);
+    if (isNaN(componentId)) {
+      return res.status(400).json({ error: 'Invalid component ID' });
+    }
+
+    const { supplier, price = 0, currency, url = '', comment = '' } = req.body;
+    if (!supplier || !String(supplier).trim()) {
+      return res.status(400).json({ error: 'Supplier name is required' });
+    }
+
+    const defaultCurrency = await currencyService.getDefaultCurrency();
+    const linkCurrency = (currency && currencyService.SUPPORTED_CURRENCIES.includes(String(currency).toUpperCase().trim()))
+      ? String(currency).toUpperCase().trim()
+      : defaultCurrency;
+    const parsedPrice = Math.max(0, parseFloat(price) || 0);
+
+    const [result] = await pool.query(
+      `INSERT INTO t_component_links (componentId, supplier, price, currency, url, comment)
+       VALUES (?, ?, ?, ?, ?, ?)`,
+      [
+        componentId,
+        String(supplier).trim(),
+        parsedPrice,
+        linkCurrency,
+        url ? String(url).trim() : '',
+        comment ? String(comment).trim() : ''
+      ]
+    );
+
+    const allRates = await currencyService.getAllRates();
+    const todayStr = new Date().toISOString().slice(0, 10);
+    const rateInfo = currencyService.findNearestRate(allRates, linkCurrency, defaultCurrency, todayStr);
+    const convertedPrice = Math.round(parsedPrice * rateInfo.rate * 10000) / 10000;
+
+    res.status(201).json({
+      id: result.insertId,
+      componentId,
+      supplier: String(supplier).trim(),
+      price: parsedPrice,
+      currency: linkCurrency,
+      convertedPrice,
+      url: url ? String(url).trim() : '',
+      comment: comment ? String(comment).trim() : ''
+    });
+  } catch (error) {
+    console.error('Error creating supplier link:', error);
+    res.status(500).json({ error: 'Failed to create supplier link', details: error.message });
+  }
+});
+
+// PUT /api/components/:id/links/:linkId - update a supplier link
+router.put('/:id/links/:linkId', async (req, res) => {
+  try {
+    const componentId = parseInt(req.params.id, 10);
+    const linkId = parseInt(req.params.linkId, 10);
+    if (isNaN(componentId) || isNaN(linkId)) {
+      return res.status(400).json({ error: 'Invalid ID' });
+    }
+
+    const { supplier, price = 0, currency, url = '', comment = '' } = req.body;
+    if (!supplier || !String(supplier).trim()) {
+      return res.status(400).json({ error: 'Supplier name is required' });
+    }
+
+    const defaultCurrency = await currencyService.getDefaultCurrency();
+    const linkCurrency = (currency && currencyService.SUPPORTED_CURRENCIES.includes(String(currency).toUpperCase().trim()))
+      ? String(currency).toUpperCase().trim()
+      : defaultCurrency;
+    const parsedPrice = Math.max(0, parseFloat(price) || 0);
+
+    await pool.query(
+      `UPDATE t_component_links
+       SET supplier = ?, price = ?, currency = ?, url = ?, comment = ?
+       WHERE id = ? AND componentId = ?`,
+      [
+        String(supplier).trim(),
+        parsedPrice,
+        linkCurrency,
+        url ? String(url).trim() : '',
+        comment ? String(comment).trim() : '',
+        linkId,
+        componentId
+      ]
+    );
+
+    const allRates = await currencyService.getAllRates();
+    const todayStr = new Date().toISOString().slice(0, 10);
+    const rateInfo = currencyService.findNearestRate(allRates, linkCurrency, defaultCurrency, todayStr);
+    const convertedPrice = Math.round(parsedPrice * rateInfo.rate * 10000) / 10000;
+
+    res.json({
+      id: linkId,
+      componentId,
+      supplier: String(supplier).trim(),
+      price: parsedPrice,
+      currency: linkCurrency,
+      convertedPrice,
+      url: url ? String(url).trim() : '',
+      comment: comment ? String(comment).trim() : ''
+    });
+  } catch (error) {
+    console.error('Error updating supplier link:', error);
+    res.status(500).json({ error: 'Failed to update supplier link', details: error.message });
+  }
+});
+
+// DELETE /api/components/:id/links/:linkId - delete a supplier link
+router.delete('/:id/links/:linkId', async (req, res) => {
+  try {
+    const componentId = parseInt(req.params.id, 10);
+    const linkId = parseInt(req.params.linkId, 10);
+    if (isNaN(componentId) || isNaN(linkId)) {
+      return res.status(400).json({ error: 'Invalid ID' });
+    }
+
+    await pool.query(
+      'DELETE FROM t_component_links WHERE id = ? AND componentId = ?',
+      [linkId, componentId]
+    );
+
+    res.json({ success: true, id: linkId, componentId });
+  } catch (error) {
+    console.error('Error deleting supplier link:', error);
+    res.status(500).json({ error: 'Failed to delete supplier link', details: error.message });
   }
 });
 

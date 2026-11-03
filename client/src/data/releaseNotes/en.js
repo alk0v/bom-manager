@@ -1,8 +1,34 @@
 export const releasesEn = [
   {
+    version: '0.3.7',
+    date: '2026-11-03',
+    isCurrent: true,
+    summary: 'Version 0.3.7 introduces Component Supplier Links ("Where to Buy") for saving store URLs, unit prices, currencies, and notes per component without requiring a purchase order, adds 1-click order pre-filling from saved supplier links, and improves the Component Details modal layout to prevent action button clipping.',
+    features: [
+      {
+        icon: 'mdi-store-outline',
+        color: 'primary',
+        title: 'Component Supplier Links ("Where to Buy")',
+        description: 'Save multiple supplier purchase links (Supplier Name, Unit Price, Currency, Product URL, and Comment/Notes) directly in the Purchases & Pricing tab of any component, even before recording an order. Stored in the new t_component_links table across MySQL and SQLite.'
+      },
+      {
+        icon: 'mdi-cash-plus',
+        color: 'teal',
+        title: '1-Click Quick Buy from Saved Supplier Links',
+        description: 'Each saved supplier link includes a Quick Buy action that opens the Purchase Confirmation dialog pre-populated with that supplier’s unit price, currency, product URL, and notes, plus automatic currency conversion previews.'
+      },
+      {
+        icon: 'mdi-file-pdf-box',
+        color: 'indigo',
+        title: 'Component Details Modal & Datasheet Button Layout Fix',
+        description: 'Expanded the Component Details modal width and restructured footer action button groups with responsive wrapping so the Open Datasheet button and action controls never clip across English and Ukrainian locales.'
+      }
+    ]
+  },
+  {
     version: '0.3.6',
     date: '2026-11-02',
-    isCurrent: true,
+    isCurrent: false,
     summary: 'Version 0.3.6 introduces complete Component & Package ZIP Export/Import workflows with smart catalog matching, a 3-step interactive component and footprint mapping wizard, full media bundling (photos, datasheets, package drawings), and clickable component photo previews across the Components table.',
     features: [
       {

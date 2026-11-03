@@ -510,7 +510,7 @@ const initForm = () => {
 
   const last = getLastPurchase();
 
-  if (last) {
+  if (last && !props.item.prefillFromSupplierLink) {
     hasRestoredValues.value = true;
     lastEdited.value = last.lastEdited || 'price';
 

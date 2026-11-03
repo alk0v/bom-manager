@@ -269,6 +269,22 @@ async function ensureTables() {
       }
       console.log('[Database:MySQL] Seeded initial tags in t_tags.');
     }
+
+    // Ensure t_component_links table exists for component supplier links / where to buy
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS t_component_links (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        componentId INT NOT NULL,
+        supplier VARCHAR(200) NOT NULL,
+        price FLOAT DEFAULT 0,
+        currency VARCHAR(10) NOT NULL DEFAULT 'USD',
+        url VARCHAR(500) DEFAULT '',
+        comment VARCHAR(500) DEFAULT '',
+        createdAt DATETIME DEFAULT CURRENT_TIMESTAMP,
+        INDEX idx_cl_comp (componentId)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+    `);
+    console.log('[Database:MySQL] Verified table "t_component_links" exists.');
   } catch (err) {
     console.warn('[Database:MySQL] Table verification note:', err.message);
   }
