@@ -1,8 +1,192 @@
 export const releasesEn = [
   {
+    version: '0.3.5',
+    date: '2026-11-02',
+    isCurrent: true,
+    summary: 'Version 0.3.5 introduces complete Package & Footprint Export/Import workflows with technical drawing image bundling, adds an interactive Gallery Mode with full-size lightbox previews, enables sortable table columns across the Packages dictionary, and resolves media URL pathing.',
+    features: [
+      {
+        icon: 'mdi-package-down',
+        color: 'primary',
+        title: 'Packages Export to ZIP Archive',
+        description: 'Export package footprints into portable ZIP archives containing manifest.json metadata and bundled technical drawing image files from media/packages/. Supports exporting either all footprints or a customized checkbox selection.'
+      },
+      {
+        icon: 'mdi-database-import-outline',
+        color: 'teal',
+        title: 'Intelligent Package Import & Name Mapping',
+        description: 'Import package archive files (.zip or .json) with an interactive preview modal. Automatically matches footprints against existing database entries by name with "Exact match" and "New footprint" detection, inline target remapping, and batch "Map Exact" / "Create All New" actions.'
+      },
+      {
+        icon: 'mdi-view-grid-outline',
+        color: 'indigo',
+        title: 'Gallery Mode for Package Drawings',
+        description: 'Added interactive Table / Gallery view switching in the Packages Dictionary (/dictionaries/packages). Gallery cards showcase large 280px drawing previews, footprint metadata, mount technology, pin counts, and hover zoom lightbox overlays.'
+      },
+      {
+        icon: 'mdi-sort-alphabetical-ascending',
+        color: 'blue-grey-darken-1',
+        title: 'Interactive Sortable Table Columns',
+        description: 'All data columns in the Packages dictionary (ID, Footprint Name, Mount Type, Pin Count, Drawing File, and Component Usage) are now fully interactive with ascending/descending natural alphanumeric sorting.'
+      },
+      {
+        icon: 'mdi-image-check-outline',
+        color: 'amber-darken-3',
+        title: 'Drawing Filename Display & Lightbox Previews',
+        description: 'Replaced bulky table image thumbnails with clean, clickable monospace drawing filenames that open the full-size media lightbox dialog, and normalized package media path resolution across client and server.'
+      }
+    ]
+  },
+  {
+    version: '0.3.4',
+    date: '2026-09-27',
+    isCurrent: false,
+    summary: 'Version 0.3.4 introduces complete Hardware Project Export & Import capabilities for sharing projects between users and environments, interactive component mapping, automated bundling of photos, datasheets, and drawings, and full localization for iBOM workflows.',
+    features: [
+      {
+        icon: 'mdi-package-down',
+        color: 'primary',
+        title: 'Project Export to ZIP Archive',
+        description: 'Export complete electronic hardware projects into portable ZIP packages containing project metadata, tags, full BOM requirements, custom technical specifications (t_component_field_values), project cover photo, attachments (t_project_files), component photos, datasheets, and package footprint drawings.'
+      },
+      {
+        icon: 'mdi-database-import-outline',
+        color: 'teal',
+        title: 'Intelligent Project Import & Component Mapping',
+        description: 'Import project export packages (.zip or .json) with an interactive preview workflow. Automatically matches BOM components against the local catalog by part name, footprint, or marking code with instant Exact/Suggested badges, and lets you re-use the Component Picker and Create/Clone dialogs on the fly.'
+      },
+      {
+        icon: 'mdi-paperclip',
+        color: 'indigo',
+        title: 'Complete Media Asset Packaging & Extraction',
+        description: 'Bundles all related component photos, datasheet PDFs, and package drawings into the export package, automatically extracting them into local media storage upon import for newly created or matched items.'
+      },
+      {
+        icon: 'mdi-translate',
+        color: 'blue-grey-darken-1',
+        title: 'KiCAD Interactive HTML BOM (iBOM) Localization',
+        description: 'Full bilingual localization (English & Ukrainian) for the KiCAD iBOM import dialog, streamlined table columns, and polished compact dialog sizing across import modals.'
+      },
+      {
+        icon: 'mdi-swap-horizontal-bold',
+        color: 'amber-darken-3',
+        title: 'Category Change Specification Mapping',
+        description: 'Automatic mapping and data preservation of custom field values when changing component categories individually or in bulk, with safety warnings for unmapped discarded fields.'
+      }
+    ]
+  },
+  {
+    version: '0.3.3',
+    date: '2026-09-27',
+    isCurrent: false,
+    summary: 'Version 0.3.3 introduces Category Groups (Supercategories) for organizing component taxonomy, adds dedicated support for Mechanical & Non-Electrical parts (MECH mounting type with nullable pin counts), and delivers UI and workflow enhancements across dictionaries and component creation.',
+    features: [
+      {
+        icon: 'mdi-folder-table-outline',
+        color: 'primary',
+        title: 'Category Groups & Supercategories Taxonomy',
+        description: 'Organize component categories into top-level groups (e.g. Electronic, Mechanical, Fasteners, Optics, Cables). Includes a full dictionary management view (/dictionaries/groups) with CRUD, sort ordering, and safe deletion with category reassignment.'
+      },
+      {
+        icon: 'mdi-wrench-outline',
+        color: 'blue-grey-darken-1',
+        title: 'Mechanical & Non-Electrical Components Support',
+        description: 'Added "MECH" mounting technology alongside SMD and THT for non-electrical parts (screws, nuts, springs, plastic cases, enclosures, standoffs). Packages support nullable pin counts and omit pin badges when not applicable.'
+      },
+      {
+        icon: 'mdi-shape-outline',
+        color: 'indigo',
+        title: 'Category Group Assignment & Quick Filtering',
+        description: 'Assign categories to groups directly in the Categories Dictionary, filter categories by group in toolbars, and view group classification chips across dictionary views.'
+      },
+      {
+        icon: 'mdi-form-select',
+        color: 'teal',
+        title: 'Component Form Memory & Workflow Optimizations',
+        description: 'When "Add another component after saving" is enabled, all form fields (including Category, Package, Name, Storage, and Custom Specifications) are automatically preserved for rapid batch entry of component kits.'
+      },
+      {
+        icon: 'mdi-table-headers-eye',
+        color: 'amber-darken-3',
+        title: 'Dictionaries Table & Layout Refinements',
+        description: 'Expanded Actions column in Categories Dictionary for optimal usability, improved mounting technology toggles and filters across all dialogs, and streamlined storage section display.'
+      }
+    ]
+  },
+  {
+    version: '0.3.2',
+    date: '2026-09-26',
+    isCurrent: false,
+    summary: 'Version 0.3.2 brings Category ↔ Package associations to prevent invalid footprint selections, introduces dynamic category-specific Custom Specification Fields (e.g. Capacitance, Voltage, Current Gain hFE), and adds advanced technical specification filtering across the catalog.',
+    features: [
+      {
+        icon: 'mdi-package-variant-closed',
+        color: 'primary',
+        title: 'Category ↔ Package Associations & Footprint Validation',
+        description: 'Configure allowed footprints and packages per category (e.g. Microcontrollers cannot be assigned 0603; Electrolytic Capacitors cannot be DIP-32). Component forms automatically filter packages with a convenient "Show all packages" override button.'
+      },
+      {
+        icon: 'mdi-tune-vertical',
+        color: 'teal',
+        title: 'Category Technical Specifications & Parameter Re-use',
+        description: 'Define custom typed specification fields per category (numeric values with units like µF, V, mA, Ω, hFE, text parameters, or dropdown options). Easily re-use parameters across categories (e.g. hFE, VCEO, IC for PNP & NPN transistors) using the "Copy from Category..." tool and standard electronic presets.'
+      },
+      {
+        icon: 'mdi-filter-cog-outline',
+        color: 'indigo',
+        title: 'Advanced Technical Specification Filtering',
+        description: 'Filter components by their dynamic technical specifications directly in the catalog toolbar (numeric min/max ranges, dropdown options, text matches) when browsing specific categories.'
+      },
+      {
+        icon: 'mdi-chip',
+        color: 'blue-darken-2',
+        title: 'Component Specifications in Details & Catalog Views',
+        description: 'Component specifications with units are clearly displayed in Component Details overview and as compact parameter badges in the main catalog table.'
+      },
+      {
+        icon: 'mdi-table-edit',
+        color: 'amber-darken-3',
+        title: 'Bulk Component Editing & Multi-Selection',
+        description: 'Select filtered components (one by one or all visible) and batch-update Category, Package/Footprint, Component Photo, Datasheet, and Category Specification Parameters with granular per-field update controls.'
+      }
+    ]
+  },
+  {
+    version: '0.3.1',
+    date: '2026-09-25',
+    isCurrent: false,
+    summary: 'Version 0.3.1 introduces Hardware Project Tagging, allowing flexible taxonomy, categorization (e.g., Commodore 64, Retro, SMD, KiCAD), multi-select tag filtering, autocomplete, and seamless project management.',
+    features: [
+      {
+        icon: 'mdi-tag-multiple-outline',
+        color: 'primary',
+        title: 'Hardware Project Tags & Categorization',
+        description: 'Assign custom and predefined tags to electronic hardware projects (e.g. "commodore 64", "retro", "smd"). Tags are normalized in dedicated relational tables (t_tags and t_project_tags) with automatic project counts and autocomplete.'
+      },
+      {
+        icon: 'mdi-filter-variant',
+        color: 'teal',
+        title: 'Multi-Select Tag Filter & Instant Click-to-Filter',
+        description: 'Filter projects effortlessly with a multi-select combobox in the projects toolbar. Clicking any tag chip on a project card toggles the tag filter immediately.'
+      },
+      {
+        icon: 'mdi-card-text-outline',
+        color: 'indigo',
+        title: 'Project Tags in BOM Dialog & Project Details',
+        description: 'Project tags are clearly displayed across all interfaces: Project Cards, Project BOM modal header, and the dedicated Project Details overview page.'
+      },
+      {
+        icon: 'mdi-file-image-outline',
+        color: 'blue-darken-2',
+        title: 'Image Attachments Support (PNG, JPG, SVG)',
+        description: 'Attach board photos, assembly diagrams, and vector schematics directly to project files with automatic type detection, interactive table thumbnails, upload preview, and full-screen lightbox viewing.'
+      }
+    ]
+  },
+  {
     version: '0.3.0',
     date: '2026-09-24',
-    isCurrent: true,
+    isCurrent: false,
     summary: 'Version 0.3.0 delivers multi-currency support with automated exchange rate recalculations, introduces the dynamic table action columns alignment and gap elimination rule, redesigns the Purchase Confirmation modal, and expands full Ukrainian localization.',
     features: [
       {

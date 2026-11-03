@@ -57,6 +57,18 @@
             {{ t('projects.produce') }}
           </v-btn>
 
+          <!-- Export Project Button -->
+          <v-btn
+            variant="outlined"
+            size="small"
+            color="primary"
+            prepend-icon="mdi-package-up"
+            :loading="exporting"
+            @click="exportCurrentProject"
+          >
+            {{ t('importProjectModal.exportBtn') }}
+          </v-btn>
+
           <!-- Edit Project Button (optional if showProjectActions) -->
           <v-btn
             v-if="showProjectActions"
@@ -112,9 +124,22 @@
             <div class="text-caption text-slate-500 font-weight-medium text-uppercase mb-1">
               {{ t('common.description') }}
             </div>
-            <p class="text-body-2 text-slate-700 mb-0 pre-line">
+            <p class="text-body-2 text-slate-700 mb-2 pre-line">
               {{ project.description || t('projectDetail.noDescription') }}
             </p>
+            <div v-if="project.tags && project.tags.length > 0" class="d-flex flex-wrap align-center" style="gap: 6px;">
+              <v-chip
+                v-for="tag in project.tags"
+                :key="tag.id || tag.name"
+                size="x-small"
+                variant="outlined"
+                color="slate-600"
+                class="font-weight-medium"
+              >
+                <v-icon start size="12" color="primary">mdi-tag-outline</v-icon>
+                {{ tag.name }}
+              </v-chip>
+            </div>
           </v-col>
 
           <v-col cols="12" md="4" class="d-flex flex-wrap align-center justify-md-end" style="gap: 12px;">
@@ -332,6 +357,31 @@ const showEditDialog = ref(false);
 const showProduceDialog = ref(false);
 const showDetailsDialog = ref(false);
 const showAnalogsDialog = ref(false);
+
+const exporting = ref(false);
+
+const exportCurrentProject = async () => {
+  if (!props.project || !props.project.id) return;
+  exporting.value = true;
+  try {
+    const res = await api.exportProject(props.project.id);
+    const blob = new Blob([res.data], { type: 'application/zip' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    const safeTitle = (props.project.projectName || `project_${props.project.id}`).replace(/[^a-zA-Z0-9._-]/g, '_');
+    link.download = `${safeTitle}_export.zip`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(link.href);
+    emit('notify', t('importProjectModal.exportSuccess'), 'success');
+  } catch (err) {
+    console.error('Failed to export project:', err);
+    emit('notify', t('importProjectModal.exportError') + ': ' + err.message, 'error');
+  } finally {
+    exporting.value = false;
+  }
+};
 
 const editingBom = ref(null);
 const selectedDetailComponent = ref(null);

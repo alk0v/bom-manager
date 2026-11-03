@@ -72,16 +72,28 @@
     <v-table v-else density="comfortable" hover class="files-table">
       <thead>
         <tr class="bg-slate-50">
-          <th class="text-left font-weight-bold" style="width: 140px;">{{ t('projectFiles.colType') }}</th>
           <th class="text-left font-weight-bold">{{ t('projectFiles.colFileName') }}</th>
+          <th class="text-left font-weight-bold" style="width: 140px;">{{ t('projectFiles.colType') }}</th>
           <th class="text-left font-weight-bold">{{ t('projectFiles.colDescription') }}</th>
           <th class="text-center font-weight-bold" style="width: 110px;">{{ t('projectFiles.colSize') }}</th>
           <th class="text-center font-weight-bold" style="width: 140px;">{{ t('projectFiles.colUploaded') }}</th>
-          <th class="text-left font-weight-bold" :style="{ width: hasAnyIbom ? '240px' : '90px', minWidth: hasAnyIbom ? '240px' : '90px' }">{{ t('projectFiles.colActions') }}</th>
+          <th class="text-left font-weight-bold" :style="{ width: hasAnySpecialAction ? '240px' : '90px', minWidth: hasAnySpecialAction ? '240px' : '90px' }">{{ t('projectFiles.colActions') }}</th>
         </tr>
       </thead>
       <tbody>
         <tr v-for="file in files" :key="file.id" class="file-row">
+          <!-- File Name with Thumbnail -->
+          <td>
+              <span
+                class="font-weight-medium file-name-text"
+                :class="{ 'cursor-pointer text-primary text-decoration-underline-hover': isImageFile(file), 'text-slate-900': !isImageFile(file) }"
+                :title="file.originalName"
+                @click="isImageFile(file) ? openImageLightbox(file) : null"
+              >
+                {{ file.originalName }}
+              </span>
+          </td>
+
           <!-- File Type Badge -->
           <td>
             <v-chip
@@ -93,24 +105,6 @@
               <v-icon start size="14">{{ getTypeMeta(file.fileType).icon }}</v-icon>
               {{ getTypeMeta(file.fileType).label }}
             </v-chip>
-          </td>
-
-          <!-- File Name -->
-          <td>
-            <div class="d-flex align-center">
-              <span class="font-weight-medium text-slate-900 file-name-text" :title="file.originalName">
-                {{ file.originalName }}
-              </span>
-              <v-chip
-                v-if="file.fileType === 'ibom'"
-                size="x-small"
-                color="success"
-                variant="flat"
-                class="ms-2 font-weight-bold"
-              >
-                KiCAD
-              </v-chip>
-            </div>
           </td>
 
           <!-- Description -->
@@ -132,7 +126,7 @@
           </td>
 
           <!-- Actions -->
-          <td class="text-left" :style="{ width: hasAnyIbom ? '240px' : '90px', minWidth: hasAnyIbom ? '240px' : '90px' }">
+          <td class="text-left" :style="{ width: hasAnySpecialAction ? '240px' : '90px', minWidth: hasAnySpecialAction ? '240px' : '90px' }">
             <div class="d-flex align-center justify-start gap-1">
               <!-- Special iBOM Actions -->
               <template v-if="file.fileType === 'ibom'">
@@ -161,6 +155,21 @@
                   @click="$emit('import-ibom', file)"
                 >
                   {{ t('projectFiles.importBom') }}
+                </v-btn>
+              </template>
+
+              <!-- Special Image Preview Action -->
+              <template v-else-if="isImageFile(file)">
+                <v-btn
+                  size="small"
+                  variant="tonal"
+                  color="primary"
+                  prepend-icon="mdi-eye-outline"
+                  class="font-weight-bold me-1"
+                  :title="t('projectFiles.viewImage')"
+                  @click="openImageLightbox(file)"
+                >
+                  {{ t('projectFiles.viewImage') }}
                 </v-btn>
               </template>
 
@@ -216,6 +225,20 @@
             :rules="[v => !!v || t('projectFiles.pleaseSelectFile')]"
             @update:model-value="onFileSelected"
           />
+
+          <!-- Image Upload Preview Thumbnail -->
+          <div v-if="uploadFilePreviewUrl && selectedFileType === 'image'" class="mb-3 pa-3 border rounded bg-slate-50 d-flex align-center gap-3">
+            <img
+              :src="uploadFilePreviewUrl"
+              alt="Upload preview"
+              style="width: 56px; height: 56px; object-fit: cover;"
+              class="border rounded bg-white shadow-sm flex-shrink-0"
+            />
+            <div class="overflow-hidden">
+              <div class="text-caption font-weight-bold text-slate-800">{{ t('projectFiles.imagePreview') }}</div>
+              <div class="text-caption text-slate-500 text-truncate font-mono">{{ uploadFileName }}</div>
+            </div>
+          </div>
 
           <!-- Detected or Chosen File Type -->
           <v-select
@@ -299,13 +322,22 @@
         </v-card-actions>
       </v-card>
     </v-dialog>
+
+    <!-- Media Lightbox for Image Preview -->
+    <MediaLightboxDialog
+      v-model="lightbox.show"
+      :src="lightbox.src"
+      :title="lightbox.title"
+      type="attachment"
+    />
   </v-card>
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue';
+import { ref, reactive, computed, onMounted } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { api } from '../services/api';
+import MediaLightboxDialog from './MediaLightboxDialog.vue';
 
 const { t } = useI18n();
 
@@ -325,9 +357,18 @@ const emit = defineEmits(['import-ibom', 'files-updated']);
 const files = ref([]);
 const loading = ref(false);
 
+// Lightbox state for image preview
+const lightbox = reactive({
+  show: false,
+  src: '',
+  title: '',
+  type: 'attachment'
+});
+
 // Upload state
 const uploadDialog = ref(false);
 const uploadFile = ref(null);
+const uploadFilePreviewUrl = ref(null);
 const selectedFileType = ref('other');
 const uploadDescription = ref('');
 const uploading = ref(false);
@@ -338,6 +379,7 @@ const fileToDelete = ref(null);
 const deleting = ref(false);
 
 const fileTypeOptions = computed(() => [
+  { value: 'image', label: t('projectFiles.typeImage'), icon: 'mdi-file-image-outline', color: 'blue-darken-2' },
   { value: 'ibom', label: t('projectFiles.typeIbom'), icon: 'mdi-chip', color: 'success' },
   { value: 'archive', label: t('projectFiles.typeArchive'), icon: 'mdi-folder-zip-outline', color: 'amber-darken-3' },
   { value: 'firmware', label: t('projectFiles.typeFirmware'), icon: 'mdi-memory', color: 'purple-darken-2' },
@@ -351,9 +393,36 @@ const currentTypeIcon = computed(() => {
   return opt ? opt.icon : 'mdi-file-outline';
 });
 
-const hasAnyIbom = computed(() => {
-  return files.value.some(f => f.fileType === 'ibom');
+const hasAnySpecialAction = computed(() => {
+  return files.value.some(f => f.fileType === 'ibom' || isImageFile(f));
 });
+
+const uploadFileName = computed(() => {
+  if (!uploadFile.value) return '';
+  const f = Array.isArray(uploadFile.value) ? uploadFile.value[0] : uploadFile.value;
+  return f?.name || '';
+});
+
+function isImageFile(file) {
+  if (!file) return false;
+  if (file.fileType === 'image') return true;
+  const name = (file.originalName || file.fileName || '').toLowerCase();
+  return ['.png', '.jpg', '.jpeg', '.svg', '.webp', '.gif', '.bmp'].some(ext => name.endsWith(ext));
+}
+
+function getImageExt(filename) {
+  if (!filename) return '';
+  const match = filename.match(/\.([a-zA-Z0-9]+)$/);
+  return match ? match[1].toUpperCase() : '';
+}
+
+function openImageLightbox(file) {
+  if (!file) return;
+  lightbox.src = file.url;
+  lightbox.title = file.originalName || file.fileName;
+  lightbox.type = 'attachment';
+  lightbox.show = true;
+}
 
 function getTypeMeta(type) {
   const opt = fileTypeOptions.value.find(o => o.value === type);
@@ -399,6 +468,10 @@ async function loadFiles() {
 
 function openUploadDialog() {
   uploadFile.value = null;
+  if (uploadFilePreviewUrl.value) {
+    URL.revokeObjectURL(uploadFilePreviewUrl.value);
+    uploadFilePreviewUrl.value = null;
+  }
   selectedFileType.value = 'other';
   uploadDescription.value = '';
   uploadDialog.value = true;
@@ -407,28 +480,74 @@ function openUploadDialog() {
 function closeUploadDialog() {
   uploadDialog.value = false;
   uploadFile.value = null;
+  if (uploadFilePreviewUrl.value) {
+    URL.revokeObjectURL(uploadFilePreviewUrl.value);
+    uploadFilePreviewUrl.value = null;
+  }
 }
 
 function onFileSelected(val) {
-  if (!val) return;
+  if (!val) {
+    if (uploadFilePreviewUrl.value) {
+      URL.revokeObjectURL(uploadFilePreviewUrl.value);
+      uploadFilePreviewUrl.value = null;
+    }
+    return;
+  }
   const fileObj = Array.isArray(val) ? val[0] : val;
   if (!fileObj || !fileObj.name) return;
 
   const name = fileObj.name.toLowerCase();
-  if (name.includes('ibom') || (name.endsWith('.html') && name.includes('bom'))) {
+  const imgExts = ['.png', '.jpg', '.jpeg', '.svg', '.webp', '.gif', '.bmp'];
+
+  if (imgExts.some(ext => name.endsWith(ext))) {
+    selectedFileType.value = 'image';
+    if (uploadFilePreviewUrl.value) {
+      URL.revokeObjectURL(uploadFilePreviewUrl.value);
+    }
+    uploadFilePreviewUrl.value = URL.createObjectURL(fileObj);
+  } else if (name.includes('ibom') || (name.endsWith('.html') && name.includes('bom'))) {
     selectedFileType.value = 'ibom';
+    if (uploadFilePreviewUrl.value) {
+      URL.revokeObjectURL(uploadFilePreviewUrl.value);
+      uploadFilePreviewUrl.value = null;
+    }
   } else if (name.endsWith('.zip') || name.endsWith('.7z') || name.endsWith('.tar') || name.endsWith('.gz')) {
     selectedFileType.value = 'archive';
+    if (uploadFilePreviewUrl.value) {
+      URL.revokeObjectURL(uploadFilePreviewUrl.value);
+      uploadFilePreviewUrl.value = null;
+    }
   } else if (name.endsWith('.bin') || name.endsWith('.hex') || name.endsWith('.rom') || name.endsWith('.elf')) {
     selectedFileType.value = 'firmware';
+    if (uploadFilePreviewUrl.value) {
+      URL.revokeObjectURL(uploadFilePreviewUrl.value);
+      uploadFilePreviewUrl.value = null;
+    }
   } else if (name.endsWith('.pdf')) {
     selectedFileType.value = 'document';
+    if (uploadFilePreviewUrl.value) {
+      URL.revokeObjectURL(uploadFilePreviewUrl.value);
+      uploadFilePreviewUrl.value = null;
+    }
   } else if (name.endsWith('.kicad_pcb') || name.endsWith('.kicad_sch') || name.endsWith('.sch') || name.endsWith('.brd')) {
     selectedFileType.value = 'schematic';
+    if (uploadFilePreviewUrl.value) {
+      URL.revokeObjectURL(uploadFilePreviewUrl.value);
+      uploadFilePreviewUrl.value = null;
+    }
   } else if (name.endsWith('.html') || name.endsWith('.htm')) {
     selectedFileType.value = 'ibom';
+    if (uploadFilePreviewUrl.value) {
+      URL.revokeObjectURL(uploadFilePreviewUrl.value);
+      uploadFilePreviewUrl.value = null;
+    }
   } else {
     selectedFileType.value = 'other';
+    if (uploadFilePreviewUrl.value) {
+      URL.revokeObjectURL(uploadFilePreviewUrl.value);
+      uploadFilePreviewUrl.value = null;
+    }
   }
 }
 
@@ -495,7 +614,21 @@ onMounted(() => {
   white-space: nowrap;
 }
 
+.text-decoration-underline-hover:hover {
+  text-decoration: underline;
+}
+
+.image-thumb-hover {
+  transition: transform 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+}
+
+.image-thumb-hover:hover {
+  transform: scale(1.08);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
 .files-table :deep(tr:hover) {
   background-color: #f8fafc !important;
 }
 </style>
+

@@ -236,6 +236,7 @@
             <!-- Package -->
             <th
               class="text-left font-weight-bold cursor-pointer user-select-none hover-header"
+              style="width: 140px; min-width: 140px;"
               :title="getHeaderTitle('package', t('common.package'))"
               @click="toggleSort('package')"
             >

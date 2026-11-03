@@ -13,20 +13,20 @@
             {{ packageStore.packageData.package || 'Package Details' }}
           </span>
 
-          <!-- SMD / THT badge -->
+          <!-- SMD / THT / MECH badge -->
           <v-chip
             v-if="packageStore.packageData.isSmd !== null && packageStore.packageData.isSmd !== undefined"
             size="small"
             variant="flat"
-            :color="packageStore.packageData.isSmd ? 'teal-darken-1' : 'indigo-darken-1'"
+            :color="packageStore.packageData.isSmd === 1 ? 'teal-darken-1' : (packageStore.packageData.isSmd === 2 ? 'blue-grey-darken-1' : 'indigo-darken-1')"
             class="font-weight-bold text-caption ms-1"
           >
-            {{ packageStore.packageData.isSmd ? 'SMD' : 'Through-Hole' }}
+            {{ packageStore.packageData.isSmd === 1 ? 'SMD' : (packageStore.packageData.isSmd === 2 ? 'MECH' : 'Through-Hole') }}
           </v-chip>
 
           <!-- Pin Count badge -->
           <v-chip
-            v-if="packageStore.packageData.pinQuantity !== null && packageStore.packageData.pinQuantity !== undefined"
+            v-if="packageStore.packageData.isSmd !== 2 && packageStore.packageData.pinQuantity !== null && packageStore.packageData.pinQuantity !== undefined"
             size="small"
             variant="tonal"
             color="blue-grey"
@@ -151,6 +151,9 @@
                     <span v-if="packageStore.packageData.isSmd === 1" class="text-teal-darken-2 font-weight-medium">
                       Surface Mount Device (SMD)
                     </span>
+                    <span v-else-if="packageStore.packageData.isSmd === 2" class="text-blue-grey-darken-2 font-weight-medium">
+                      Mechanical / Hardware (MECH)
+                    </span>
                     <span v-else-if="packageStore.packageData.isSmd === 0" class="text-indigo-darken-2 font-weight-medium">
                       Through-Hole Technology (THT)
                     </span>
@@ -160,7 +163,7 @@
                 <tr>
                   <td class="text-slate-500 font-weight-medium">Pin / Lead Count</td>
                   <td class="font-mono">
-                    {{ packageStore.packageData.pinQuantity != null ? `${packageStore.packageData.pinQuantity} pins` : '—' }}
+                    {{ packageStore.packageData.isSmd === 2 ? 'N/A' : (packageStore.packageData.pinQuantity != null ? `${packageStore.packageData.pinQuantity} pins` : '—') }}
                   </td>
                 </tr>
                 <tr>
@@ -236,11 +239,21 @@
           <v-row dense class="mb-3" align="center">
             <v-col cols="12" sm="5">
               <v-text-field
+                v-if="Number(editForm.isSmd) !== 2"
                 v-model.number="editForm.pinQuantity"
                 :label="t('manageCatalogModal.pinPadCount')"
                 type="number"
                 min="1"
                 :placeholder="t('manageCatalogModal.pinPlaceholder')"
+                variant="outlined"
+                density="comfortable"
+                hide-details="auto"
+              />
+              <v-text-field
+                v-else
+                disabled
+                model-value="N/A"
+                :label="t('manageCatalogModal.pinPadCount')"
                 variant="outlined"
                 density="comfortable"
                 hide-details="auto"
@@ -266,6 +279,9 @@
                   </v-btn>
                   <v-btn :value="0" size="small" class="flex-grow-1 text-caption font-weight-bold">
                     {{ t('dialogs.throughHole') }}
+                  </v-btn>
+                  <v-btn :value="2" size="small" class="flex-grow-1 text-caption font-weight-bold">
+                    MECH
                   </v-btn>
                 </v-btn-toggle>
               </div>
@@ -375,7 +391,7 @@ const openEditDialog = () => {
   editForm.value = {
     package: current.package || '',
     pinQuantity: current.pinQuantity != null ? current.pinQuantity : null,
-    isSmd: current.isSmd === 0 ? 0 : 1,
+    isSmd: current.isSmd !== undefined && current.isSmd !== null ? Number(current.isSmd) : 1,
     drawingURL: current.drawingURL || ''
   };
   editError.value = '';
@@ -415,10 +431,11 @@ const savePackage = async () => {
   saving.value = true;
   editError.value = '';
   try {
+    const isSmdVal = parseInt(editForm.value.isSmd, 10) || 0;
     const payload = {
       package: name,
-      pinQuantity: editForm.value.pinQuantity,
-      isSmd: editForm.value.isSmd,
+      pinQuantity: isSmdVal === 2 ? null : (editForm.value.pinQuantity !== null && editForm.value.pinQuantity !== '' ? parseInt(editForm.value.pinQuantity, 10) : null),
+      isSmd: isSmdVal,
       drawingURL: (editForm.value.drawingURL || '').trim()
     };
 

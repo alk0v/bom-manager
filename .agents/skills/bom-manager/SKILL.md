@@ -140,6 +140,17 @@ Locations and stock quantity per storage bin/box.
 - `i_storages`: `ID`, `storage` (e.g. "Default Storage", "storage1", "storage2")
 - `t_warehouse`: `id`, `componentId`, `storageId`, `quantity`
 
+#### 11. `t_tags` & `t_project_tags`
+Hardware project categorization and taxonomy tags.
+- `t_tags`:
+  - `id`: `INT` (PK, AI)
+  - `name`: `VARCHAR(50)` (Unique, e.g. "commodore 64", "retro", "smd", "kicad")
+  - `createdAt`: `DATETIME`
+- `t_project_tags`:
+  - `projectId`: `INT` (FK to `i_projects.id`)
+  - `tagId`: `INT` (FK to `t_tags.id`)
+  - Composite PK: `(projectId, tagId)`
+
 ---
 
 ## 3. Media & Asset Resolution Rules
@@ -237,5 +248,9 @@ Locations and stock quantity per storage bin/box.
 ---
 
 ## 5. Development & Testing Directives
+- **Do NOT rebuild client after minor changes**:
+  - The development server (`npm run dev`) runs continuously in the background with Vite Hot Module Replacement (HMR).
+  - **Do NOT** execute production builds (`npm run build` or `npm run build --workspace=client`) after minor changes (such as template adjustments, styling/CSS tweaks, column width changes, text/localization edits, or component refactorings).
+  - Only run a build if explicitly requested by the user, or **ask the user first** if you believe a production build verification is needed.
 - **Do NOT spawn agents for testing**: Never spawn subagents, browser subagents, or automated testing agents for browser testing, taking screenshots, clicking around, or manual UI verification.
-- **Verification Method**: Validate changes using automated build commands (e.g. `npm run build --workspace=client`), API requests via PowerShell (`Invoke-RestMethod`), or unit tests. Keep turn execution lean, direct, and fast without browser recording or screenshot overhead.
+- **Verification Method**: For backend APIs, validate using targeted requests via PowerShell (`Invoke-RestMethod`) or unit tests when needed. Rely on Vite's live dev server and HMR for frontend changes. Keep turn execution lean, direct, and fast without browser recording, unnecessary builds, or screenshot overhead.

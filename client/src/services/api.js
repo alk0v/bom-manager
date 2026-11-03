@@ -29,7 +29,7 @@ export const fetchMediaConfig = async () => {
 // Build URL for photos and datasheets
 export const resolveMediaUrl = (type, filename) => {
   if (!filename) return null;
-  if (filename.startsWith('http://') || filename.startsWith('https://')) {
+  if (filename.startsWith('http://') || filename.startsWith('https://') || filename.startsWith('data:')) {
     return filename;
   }
   if (filename.startsWith('/media/')) {
@@ -44,22 +44,31 @@ export const resolveMediaUrl = (type, filename) => {
 
   switch (type) {
     case 'project':
+    case 'projects':
       folder = mediaConfig.projectPhotoFolder || 'projects/';
       break;
     case 'component':
+    case 'components':
       folder = mediaConfig.componentPhotoFolder || 'components/';
       break;
     case 'package':
+    case 'packages':
       folder = mediaConfig.packagePhotoFolder || 'packages/';
       break;
     case 'datasheet':
+    case 'datasheets':
       folder = mediaConfig.datasheetFolder || 'datasheets/';
       break;
   }
 
   const cleanFolder = folder.replace(/^\/+/, '').replace(/\/+$/, '');
   const cleanFile = filename.replace(/^\/+/, '');
-  return `${base}/${cleanFolder}/${cleanFile}`;
+
+  if (cleanFolder && cleanFile.startsWith(`${cleanFolder}/`)) {
+    return `${base}/${cleanFile}`;
+  }
+
+  return cleanFolder ? `${base}/${cleanFolder}/${cleanFile}` : `${base}/${cleanFile}`;
 };
 
 export const api = {
@@ -88,6 +97,14 @@ export const api = {
   }).then(res => res.data),
   deleteProjectFile: (projectId, fileId) => client.delete(`/projects/${projectId}/files/${fileId}`).then(res => res.data),
 
+  // Project Export & Import (v0.3.4)
+  exportProjectUrl: (id) => `/api/projects/${id}/export`,
+  exportProject: (id) => client.get(`/projects/${id}/export`, { responseType: 'blob' }),
+  parseProjectImport: (formData) => client.post('/projects/import/preview', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' }
+  }).then(res => res.data),
+  executeProjectImport: (payload) => client.post('/projects/import/execute', payload).then(res => res.data),
+
   // KiCAD iBOM Parsing and Import
   parseIbom: (projectId, data, isFormData = false) => client.post(
     `/projects/${projectId}/bom/parse-ibom`,
@@ -111,6 +128,7 @@ export const api = {
   checkExistingComponent: (params) => client.get('/components/check-existing', { params }).then(res => res.data),
   createComponent: (data) => client.post('/components', data).then(res => res.data),
   updateComponent: (id, data) => client.put(`/components/${id}`, data).then(res => res.data),
+  bulkUpdateComponents: (payload) => client.post('/components/bulk-update', payload).then(res => res.data),
   updateComponentMinQty: (id, minQty) => client.patch(`/components/${id}/min-qty`, { minQty }).then(res => res.data),
   updateComponentQty: (id, qty) => client.patch(`/components/${id}/qty`, { qty }).then(res => res.data),
   purchaseComponent: (id, data) => client.post(`/components/${id}/purchase`, data).then(res => res.data),
@@ -119,18 +137,44 @@ export const api = {
   downloadComponentsTemplate: () => client.get('/components/template-csv', { responseType: 'blob' }).then(res => res.data),
   importComponentsCsv: (payload) => client.post('/components/import-csv', payload).then(res => res.data),
 
-  // Categories, Packages & Storages
+  // Category Groups, Categories, Packages & Storages
+  getCategoryGroups: () => client.get('/category-groups').then(res => res.data),
+  createCategoryGroup: (data) => client.post('/category-groups', data).then(res => res.data),
+  updateCategoryGroup: (id, data) => client.put(`/category-groups/${id}`, data).then(res => res.data),
+  deleteCategoryGroup: (id, reassignTo = null) => client.delete(`/category-groups/${id}`, { params: { reassignTo } }).then(res => res.data),
+
   getCategories: () => client.get('/categories').then(res => res.data),
   createCategory: (data) => client.post('/categories', data).then(res => res.data),
   updateCategory: (id, data) => client.put(`/categories/${id}`, data).then(res => res.data),
   deleteCategory: (id, force = false) => client.delete(`/categories/${id}`, { params: { force } }).then(res => res.data),
+  getCategoryPackages: (id) => client.get(`/categories/${id}/packages`).then(res => res.data),
+  updateCategoryPackages: (id, packageIds) => client.put(`/categories/${id}/packages`, { packageIds }).then(res => res.data),
+  getCategoryFields: (id) => client.get(`/categories/${id}/fields`).then(res => res.data),
+  getCategoryFieldUsage: (id, fieldId) => client.get(`/categories/${id}/fields/${fieldId}/usage`).then(res => res.data),
+  addCategoryField: (id, data) => client.post(`/categories/${id}/fields`, data).then(res => res.data),
+  updateCategoryField: (id, fieldId, data) => client.put(`/categories/${id}/fields/${fieldId}`, data).then(res => res.data),
+  deleteCategoryField: (id, fieldId) => client.delete(`/categories/${id}/fields/${fieldId}`).then(res => res.data),
+  getCategoriesPackagesMap: () => client.get('/categories-packages-map').then(res => res.data),
+  getCategoriesFieldsMap: () => client.get('/categories-fields-map').then(res => res.data),
 
   getPackages: () => client.get('/packages').then(res => res.data),
   createPackage: (data) => client.post('/packages', data).then(res => res.data),
   updatePackage: (id, data) => client.put(`/packages/${id}`, data).then(res => res.data),
   deletePackage: (id, force = false) => client.delete(`/packages/${id}`, { params: { force } }).then(res => res.data),
+  // Package Export & Import
+  exportPackagesUrl: (ids = []) => `/api/packages/export?ids=${ids.join(',')}`,
+  exportPackages: (ids = []) => client.post('/packages/export', { ids }, { responseType: 'blob' }),
+  parsePackagesImport: (formData) => client.post('/packages/import/preview', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' }
+  }).then(res => res.data),
+  executePackagesImport: (payload) => client.post('/packages/import/execute', payload).then(res => res.data),
 
   getStorages: () => client.get('/storages').then(res => res.data),
+
+  // Tags
+  getTags: () => client.get('/tags').then(res => res.data),
+  createTag: (name) => client.post('/tags', { name }).then(res => res.data),
+  deleteTag: (id) => client.delete(`/tags/${id}`).then(res => res.data),
 
   // Shopping List
   getShoppingList: (params = {}) => client.get('/shopping-list', { params }).then(res => res.data),

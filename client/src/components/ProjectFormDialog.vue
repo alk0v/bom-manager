@@ -2,7 +2,8 @@
   <v-dialog
     :model-value="modelValue"
     @update:model-value="emit('update:modelValue', $event)"
-    max-width="620"
+    width="92vw"
+    max-width="850"
     scrollable
     transition="dialog-transition"
   >
@@ -61,6 +62,44 @@
               rounded="lg"
               hide-details="auto"
             />
+          </div>
+
+          <!-- Project Tags -->
+          <div class="mb-4">
+            <div class="text-caption font-weight-bold text-slate-700 text-uppercase mb-1">
+              {{ t('dialogs.projectTags') }}
+            </div>
+            <v-combobox
+              v-model="form.tags"
+              v-model:search="tagSearchInput"
+              :items="availableTagNames"
+              :placeholder="t('dialogs.projectTagsPlaceholder')"
+              multiple
+              chips
+              closable-chips
+              density="comfortable"
+              variant="outlined"
+              rounded="lg"
+              prepend-inner-icon="mdi-tag-multiple-outline"
+              hide-details="auto"
+              :hint="t('projects.addTagHint')"
+              persistent-hint
+              @blur="handleTagBlur"
+              @keydown.enter.prevent.stop="handleTagKeydown"
+            >
+              <template #chip="{ props, item }">
+                <v-chip
+                  v-bind="props"
+                  size="small"
+                  color="primary"
+                  variant="tonal"
+                  prepend-icon="mdi-tag-outline"
+                  class="font-weight-medium ps-2 pe-3"
+                >
+                  {{ item.raw }}
+                </v-chip>
+              </template>
+            </v-combobox>
           </div>
 
           <!-- Documentation / Repository Link -->
@@ -249,11 +288,44 @@ const handlePhotoUpload = async (event) => {
 
 const isEdit = computed(() => !!props.project && !!props.project.id);
 
+const availableTags = ref([]);
+const availableTagNames = computed(() => availableTags.value.map(t => t.name));
+const tagSearchInput = ref('');
+
+const loadAvailableTags = async () => {
+  try {
+    const list = await api.getTags();
+    availableTags.value = list;
+  } catch (err) {
+    console.warn('Failed to load tags for autocomplete:', err);
+  }
+};
+const handleTagBlur = () => {
+  const val = (tagSearchInput.value || '').trim();
+  if (val) {
+    if (!form.tags.some(t => (typeof t === 'string' ? t : t.name).toLowerCase() === val.toLowerCase())) {
+      form.tags.push(val);
+    }
+    tagSearchInput.value = '';
+  }
+};
+
+const handleTagKeydown = (e) => {
+  const val = (tagSearchInput.value || '').trim();
+  if (val) {
+    if (!form.tags.some(t => (typeof t === 'string' ? t : t.name).toLowerCase() === val.toLowerCase())) {
+      form.tags.push(val);
+    }
+    tagSearchInput.value = '';
+  }
+};
+
 const form = reactive({
   projectName: '',
   description: '',
   url: '',
-  photoUrl: ''
+  photoUrl: '',
+  tags: []
 });
 
 const resetForm = () => {
@@ -262,11 +334,15 @@ const resetForm = () => {
     form.description = props.project.description || '';
     form.url = props.project.url || '';
     form.photoUrl = props.project.photoUrl || '';
+    form.tags = Array.isArray(props.project.tags)
+      ? props.project.tags.map(t => typeof t === 'string' ? t : t.name)
+      : [];
   } else {
     form.projectName = '';
     form.description = '';
     form.url = '';
     form.photoUrl = '';
+    form.tags = [];
   }
 };
 
@@ -274,6 +350,7 @@ watch(
   () => props.modelValue,
   (val) => {
     if (val) {
+      loadAvailableTags();
       resetForm();
     }
   }
@@ -305,19 +382,32 @@ const handleSubmit = async () => {
 
   if (!form.projectName.trim()) return;
 
+  // Flush any pending tag in search input
+  const pendingTag = (tagSearchInput.value || '').trim();
+  if (pendingTag && !form.tags.some(t => (typeof t === 'string' ? t : t.name).toLowerCase() === pendingTag.toLowerCase())) {
+    form.tags.push(pendingTag);
+    tagSearchInput.value = '';
+  }
+
   submitting.value = true;
   try {
+    // Normalize tags
+    const normalizedTags = (form.tags || [])
+      .map(t => typeof t === 'string' ? t.trim().toLowerCase() : (t?.name || '').trim().toLowerCase())
+      .filter(Boolean);
+
     const payload = {
       projectName: form.projectName.trim(),
       description: (form.description || '').trim(),
       url: (form.url || '').trim(),
-      photoUrl: (form.photoUrl || '').trim()
+      photoUrl: (form.photoUrl || '').trim(),
+      tags: normalizedTags
     };
 
     let savedProject;
     if (isEdit.value) {
-      await api.updateProject(props.project.id, payload);
-      savedProject = { ...props.project, ...payload };
+      const res = await api.updateProject(props.project.id, payload);
+      savedProject = { ...props.project, ...payload, tags: res.tags || normalizedTags.map(name => ({ name })) };
     } else {
       savedProject = await api.createProject(payload);
     }

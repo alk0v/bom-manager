@@ -28,7 +28,7 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue';
+import { ref, computed, watch } from 'vue';
 import { resolveMediaUrl } from '../services/api';
 
 const props = defineProps({
@@ -63,6 +63,10 @@ const props = defineProps({
 });
 
 const hasError = ref(false);
+
+watch(() => [props.src, props.type], () => {
+  hasError.value = false;
+});
 
 const resolvedUrl = computed(() => {
   if (!props.src || hasError.value) return null;

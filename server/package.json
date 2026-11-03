@@ -1,6 +1,6 @@
 {
   "name": "bommanager-server",
-  "version": "0.3.0",
+  "version": "0.3.5",
   "private": true,
   "main": "src/index.js",
   "scripts": {
@@ -8,6 +8,8 @@
     "dev": "node --watch src/index.js"
   },
   "dependencies": {
+    "adm-zip": "^0.6.1",
+    "archiver": "^8.0.0",
     "cors": "^2.8.5",
     "dotenv": "^16.4.7",
     "express": "^4.21.2",

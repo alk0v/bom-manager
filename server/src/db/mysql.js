@@ -168,6 +168,107 @@ async function ensureTables() {
       `, [today, today, today]);
       console.log('[Database:MySQL] Seeded initial exchange rates in t_exchange_rates.');
     }
+
+    // Ensure t_tags and t_project_tags tables exist
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS t_tags (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        name VARCHAR(50) NOT NULL UNIQUE,
+        createdAt DATETIME DEFAULT CURRENT_TIMESTAMP,
+        INDEX idx_tag_name (name)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+    `);
+
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS t_project_tags (
+        projectId INT NOT NULL,
+        tagId INT NOT NULL,
+        PRIMARY KEY (projectId, tagId),
+        INDEX idx_pt_project (projectId),
+        INDEX idx_pt_tag (tagId)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+    `);
+    console.log('[Database:MySQL] Verified tables "t_tags" and "t_project_tags" exist.');
+
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS t_category_packages (
+        categoryId INT NOT NULL,
+        packageId INT NOT NULL,
+        PRIMARY KEY (categoryId, packageId),
+        INDEX idx_cp_cat (categoryId),
+        INDEX idx_cp_pkg (packageId)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+    `);
+
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS t_category_fields (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        categoryId INT NOT NULL,
+        fieldName VARCHAR(100) NOT NULL,
+        fieldLabel VARCHAR(255) NOT NULL,
+        fieldType VARCHAR(50) NOT NULL DEFAULT 'number',
+        unit VARCHAR(50) DEFAULT NULL,
+        options TEXT DEFAULT NULL,
+        sortOrder INT DEFAULT 0,
+        INDEX idx_cf_cat (categoryId)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+    `);
+
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS t_component_field_values (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        componentId INT NOT NULL,
+        fieldId INT NOT NULL,
+        fieldValue TEXT,
+        numValue DOUBLE DEFAULT NULL,
+        UNIQUE KEY uq_comp_field (componentId, fieldId),
+        INDEX idx_cfv_comp (componentId),
+        INDEX idx_cfv_field (fieldId),
+        INDEX idx_cfv_num (numValue)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+    `);
+    console.log('[Database:MySQL] Verified tables "t_category_packages", "t_category_fields", and "t_component_field_values" exist.');
+
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS i_category_groups (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        name VARCHAR(100) NOT NULL UNIQUE,
+        description VARCHAR(500) DEFAULT NULL,
+        sortOrder INT DEFAULT 0,
+        createdAt DATETIME DEFAULT CURRENT_TIMESTAMP,
+        INDEX idx_cg_sort (sortOrder),
+        INDEX idx_cg_name (name)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+    `);
+
+    // Ensure default primary group exists
+    const [groupCountRow] = await pool.query('SELECT COUNT(*) as cnt FROM i_category_groups');
+    if (groupCountRow[0]?.cnt === 0) {
+      await pool.query(
+        "INSERT INTO i_category_groups (id, name, description, sortOrder) VALUES (1, 'Electronic', 'Default category group', 1)"
+      );
+      console.log('[Database:MySQL] Seeded default "Electronic" category group in i_category_groups.');
+    }
+
+    // Ensure groupId column in i_categories
+    const [catGroupCols] = await pool.query("SHOW COLUMNS FROM i_categories LIKE 'groupId'");
+    if (catGroupCols.length === 0) {
+      await pool.query('ALTER TABLE i_categories ADD COLUMN groupId INT NOT NULL DEFAULT 1');
+      await pool.query('UPDATE i_categories SET groupId = 1 WHERE groupId IS NULL OR groupId = 0');
+      console.log('[Database:MySQL] Added "groupId" column to i_categories.');
+    } else {
+      console.log('[Database:MySQL] Verified column "groupId" exists in i_categories.');
+    }
+
+    // Seed initial tags if t_tags is empty
+    const [tagCountRow] = await pool.query('SELECT COUNT(*) as cnt FROM t_tags');
+    if (tagCountRow[0]?.cnt === 0) {
+      const initialTags = ['commodore 64', 'retro', 'diy', 'kicad', 'smd'];
+      for (const t of initialTags) {
+        await pool.query('INSERT IGNORE INTO t_tags (name) VALUES (?)', [t]);
+      }
+      console.log('[Database:MySQL] Seeded initial tags in t_tags.');
+    }
   } catch (err) {
     console.warn('[Database:MySQL] Table verification note:', err.message);
   }

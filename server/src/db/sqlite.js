@@ -50,9 +50,18 @@ function initSchema() {
       photoUrl TEXT
     );
 
+    CREATE TABLE IF NOT EXISTS i_category_groups (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      name TEXT NOT NULL UNIQUE,
+      description TEXT DEFAULT NULL,
+      sortOrder INTEGER DEFAULT 0,
+      createdAt TEXT DEFAULT (datetime('now', 'localtime'))
+    );
+
     CREATE TABLE IF NOT EXISTS i_categories (
       ID INTEGER PRIMARY KEY AUTOINCREMENT,
-      category TEXT
+      category TEXT,
+      groupId INTEGER DEFAULT 1
     );
 
     CREATE TABLE IF NOT EXISTS i_packages (
@@ -165,6 +174,51 @@ function initSchema() {
       returnedStock INTEGER NOT NULL DEFAULT 0
     );
 
+    CREATE TABLE IF NOT EXISTS t_tags (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      name TEXT NOT NULL UNIQUE,
+      createdAt TEXT DEFAULT (datetime('now', 'localtime'))
+    );
+
+    CREATE TABLE IF NOT EXISTS t_project_tags (
+      projectId INTEGER NOT NULL,
+      tagId INTEGER NOT NULL,
+      PRIMARY KEY (projectId, tagId),
+      FOREIGN KEY (projectId) REFERENCES i_projects(id) ON DELETE CASCADE,
+      FOREIGN KEY (tagId) REFERENCES t_tags(id) ON DELETE CASCADE
+    );
+
+    CREATE TABLE IF NOT EXISTS t_category_packages (
+      categoryId INTEGER NOT NULL,
+      packageId INTEGER NOT NULL,
+      PRIMARY KEY (categoryId, packageId),
+      FOREIGN KEY (categoryId) REFERENCES i_categories(ID) ON DELETE CASCADE,
+      FOREIGN KEY (packageId) REFERENCES i_packages(ID) ON DELETE CASCADE
+    );
+
+    CREATE TABLE IF NOT EXISTS t_category_fields (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      categoryId INTEGER NOT NULL,
+      fieldName TEXT NOT NULL,
+      fieldLabel TEXT NOT NULL,
+      fieldType TEXT NOT NULL DEFAULT 'number',
+      unit TEXT DEFAULT NULL,
+      options TEXT DEFAULT NULL,
+      sortOrder INTEGER DEFAULT 0,
+      FOREIGN KEY (categoryId) REFERENCES i_categories(ID) ON DELETE CASCADE
+    );
+
+    CREATE TABLE IF NOT EXISTS t_component_field_values (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      componentId INTEGER NOT NULL,
+      fieldId INTEGER NOT NULL,
+      fieldValue TEXT,
+      numValue REAL DEFAULT NULL,
+      FOREIGN KEY (componentId) REFERENCES i_components(ID) ON DELETE CASCADE,
+      FOREIGN KEY (fieldId) REFERENCES t_category_fields(id) ON DELETE CASCADE,
+      UNIQUE(componentId, fieldId)
+    );
+
     -- Create indexes
     CREATE INDEX IF NOT EXISTS idx_pf_project ON t_project_files (projectId);
     CREATE INDEX IF NOT EXISTS idx_pr_project ON t_production_runs (projectId);
@@ -177,6 +231,15 @@ function initSchema() {
     CREATE INDEX IF NOT EXISTS idx_comp_cat ON i_components (category_id);
     CREATE INDEX IF NOT EXISTS idx_comp_pkg ON i_components (package_id);
     CREATE INDEX IF NOT EXISTS idx_wh_comp ON t_warehouse (componentId);
+    CREATE INDEX IF NOT EXISTS idx_pt_project ON t_project_tags (projectId);
+    CREATE INDEX IF NOT EXISTS idx_pt_tag ON t_project_tags (tagId);
+    CREATE INDEX IF NOT EXISTS idx_tag_name ON t_tags (name);
+    CREATE INDEX IF NOT EXISTS idx_cp_cat ON t_category_packages (categoryId);
+    CREATE INDEX IF NOT EXISTS idx_cp_pkg ON t_category_packages (packageId);
+    CREATE INDEX IF NOT EXISTS idx_cf_cat ON t_category_fields (categoryId);
+    CREATE INDEX IF NOT EXISTS idx_cfv_comp ON t_component_field_values (componentId);
+    CREATE INDEX IF NOT EXISTS idx_cfv_field ON t_component_field_values (fieldId);
+    CREATE INDEX IF NOT EXISTS idx_cfv_num ON t_component_field_values (numValue);
   `);
 
   // Ensure migration columns for t_orders
@@ -247,6 +310,23 @@ function initSchema() {
     }
   } catch (err) {
     console.warn('[Database:SQLite] Migration notice on t_busket:', err.message);
+  }
+
+  // Ensure migration column for i_categories and default i_category_groups seed
+  try {
+    const catCols = db.prepare("PRAGMA table_info(i_categories)").all();
+    if (!catCols.some(c => c.name === 'groupId')) {
+      db.prepare("ALTER TABLE i_categories ADD COLUMN groupId INTEGER DEFAULT 1").run();
+      db.prepare("UPDATE i_categories SET groupId = 1 WHERE groupId IS NULL").run();
+      console.log('[Database:SQLite] Added "groupId" column to i_categories.');
+    }
+    const grpCount = db.prepare('SELECT COUNT(*) as count FROM i_category_groups').get()?.count || 0;
+    if (grpCount === 0) {
+      db.prepare("INSERT INTO i_category_groups (id, name, description, sortOrder) VALUES (1, 'Electronic', 'Default category group', 1)").run();
+      console.log('[Database:SQLite] Seeded default "Electronic" category group into i_category_groups.');
+    }
+  } catch (err) {
+    console.warn('[Database:SQLite] Migration notice on i_category_groups / i_categories:', err.message);
   }
 
   // Seed default t_config if empty

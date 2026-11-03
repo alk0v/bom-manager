@@ -136,14 +136,21 @@
       </div>
 
       <v-window v-model="activeTab">
-        <!-- TAB 0: GENERAL & LANGUAGE -->
+        <!-- TAB 0: GENERAL & PREFERENCES -->
         <v-window-item value="general" class="pa-6">
           <v-row>
-            <v-col cols="12" md="7">
+            <!-- Left Column: Interface Language & Regional Formats -->
+            <v-col cols="12" md="6">
+              <!-- Language Selection Card -->
               <v-card variant="outlined" class="rounded-0 border bg-white mb-6">
-                <v-card-title class="text-subtitle-1 font-weight-bold text-slate-900 pa-4 border-b bg-slate-50 d-flex align-center">
-                  <v-icon color="primary" class="me-2">mdi-translate</v-icon>
-                  {{ t('settings.languageTitle') }}
+                <v-card-title class="text-subtitle-1 font-weight-bold text-slate-900 pa-4 border-b bg-slate-50 d-flex align-center justify-space-between">
+                  <span class="d-flex align-center">
+                    <v-icon color="primary" class="me-2">mdi-translate</v-icon>
+                    {{ t('settings.languageTitle') }}
+                  </span>
+                  <v-chip size="small" color="primary" variant="flat" class="font-weight-bold text-uppercase font-mono">
+                    {{ selectedLanguage }}
+                  </v-chip>
                 </v-card-title>
                 <v-card-text class="pa-5">
                   <p class="text-body-2 text-slate-600 mb-4">
@@ -155,58 +162,191 @@
                     @update:model-value="onLanguageChange"
                     hide-details
                   >
+                    <!-- English Option -->
                     <v-card
                       variant="outlined"
-                      class="rounded-0 border pa-3 mb-3 cursor-pointer"
-                      :class="{ 'border-primary bg-blue-50': selectedLanguage === 'en' }"
+                      class="rounded-0 border pa-3 mb-3 cursor-pointer transition-swing"
+                      :class="{ 'border-primary bg-blue-50/50': selectedLanguage === 'en' }"
                       @click="onLanguageChange('en')"
                     >
-                      <div class="d-flex align-center">
-                        <v-radio value="en" color="primary" class="me-3" />
-                        <span class="text-h6 me-3">🇬🇧</span>
-                        <div>
-                          <div class="font-weight-bold text-slate-900">English</div>
-                          <div class="text-caption text-slate-500">English (Default)</div>
+                      <div class="d-flex align-center justify-space-between">
+                        <div class="d-flex align-center">
+                          <v-radio value="en" color="primary" class="me-3" />
+                          <span class="text-h6 me-3">🇬🇧</span>
+                          <div>
+                            <div class="font-weight-bold text-slate-900">English</div>
+                            <div class="text-caption text-slate-500">{{ t('settings.englishDesc') }}</div>
+                          </div>
                         </div>
+                        <v-chip
+                          v-if="selectedLanguage === 'en'"
+                          size="x-small"
+                          color="primary"
+                          variant="flat"
+                          class="font-weight-bold"
+                        >
+                          {{ t('settings.activeLocaleBadge') }}
+                        </v-chip>
                       </div>
                     </v-card>
 
+                    <!-- Ukrainian Option -->
                     <v-card
                       variant="outlined"
-                      class="rounded-0 border pa-3 cursor-pointer"
-                      :class="{ 'border-primary bg-blue-50': selectedLanguage === 'uk' }"
+                      class="rounded-0 border pa-3 cursor-pointer transition-swing"
+                      :class="{ 'border-primary bg-blue-50/50': selectedLanguage === 'uk' }"
                       @click="onLanguageChange('uk')"
                     >
-                      <div class="d-flex align-center">
-                        <v-radio value="uk" color="primary" class="me-3" />
-                        <span class="text-h6 me-3">🇺🇦</span>
-                        <div>
-                          <div class="font-weight-bold text-slate-900">Українська</div>
-                          <div class="text-caption text-slate-500">Ukrainian Translation</div>
+                      <div class="d-flex align-center justify-space-between">
+                        <div class="d-flex align-center">
+                          <v-radio value="uk" color="primary" class="me-3" />
+                          <span class="text-h6 me-3">🇺🇦</span>
+                          <div>
+                            <div class="font-weight-bold text-slate-900">Українська</div>
+                            <div class="text-caption text-slate-500">{{ t('settings.ukrainianDesc') }}</div>
+                          </div>
                         </div>
+                        <v-chip
+                          v-if="selectedLanguage === 'uk'"
+                          size="x-small"
+                          color="primary"
+                          variant="flat"
+                          class="font-weight-bold"
+                        >
+                          {{ t('settings.activeLocaleBadge') }}
+                        </v-chip>
                       </div>
                     </v-card>
                   </v-radio-group>
                 </v-card-text>
               </v-card>
+
+              <!-- Regional & Formatting Preview Card -->
+              <v-card variant="outlined" class="rounded-0 border bg-white mb-6">
+                <v-card-title class="text-subtitle-1 font-weight-bold text-slate-900 pa-4 border-b bg-slate-50 d-flex align-center">
+                  <v-icon color="primary" class="me-2">mdi-calendar-clock-outline</v-icon>
+                  {{ t('settings.regionalPreviewTitle') }}
+                </v-card-title>
+                <v-card-text class="pa-4">
+                  <v-table density="compact">
+                    <tbody>
+                      <tr>
+                        <td class="text-slate-500 font-weight-medium py-2" style="width: 180px;">{{ t('settings.dateFormatLabel') }}</td>
+                        <td class="text-slate-900 font-mono py-2">
+                          <v-chip size="small" variant="tonal" color="slate-700" class="font-mono font-weight-bold">
+                            {{ sampleFormattedDate }}
+                          </v-chip>
+                        </td>
+                      </tr>
+                      <tr>
+                        <td class="text-slate-500 font-weight-medium py-2">{{ t('settings.currencyFormatLabel') }}</td>
+                        <td class="text-slate-900 font-mono py-2">
+                          <v-chip size="small" variant="tonal" color="primary" class="font-mono font-weight-bold">
+                            {{ sampleFormattedPrice }}
+                          </v-chip>
+                        </td>
+                      </tr>
+                      <tr>
+                        <td class="text-slate-500 font-weight-medium py-2">{{ t('settings.localeStorageKey') }}</td>
+                        <td class="text-slate-900 font-mono text-caption py-2">
+                          <code>bom_language</code> = <span class="font-weight-bold text-primary">"{{ selectedLanguage }}"</span>
+                        </td>
+                      </tr>
+                    </tbody>
+                  </v-table>
+                </v-card-text>
+              </v-card>
             </v-col>
 
-            <v-col cols="12" md="5">
-              <v-card variant="outlined" class="rounded-0 border bg-slate-50">
-                <v-card-title class="text-subtitle-1 font-weight-bold text-slate-900 pa-4 border-b bg-white">
-                  <v-icon color="primary" class="me-2">mdi-information-outline</v-icon>
-                  {{ t('common.info') }}
+            <!-- Right Column: Appearance Profile & Local Cache -->
+            <v-col cols="12" md="6">
+              <!-- Appearance Profile Card -->
+              <v-card variant="outlined" class="rounded-0 border bg-white mb-6">
+                <v-card-title class="text-subtitle-1 font-weight-bold text-slate-900 pa-4 border-b bg-slate-50 d-flex align-center justify-space-between">
+                  <span class="d-flex align-center">
+                    <v-icon color="primary" class="me-2">mdi-palette-outline</v-icon>
+                    {{ t('settings.uiPreferencesTitle') }}
+                  </span>
+                  <v-chip size="x-small" color="success" variant="tonal" class="font-weight-bold">
+                    ACTIVE
+                  </v-chip>
                 </v-card-title>
-                <v-card-text class="pa-4 text-body-2 text-slate-600">
-                  <p class="mb-3">
-                    <strong>Version:</strong> v0.3.0
+                <v-card-text class="pa-4">
+                  <v-table density="compact">
+                    <tbody>
+                      <tr>
+                        <td class="text-slate-500 font-weight-medium py-2" style="width: 160px;">{{ t('settings.themeModeLabel') }}</td>
+                        <td class="py-2">
+                          <div class="font-weight-bold text-slate-900">{{ t('settings.pureLightTheme') }}</div>
+                          <div class="text-caption text-slate-500">{{ t('settings.pureLightDesc') }}</div>
+                        </td>
+                      </tr>
+                      <tr>
+                        <td class="text-slate-500 font-weight-medium py-2">{{ t('settings.fontFamilyLabel') }}</td>
+                        <td class="py-2">
+                          <div class="d-flex align-center gap-2 mb-1 flex-wrap">
+                            <v-chip size="x-small" variant="outlined" class="font-weight-bold">UI: Inter / Sans-Serif</v-chip>
+                            <v-chip size="x-small" variant="outlined" color="primary" class="font-mono font-weight-bold">Code/BOM: Monospace</v-chip>
+                          </div>
+                          <div class="text-caption text-slate-500">{{ t('settings.fontFamilyDesc') }}</div>
+                        </td>
+                      </tr>
+                      <tr>
+                        <td class="text-slate-500 font-weight-medium py-2">{{ t('settings.systemStatusLabel') }}</td>
+                        <td class="py-2">
+                          <div class="d-flex align-center">
+                            <v-icon size="16" color="success" class="me-1">mdi-checkbox-marked-circle</v-icon>
+                            <span class="font-weight-bold text-slate-900 me-2">{{ t('settings.systemStatusReady') }}</span>
+                            <v-chip size="x-small" color="primary" variant="flat" class="font-mono font-weight-bold">
+                              v{{ appInfo.version }}
+                            </v-chip>
+                          </div>
+                        </td>
+                      </tr>
+                    </tbody>
+                  </v-table>
+                </v-card-text>
+              </v-card>
+
+              <!-- Local Storage & Cache Management Card -->
+              <v-card variant="outlined" class="rounded-0 border bg-white mb-6">
+                <v-card-title class="text-subtitle-1 font-weight-bold text-slate-900 pa-4 border-b bg-slate-50 d-flex align-center justify-space-between">
+                  <span class="d-flex align-center">
+                    <v-icon color="primary" class="me-2">mdi-database-clock-outline</v-icon>
+                    {{ t('settings.localStorageTitle') }}
+                  </span>
+                </v-card-title>
+                <v-card-text class="pa-5">
+                  <p class="text-body-2 text-slate-600 mb-4">
+                    {{ t('settings.localStorageDesc') }}
                   </p>
-                  <p class="mb-3">
-                    Translations are stored as modular JSON files in <code>client/src/locales/</code> and synchronized with Vuetify 3 components.
-                  </p>
-                  <p class="mb-0">
-                    Language preferences are automatically saved in local browser storage and loaded whenever you revisit BOM Manager.
-                  </p>
+
+                  <div class="pa-3 bg-slate-50 border rounded-0 mb-4 text-caption font-mono">
+                    <div class="d-flex justify-space-between mb-1">
+                      <span class="text-slate-500">Active Locale:</span>
+                      <strong class="text-slate-900">{{ selectedLanguage }}</strong>
+                    </div>
+                    <div class="d-flex justify-space-between mb-1">
+                      <span class="text-slate-500">Active Base Currency:</span>
+                      <strong class="text-slate-900">{{ selectedDefaultCurrency }} ({{ CURRENCY_SYMBOLS[selectedDefaultCurrency] || '$' }})</strong>
+                    </div>
+                    <div class="d-flex justify-space-between">
+                      <span class="text-slate-500">Storage Technology:</span>
+                      <strong class="text-slate-900">HTML5 Web Storage API</strong>
+                    </div>
+                  </div>
+
+                  <div class="d-flex justify-end">
+                    <v-btn
+                      variant="outlined"
+                      color="slate-700"
+                      size="small"
+                      prepend-icon="mdi-broom"
+                      @click="resetUiCache"
+                    >
+                      {{ t('settings.clearCacheBtn') }}
+                    </v-btn>
+                  </div>
                 </v-card-text>
               </v-card>
             </v-col>
@@ -930,7 +1070,7 @@ PORT=3001</pre>
                 </v-card-title>
                 <v-card-text class="pa-4">
                   <p class="text-body-2 text-slate-600 mb-4">
-                    Version 0.3.0 delivers multi-currency orders, action column alignment, and purchase confirmation modal redesign.
+                    Version 0.3.1 introduces hardware project tagging, multi-select tag filtering, refined Settings layout, and enhanced responsive modals.
                   </p>
                   <div class="d-flex flex-wrap gap-2">
                     <v-btn
@@ -1092,16 +1232,36 @@ import { useI18n } from 'vue-i18n';
 import axios from 'axios';
 import api from '../services/api';
 import { useCurrencyStore, CURRENCY_SYMBOLS, CURRENCY_NAMES } from '../stores/currency';
-import { formatDate } from '../utils/formatters';
+import { formatDate, formatCurrency } from '../utils/formatters';
+import { APP_VERSION } from '../config/appConfig';
 
 const { t, locale } = useI18n();
+const currencyStore = useCurrencyStore();
 
 const activeTab = ref('general');
 const selectedLanguage = ref(locale.value);
+const selectedDefaultCurrency = ref('USD');
+const selectedSecondaryCurrencies = ref(['EUR', 'UAH', 'PLN']);
 const loading = ref(false);
 const diagnosticsLoading = ref(false);
 const savingConfig = ref(false);
 const latencyMs = ref(null);
+
+const sampleFormattedDate = computed(() => {
+  return formatDate(new Date());
+});
+
+const sampleFormattedPrice = computed(() => {
+  return formatCurrency(1234.50, selectedDefaultCurrency.value);
+});
+
+const resetUiCache = () => {
+  localStorage.removeItem('bom_project_filter');
+  localStorage.removeItem('bom_component_filter');
+  localStorage.removeItem('bom_active_tab');
+  localStorage.setItem('bom_language', selectedLanguage.value);
+  showToast(t('settings.clearCacheSuccess'), 'success');
+};
 
 const onLanguageChange = (val) => {
   if (val) {
@@ -1120,7 +1280,7 @@ watch(() => locale.value, (newVal) => {
 
 const appInfo = reactive({
   name: 'BOM Manager',
-  version: '0.3.0',
+  version: APP_VERSION,
   environment: 'development',
   nodeVersion: '',
   platform: '',
@@ -1232,9 +1392,6 @@ async function saveConfig() {
 }
 
 // Currency & Exchange Rate State
-const currencyStore = useCurrencyStore();
-const selectedDefaultCurrency = ref('USD');
-const selectedSecondaryCurrencies = ref(['EUR', 'UAH', 'PLN']);
 const ratesHistory = ref([]);
 const savingCurrencies = ref(false);
 const recalculating = ref(false);

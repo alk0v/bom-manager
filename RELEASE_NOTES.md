@@ -1,5 +1,84 @@
 # Release Notes - BOM Manager
 
+## Version 0.3.5 (November 2026) - Package Footprint ZIP Export/Import, Gallery Mode & Table Sorting
+
+### Summary
+Version 0.3.5 introduces complete Package & Footprint Export/Import workflows with technical drawing image bundling, adds an interactive Gallery Mode with full-size lightbox previews, enables sortable table columns across the Packages dictionary, and resolves media URL pathing.
+
+### What's New
+- 📦 **Packages Export to ZIP Archive**:
+  - Export package footprints into portable ZIP archives containing `manifest.json` metadata and bundled technical drawing image files from `media/packages/`.
+  - Supports exporting either all footprints or a customized checkbox selection.
+- 📥 **Intelligent Package Import & Name Mapping**:
+  - Import package archive files (`.zip` or `.json`) with an interactive preview modal.
+  - Automatically matches footprints against existing database entries by name with "Exact match" and "New footprint" detection.
+  - Interactive target remapping, sleek action selectors, and batch "Map Exact" / "Create All New" actions.
+- 🖼️ **Gallery Mode for Package Drawings**:
+  - Added interactive Table / Gallery view switching in the Packages Dictionary (`/dictionaries/packages`).
+  - Gallery cards showcase large 280px drawing previews, footprint metadata, mount technology, pin counts, and hover zoom lightbox overlays.
+- 🔀 **Interactive Sortable Table Columns**:
+  - All data columns in the Packages dictionary (ID, Footprint Name, Mount Type, Pin Count, Drawing File, and Component Usage) are now fully interactive with ascending/descending natural alphanumeric sorting.
+- 🔍 **Drawing Filename Display & Lightbox Previews**:
+  - Replaced bulky table image thumbnails with clean, clickable monospace drawing filenames that open the full-size media lightbox dialog.
+  - Normalized package media path resolution across client and server (`/media/packages/*`) with full `data:` URI support.
+
+---
+
+## Version 0.3.4 (September 2026) - Hardware Project Export/Import, Component Mapping & iBOM Localization
+
+### Summary
+Version 0.3.4 introduces complete Hardware Project Export & Import capabilities for sharing projects between users and environments, interactive component mapping, automated bundling of photos, datasheets, and drawings, and full localization for iBOM workflows.
+
+### What's New
+- 📦 **Project Export to ZIP Archive**: Export complete electronic hardware projects into portable ZIP packages containing project metadata, tags, full BOM requirements, custom technical specifications (`t_component_field_values`), project cover photo, attachments (`t_project_files`), component photos, datasheets, and package footprint drawings.
+- 📥 **Intelligent Project Import & Component Mapping**: Import project export packages (`.zip` or `.json`) with an interactive preview workflow. Automatically matches BOM components against the local catalog by part name, footprint, or marking code with instant Exact/Suggested badges, and lets you re-use the Component Picker and Create/Clone dialogs on the fly.
+- 📎 **Complete Media Asset Packaging & Extraction**: Bundles all related component photos, datasheet PDFs, and package drawings into the export package, automatically extracting them into local media storage upon import for newly created or matched items.
+- 🌐 **KiCAD Interactive HTML BOM (iBOM) Localization**: Full bilingual localization (English & Ukrainian) for the KiCAD iBOM import dialog, streamlined table columns, and polished compact dialog sizing across import modals.
+- ⚙️ **Category Change Specification Mapping**: Automatic mapping and data preservation of custom field values when changing component categories individually or in bulk, with safety warnings for unmapped discarded fields.
+
+---
+
+## Version 0.3.3 (September 2026) - Category Groups, Mechanical Components & Dictionary Enhancements
+
+### Summary
+Version 0.3.3 introduces Category Groups (Supercategories) for organizing component taxonomy, adds dedicated support for Mechanical & Non-Electrical parts (MECH mounting type with nullable pin counts), and delivers UI and workflow enhancements across dictionaries and component creation.
+
+### What's New
+- 🗂️ **Category Groups & Supercategories Taxonomy**: Organize component categories into top-level groups (e.g. Electronic, Mechanical, Fasteners, Optics, Cables). Includes a full dictionary management view (`/dictionaries/groups`) with CRUD, sort ordering, and safe deletion with category reassignment.
+- 🔩 **Mechanical & Non-Electrical Components Support**: Added "MECH" mounting technology alongside SMD and THT for non-electrical parts (screws, nuts, springs, plastic cases, enclosures, standoffs). Packages support nullable pin counts and omit pin badges when not applicable.
+- 🏷️ **Category Group Assignment & Quick Filtering**: Assign categories to groups directly in the Categories Dictionary, filter categories by group in toolbars, and view group classification chips across dictionary views.
+- 📝 **Component Form Memory & Workflow Optimizations**: When "Add another component after saving" is enabled, all form fields (including Category, Package, Name, Storage, and Custom Specifications) are automatically preserved for rapid batch entry of component kits.
+- 📐 **Dictionaries Table & Layout Refinements**: Expanded Actions column in Categories Dictionary for optimal usability, improved mounting technology toggles and filters across all dialogs, and streamlined storage section display.
+
+---
+
+## Version 0.3.2 (September 2026) - Category-Package Associations, Custom Specification Fields & Bulk Editing
+
+### Summary
+Version 0.3.2 brings Category ↔ Package associations to prevent invalid footprint selections, introduces dynamic category-specific Custom Specification Fields (e.g. Capacitance, Voltage, Current Gain hFE), and adds advanced technical specification filtering across the catalog.
+
+### What's New
+- 🔗 **Category ↔ Package Associations & Footprint Validation**: Configure allowed footprints and packages per category (e.g. Microcontrollers cannot be assigned 0603; Electrolytic Capacitors cannot be DIP-32). Component forms automatically filter packages with a convenient "Show all packages" override button.
+- ⚡ **Category Technical Specifications & Parameter Re-use**: Define custom typed specification fields per category (numeric values with units like µF, V, mA, Ω, hFE, text parameters, or dropdown options). Easily re-use parameters across categories (e.g. hFE, VCEO, IC for PNP & NPN transistors) using the "Copy from Category..." tool and standard electronic presets.
+- 🔎 **Advanced Technical Specification Filtering**: Filter components by their dynamic technical specifications directly in the catalog toolbar (numeric min/max ranges, dropdown options, text matches) when browsing specific categories.
+- 📊 **Component Specifications in Details & Catalog Views**: Component specifications with units are clearly displayed in Component Details overview and as compact parameter badges in the main catalog table.
+- ✏️ **Bulk Component Editing & Multi-Selection**: Select filtered components (one by one or all visible) and batch-update Category, Package/Footprint, Component Photo, Datasheet, and Category Specification Parameters with granular per-field update controls.
+
+---
+
+## Version 0.3.1 (September 2026) - Hardware Project Tagging, Image Attachments & Fast Filtering
+
+### Summary
+Version 0.3.1 introduces Hardware Project Tagging, allowing flexible taxonomy, categorization (e.g., Commodore 64, Retro, SMD, KiCAD), multi-select tag filtering, autocomplete, and seamless project management.
+
+### What's New
+- 🏷️ **Hardware Project Tags & Categorization**: Assign custom and predefined tags to electronic hardware projects (e.g. "commodore 64", "retro", "smd"). Tags are normalized in dedicated relational tables (`t_tags` and `t_project_tags`) with automatic project counts and autocomplete.
+- 🔍 **Multi-Select Tag Filter & Instant Click-to-Filter**: Filter projects effortlessly with a multi-select combobox in the projects toolbar. Clicking any tag chip on a project card toggles the tag filter immediately.
+- 📋 **Project Tags in BOM Dialog & Project Details**: Project tags are clearly displayed across all interfaces: Project Cards, Project BOM modal header, and the dedicated Project Details overview page.
+- 🖼️ **Image Attachments Support (PNG, JPG, SVG)**: Attach board photos, assembly diagrams, and vector schematics directly to project files with automatic type detection, interactive table thumbnails, upload preview, and full-screen lightbox viewing.
+
+---
+
 ## Version 0.3.0 (September 2026) - Multi-Currency Orders, Action Columns Alignment & Purchase Workflow Redesign
 
 ### Summary

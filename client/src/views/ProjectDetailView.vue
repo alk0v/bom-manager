@@ -39,6 +39,17 @@
           variant="outlined"
           size="small"
           color="primary"
+          prepend-icon="mdi-package-up"
+          :loading="exporting"
+          @click="exportCurrentProject"
+        >
+          {{ t('importProjectModal.exportBtn') }}
+        </v-btn>
+
+        <v-btn
+          variant="outlined"
+          size="small"
+          color="primary"
           prepend-icon="mdi-pencil-outline"
           @click="showProjectDialog = true"
         >
@@ -131,6 +142,21 @@
             <p class="text-body-2 text-slate-600 mb-3 pre-line">
               {{ project.description || t('projectDetail.noDescription') }}
             </p>
+
+            <!-- Project Tags -->
+            <div v-if="project.tags && project.tags.length > 0" class="d-flex flex-wrap align-center mb-3" style="gap: 6px;">
+              <v-chip
+                v-for="tag in project.tags"
+                :key="tag.id || tag.name"
+                size="small"
+                variant="outlined"
+                color="slate-600"
+                class="font-weight-medium"
+              >
+                <v-icon start size="14" color="primary">mdi-tag-outline</v-icon>
+                {{ tag.name }}
+              </v-chip>
+            </div>
           </div>
 
           <div class="d-flex align-center justify-space-between pt-3 border-t">
@@ -343,7 +369,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, watch, onMounted } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useI18n } from 'vue-i18n';
 import api, { resolveMediaUrl } from '../services/api';
@@ -466,6 +492,31 @@ const projectForDelete = computed(() => {
   };
 });
 
+const exporting = ref(false);
+
+const exportCurrentProject = async () => {
+  if (!project.value || !project.value.id) return;
+  exporting.value = true;
+  try {
+    const res = await api.exportProject(project.value.id);
+    const blob = new Blob([res.data], { type: 'application/zip' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    const safeTitle = (project.value.projectName || `project_${project.value.id}`).replace(/[^a-zA-Z0-9._-]/g, '_');
+    link.download = `${safeTitle}_export.zip`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(link.href);
+    notify(t('importProjectModal.exportSuccess'));
+  } catch (err) {
+    console.error('Failed to export project:', err);
+    notify(t('importProjectModal.exportError') + ': ' + err.message, 'error');
+  } finally {
+    exporting.value = false;
+  }
+};
+
 function onProjectDeleted(deletedProj) {
   showDeleteDialog.value = false;
   showProjectDialog.value = false;
@@ -476,7 +527,15 @@ function onProjectDeleted(deletedProj) {
 const onProjectSaved = async ({ project: updatedProject }) => {
   notify(`Project "${updatedProject.projectName}" updated!`);
   project.value = { ...project.value, ...updatedProject };
+  await loadData();
 };
+
+// Automatically reload project data when Edit Project dialog is closed
+watch(showProjectDialog, (isOpen, wasOpen) => {
+  if (wasOpen && !isOpen) {
+    loadData();
+  }
+});
 
 const snackbar = ref({
   show: false,

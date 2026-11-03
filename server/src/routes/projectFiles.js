@@ -42,17 +42,22 @@ function detectFileType(originalName, buffer) {
     return 'document';
   }
 
-  // 2. Archives / Gerbers
+  // 2. Images (PNG, JPG, SVG, WebP, GIF, BMP)
+  if (['.png', '.jpg', '.jpeg', '.svg', '.webp', '.gif', '.bmp', '.ico'].includes(ext)) {
+    return 'image';
+  }
+
+  // 3. Archives / Gerbers
   if (['.zip', '.tar', '.gz', '.7z', '.rar', '.tgz'].includes(ext)) {
     return 'archive';
   }
 
-  // 3. Firmware / ROMs
+  // 4. Firmware / ROMs
   if (['.bin', '.hex', '.rom', '.elf', '.dfu', '.img'].includes(ext)) {
     return 'firmware';
   }
 
-  // 4. Documents / Schematics / Datasheets
+  // 5. Documents / Schematics / Datasheets
   if (['.pdf', '.txt', '.md', '.csv'].includes(ext)) {
     return 'document';
   }

@@ -205,6 +205,30 @@
 
             <v-divider class="my-3" />
 
+            <!-- Technical Specifications & Attributes -->
+            <div v-if="displayComponent.customFields && displayComponent.customFields.length > 0" class="mb-3">
+              <div class="text-caption text-disabled text-uppercase font-weight-bold mb-2 d-flex align-center gap-1">
+                <v-icon size="16" color="primary">mdi-tune-vertical</v-icon>
+                <span>{{ t('componentDetailsModal.specifications') }}</span>
+              </div>
+              <div class="border rounded-lg bg-slate-50 pa-3">
+                <v-row dense>
+                  <v-col
+                    v-for="spec in displayComponent.customFields"
+                    :key="spec.fieldId || spec.id"
+                    cols="6"
+                    sm="4"
+                    class="py-1"
+                  >
+                    <div class="text-caption text-slate-500 font-weight-medium">{{ spec.fieldLabel }}</div>
+                    <div class="font-mono font-weight-bold text-body-2 text-slate-900">
+                      {{ spec.fieldValue }} <span v-if="spec.unit" class="text-caption font-weight-normal text-slate-600">{{ spec.unit }}</span>
+                    </div>
+                  </v-col>
+                </v-row>
+              </div>
+            </div>
+
             <!-- Description -->
             <div class="text-caption text-disabled text-uppercase font-weight-bold mb-1">{{ t('common.description') }}</div>
             <p class="text-body-2 text-slate-700 mb-3" style="white-space: pre-line;">

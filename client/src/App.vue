@@ -23,7 +23,7 @@
               variant="flat"
               class="ms-2 font-mono font-weight-bold"
             >
-              0.3.0
+              {{ APP_VERSION }}
             </v-chip>
           </div>
         </template>
@@ -80,6 +80,16 @@
         </v-list-item>
 
         <v-list-item
+          prepend-icon="mdi-book-open-outline"
+          :title="t('nav.dictionaries')"
+          value="dictionaries"
+          to="/dictionaries"
+          :active="route.path.startsWith('/dictionaries')"
+          active-class="bg-primary text-white"
+          rounded="lg"
+        />
+
+        <v-list-item
           prepend-icon="mdi-chart-box-outline"
           :title="t('nav.reports')"
           value="reports"
@@ -113,7 +123,7 @@
               variant="tonal"
               class="font-mono font-weight-bold"
             >
-              0.3.0
+              {{ APP_VERSION }}
             </v-chip>
           </template>
         </v-list-item>
@@ -126,7 +136,7 @@
             class="text-decoration-none d-flex align-center justify-space-between text-caption text-slate-600"
           >
             <span>BOM Manager</span>
-            <span class="font-mono font-weight-bold">v0.3.0</span>
+            <span class="font-mono font-weight-bold">v{{ APP_VERSION }}</span>
           </router-link>
         </div>
       </template>
@@ -151,6 +161,15 @@
             to="/reports"
             :title="t('reports.availableReports')"
           />
+          <v-btn
+            v-else-if="isDictionaryDetail"
+            icon="mdi-arrow-left"
+            variant="text"
+            size="small"
+            class="me-1 text-slate-600"
+            to="/dictionaries"
+            :title="t('dictionaries.backToDictionaries')"
+          />
           <v-icon start color="primary" size="22">
             {{ currentIcon }}
           </v-icon>
@@ -160,6 +179,13 @@
             </router-link>
             <span class="text-slate-400 me-2">/</span>
             <span class="text-slate-900">{{ reportDetailTitle }}</span>
+          </template>
+          <template v-else-if="isDictionaryDetail">
+            <router-link to="/dictionaries" class="text-decoration-none text-slate-500 hover-underline me-2">
+              {{ t('header.dictionariesTitle') }}
+            </router-link>
+            <span class="text-slate-400 me-2">/</span>
+            <span class="text-slate-900">{{ dictionaryDetailTitle }}</span>
           </template>
           <template v-else>
             <span>{{ currentTitle }}</span>
@@ -211,6 +237,7 @@ import api from './services/api';
 import { useComponentsStore } from './stores/components';
 import { useShoppingListStore } from './stores/shoppingList';
 import { useCurrencyStore } from './stores/currency';
+import { APP_VERSION } from './config/appConfig';
 import PackageDetailsDialog from './components/PackageDetailsDialog.vue';
 import MediaUploadDialog from './components/MediaUploadDialog.vue';
 
@@ -228,12 +255,29 @@ const isReportDetail = computed(() => {
   return route.path === '/reports/production' || route.path === '/reports/purchases';
 });
 
+const isDictionaryDetail = computed(() => {
+  return route.path === '/dictionaries/groups' || route.path === '/dictionaries/categories' || route.path === '/dictionaries/packages';
+});
+
 const reportDetailTitle = computed(() => {
   if (route.path === '/reports/production') {
     return t('reports.productionReport');
   }
   if (route.path === '/reports/purchases') {
     return t('reports.purchasesReport');
+  }
+  return '';
+});
+
+const dictionaryDetailTitle = computed(() => {
+  if (route.path === '/dictionaries/groups') {
+    return t('dictionaries.groupsTitle');
+  }
+  if (route.path === '/dictionaries/categories') {
+    return t('dictionaries.categoriesTitle');
+  }
+  if (route.path === '/dictionaries/packages') {
+    return t('dictionaries.packagesTitle');
   }
   return '';
 });
@@ -248,17 +292,28 @@ const currentTitle = computed(() => {
   if (route.path === '/reports/purchases') {
     return t('reports.purchasesReport');
   }
+  if (route.path === '/dictionaries/groups') {
+    return t('dictionaries.groupsTitle');
+  }
+  if (route.path === '/dictionaries/categories') {
+    return t('dictionaries.categoriesTitle');
+  }
+  if (route.path === '/dictionaries/packages') {
+    return t('dictionaries.packagesTitle');
+  }
   switch (route.path) {
     case '/components':
       return t('header.componentsTitle');
     case '/shopping-list':
       return t('header.shoppingListTitle');
+    case '/dictionaries':
+      return t('header.dictionariesTitle');
     case '/reports':
       return t('header.reportsTitle');
     case '/settings':
       return t('header.settingsTitle');
     case '/release-notes':
-      return `${t('header.releaseNotesTitle')} (v0.3.0)`;
+      return `${t('header.releaseNotesTitle')} (v${APP_VERSION})`;
     default:
       return t('common.appName');
   }
@@ -274,11 +329,22 @@ const currentIcon = computed(() => {
   if (route.path === '/reports/purchases') {
     return 'mdi-cart-arrow-down';
   }
+  if (route.path === '/dictionaries/groups') {
+    return 'mdi-folder-table-outline';
+  }
+  if (route.path === '/dictionaries/categories') {
+    return 'mdi-shape-outline';
+  }
+  if (route.path === '/dictionaries/packages') {
+    return 'mdi-package-variant-closed';
+  }
   switch (route.path) {
     case '/components':
       return 'mdi-memory';
     case '/shopping-list':
       return 'mdi-cart-outline';
+    case '/dictionaries':
+      return 'mdi-book-open-outline';
     case '/reports':
       return 'mdi-chart-box-outline';
     case '/settings':
