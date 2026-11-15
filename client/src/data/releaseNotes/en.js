@@ -3,17 +3,35 @@ export const releasesEn = [
     version: '0.3.8',
     date: '2026-11-15',
     isCurrent: true,
-    summary: 'Version 0.3.8 fixes package footprint drawing uploads in the Packages dictionary modal window, adds parameter safety to the media upload client service, and improves quick-pickup options from saved supplier links and previous orders in the purchase confirmation dialog.',
+    summary: 'Version 0.3.8 introduces a Gallery view mode and 1-click quick-filtering for Category and Package chips in the Components catalog, package footprint preview modals with vertically aligned preview icons, fixes package footprint drawing uploads in the Packages dictionary modal window, and improves quick-pickup options from saved supplier links and previous orders in the purchase confirmation dialog.',
     features: [
       {
-        icon: 'mdi-package-variant-closed',
+        icon: 'mdi-view-grid-outline',
         color: 'primary',
+        title: 'Components Gallery View Mode',
+        description: 'Toggle between Table View and Gallery Mode in the Components catalog. Gallery cards display component photos with hover zoom & lightbox, stock status and shortage badges, marking and datasheet links, specifications chips, inline stock editing, and full component actions.'
+      },
+      {
+        icon: 'mdi-filter-outline',
+        color: 'teal',
+        title: 'Clickable Category & Package Quick Filters',
+        description: 'Category and Package chips in the Components table and gallery cards are now interactive. Clicking any chip immediately filters the catalog by that category or package, with filter clearing easily managed in the header toolbar.'
+      },
+      {
+        icon: 'mdi-eye-outline',
+        color: 'indigo',
+        title: 'Package Footprint Preview Modal',
+        description: 'Added a dedicated footprint preview icon positioned right before the package chip. Vertically aligns down table rows and provides instant access to package details, technical drawings, pinout layouts, and mount technology.'
+      },
+      {
+        icon: 'mdi-package-variant-closed',
+        color: 'slate-700',
         title: 'Package Footprint Drawing Upload Fix',
         description: 'Resolved an issue where uploading footprint drawings or photos in the New / Edit Package modal failed with "Unexpected file field". Corrected parameter order and made the media upload API client resilient against transposed parameters.'
       },
       {
         icon: 'mdi-lightning-bolt-outline',
-        color: 'teal',
+        color: 'amber-darken-3',
         title: 'Enhanced Purchase Quick-Pickup',
         description: 'Refined the purchase confirmation dialog with quick-pickup chips and table entries for saved supplier links ("Where to Buy") and purchase history, allowing fast 1-click prefilling of supplier names, prices, currencies, and product URLs.'
       }

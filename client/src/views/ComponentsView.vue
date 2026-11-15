@@ -193,6 +193,24 @@
               {{ t('common.reset') }}
             </v-btn>
 
+            <!-- View Mode Toggle: Table or Gallery -->
+            <v-btn-toggle
+              v-model="viewMode"
+              mandatory
+              density="compact"
+              variant="outlined"
+              color="primary"
+              rounded="lg"
+              class="bg-white"
+            >
+              <v-btn value="table" size="small" :title="t('components.tableView')">
+                <v-icon size="16">mdi-table</v-icon>
+              </v-btn>
+              <v-btn value="gallery" size="small" :title="t('components.galleryView')">
+                <v-icon size="16">mdi-view-grid</v-icon>
+              </v-btn>
+            </v-btn-toggle>
+
             <v-btn
               icon="mdi-refresh"
               size="small"
@@ -417,7 +435,7 @@
       </v-slide-y-transition>
 
       <!-- Components Table -->
-      <v-table density="comfortable" hover class="components-table">
+      <v-table v-if="viewMode === 'table'" density="comfortable" hover class="components-table">
         <thead>
           <tr>
             <th class="text-center font-weight-bold" style="width: 44px;">
@@ -507,17 +525,49 @@
               </div>
             </td>
 
-            <!-- Category -->
+            <!-- Category (Clickable Quick Filter) -->
             <td>
-              <v-chip size="x-small" variant="tonal" color="info" v-if="c.category">
+              <v-chip
+                v-if="c.category"
+                size="x-small"
+                variant="tonal"
+                color="info"
+                class="cursor-pointer font-weight-medium"
+                :title="t('components.filterByCategory', { category: c.category })"
+                @click.stop="filterByCategory(c.category_id)"
+              >
                 {{ c.category }}
               </v-chip>
               <span v-else class="text-disabled text-caption">—</span>
             </td>
 
-            <!-- Package -->
+            <!-- Package (Clickable Quick Filter + Preview Icon) -->
             <td>
-              <PackageLink :item="c" />
+              <div class="d-inline-flex align-center gap-1" v-if="c.package">
+                <v-btn
+                  icon
+                  size="x-small"
+                  variant="text"
+                  color="primary"
+                  class="package-preview-btn me-1"
+                  style="width: 22px; height: 22px;"
+                  :title="t('components.previewPackage', { package: c.package })"
+                  @click.stop="openPackagePreview(c)"
+                >
+                  <v-icon size="15">mdi-eye-outline</v-icon>
+                </v-btn>
+                <v-chip
+                  size="x-small"
+                  variant="tonal"
+                  color="secondary"
+                  class="font-mono cursor-pointer font-weight-medium"
+                  :title="t('components.filterByPackage', { package: c.package })"
+                  @click.stop="filterByPackage(c.package_id)"
+                >
+                  {{ c.package }}
+                </v-chip>
+              </div>
+              <span v-else class="text-disabled text-caption">—</span>
             </td>
 
             <!-- Description -->
@@ -655,6 +705,270 @@
         </tbody>
       </v-table>
 
+      <!-- Components Gallery View -->
+      <div v-else class="pa-4 bg-slate-50 components-gallery">
+        <div v-if="loading" class="d-flex justify-center align-center py-12">
+          <v-progress-circular indeterminate color="primary" />
+        </div>
+
+        <div v-else-if="components.length === 0" class="text-center py-12 text-disabled">
+          <v-icon size="48" class="mb-2">mdi-memory-off</v-icon>
+          <div>{{ t('components.noComponentsMatching') }}</div>
+        </div>
+
+        <v-row v-else>
+          <v-col
+            v-for="c in components"
+            :key="c.ID"
+            cols="12"
+            sm="6"
+            md="4"
+            lg="3"
+            xl="2"
+          >
+            <v-card
+              elevation="1"
+              class="rounded-0 border bg-white h-100 d-flex flex-column component-gallery-card position-relative"
+              :class="{
+                'border-primary': isComponentSelected(c.ID),
+                'card-shortage': !c.qty || c.qty <= 0,
+                'card-low-stock': c.qty > 0 && c.minQty > 0 && c.qty <= c.minQty
+              }"
+              hover
+            >
+              <!-- Card Selection Checkbox -->
+              <div class="position-absolute" style="top: 8px; left: 8px; z-index: 3;">
+                <v-checkbox-btn
+                  :model-value="isComponentSelected(c.ID)"
+                  color="primary"
+                  density="compact"
+                  class="bg-white rounded border elevation-1 pa-0 d-flex align-center justify-center"
+                  style="width: 28px; height: 28px;"
+                  @click.stop
+                  @update:model-value="toggleComponentSelection(c)"
+                />
+              </div>
+
+              <!-- Stock Quantity Badge -->
+              <div class="position-absolute" style="top: 8px; right: 8px; z-index: 3;">
+                <v-chip
+                  size="small"
+                  variant="flat"
+                  :color="(!c.qty || c.qty <= 0) ? 'error' : (c.minQty > 0 && c.qty <= c.minQty ? 'warning' : 'success')"
+                  class="font-weight-bold font-mono shadow-sm"
+                  style="font-size: 11px;"
+                >
+                  <v-icon start size="13">
+                    {{ (!c.qty || c.qty <= 0) ? 'mdi-alert-circle' : (c.minQty > 0 && c.qty <= c.minQty ? 'mdi-alert' : 'mdi-check-circle') }}
+                  </v-icon>
+                  {{ c.qty || 0 }} pcs
+                </v-chip>
+              </div>
+
+              <!-- Component Photo Cover -->
+              <div
+                class="position-relative bg-slate-50 border-b d-flex align-center justify-center pa-2 component-photo-cover"
+                :class="{ 'cursor-pointer': !!c.photoURL }"
+                style="height: 180px;"
+                :title="c.photoURL ? t('dialogs.viewFullSize') : ''"
+                @click="c.photoURL ? openPhotoPreview(c) : viewDetails(c)"
+              >
+                <MediaImage
+                  type="component"
+                  :src="c.photoURL"
+                  height="164px"
+                  width="100%"
+                  :cover="false"
+                  icon-size="48px"
+                />
+                <div v-if="c.photoURL" class="photo-overlay d-flex align-center justify-center">
+                  <v-icon icon="mdi-magnify-plus-outline" size="32" color="slate-800" />
+                </div>
+              </div>
+
+              <!-- Card Body -->
+              <v-card-text class="pa-3 flex-grow-1 d-flex flex-column justify-space-between">
+                <div>
+                  <!-- Component Name & Marking -->
+                  <div class="d-flex align-start justify-space-between gap-1 mb-1">
+                    <div
+                      class="font-mono font-weight-bold text-subtitle-2 text-primary cursor-pointer hover-underline text-truncate"
+                      :title="c.component"
+                      @click="viewDetails(c)"
+                    >
+                      {{ c.component }}
+                    </div>
+                    <span class="text-caption font-mono text-slate-400 flex-shrink-0">#{{ c.ID }}</span>
+                  </div>
+
+                  <!-- Marking and PDF Datasheet -->
+                  <div class="d-flex align-center gap-1 text-caption font-mono mb-2" v-if="c.marking || c.datasheetURL">
+                    <span v-if="c.marking" class="text-disabled text-truncate" :title="'Marking: ' + c.marking">
+                      {{ c.marking }}
+                    </span>
+                    <v-btn
+                      v-if="c.datasheetURL"
+                      icon="mdi-file-pdf-box"
+                      size="x-small"
+                      density="compact"
+                      color="red-darken-1"
+                      variant="text"
+                      title="View Datasheet"
+                      :href="getDatasheetUrl(c.datasheetURL)"
+                      target="_blank"
+                      class="ms-auto flex-shrink-0"
+                      style="width: 20px; height: 20px;"
+                      @click.stop
+                    />
+                  </div>
+
+                  <!-- Category & Package Chips Row -->
+                  <div class="d-flex flex-wrap align-center gap-1 mb-2">
+                    <!-- Category Chip -->
+                    <v-chip
+                      v-if="c.category"
+                      size="x-small"
+                      variant="tonal"
+                      color="info"
+                      class="cursor-pointer font-weight-medium"
+                      :title="t('components.filterByCategory', { category: c.category })"
+                      @click.stop="filterByCategory(c.category_id)"
+                    >
+                      {{ c.category }}
+                    </v-chip>
+
+                    <!-- Package Chip + Preview Icon -->
+                    <div class="d-inline-flex align-center gap-1" v-if="c.package">
+                      <v-btn
+                        icon
+                        size="x-small"
+                        variant="text"
+                        color="primary"
+                        class="package-preview-btn me-1"
+                        style="width: 20px; height: 20px;"
+                        :title="t('components.previewPackage', { package: c.package })"
+                        @click.stop="openPackagePreview(c)"
+                      >
+                        <v-icon size="14">mdi-eye-outline</v-icon>
+                      </v-btn>
+                      <v-chip
+                        size="x-small"
+                        variant="tonal"
+                        color="secondary"
+                        class="font-mono cursor-pointer font-weight-medium"
+                        :title="t('components.filterByPackage', { package: c.package })"
+                        @click.stop="filterByPackage(c.package_id)"
+                      >
+                        {{ c.package }}
+                      </v-chip>
+                    </div>
+                  </div>
+
+                  <!-- Description / Short Description -->
+                  <div class="text-caption text-slate-600 line-clamp-2 mb-2" style="min-height: 32px;" :title="c.description || c.shortDescription">
+                    {{ c.shortDescription?.trim() || c.description?.trim() || '—' }}
+                  </div>
+
+                  <!-- Custom Fields (Specs) preview chips if any -->
+                  <div v-if="c.customFields && c.customFields.length > 0" class="d-flex align-center gap-1 flex-wrap mb-2">
+                    <v-chip
+                      v-for="spec in c.customFields.slice(0, 2)"
+                      :key="spec.fieldId"
+                      size="x-small"
+                      variant="tonal"
+                      color="primary"
+                      class="font-mono text-caption px-1"
+                      style="height: 18px; font-size: 10px;"
+                      :title="`${spec.fieldLabel}: ${spec.fieldValue}${spec.unit ? ' ' + spec.unit : ''}`"
+                    >
+                      {{ spec.fieldLabel }}: {{ spec.fieldValue }}{{ spec.unit || '' }}
+                    </v-chip>
+                    <span v-if="c.customFields.length > 2" class="text-caption text-disabled font-mono" style="font-size: 10px;">
+                      +{{ c.customFields.length - 2 }}
+                    </span>
+                  </div>
+                </div>
+
+                <!-- Footer: Inline Stock Edit and Actions Toolbar -->
+                <div>
+                  <div class="d-flex align-center justify-space-between pt-2 border-t mt-auto bg-slate-50 px-2 py-1 rounded">
+                    <div class="d-flex align-center gap-1">
+                      <span class="text-caption text-slate-500 font-weight-medium">Qty:</span>
+                      <v-text-field
+                        :model-value="c.qty ?? 0"
+                        type="number"
+                        min="0"
+                        density="compact"
+                        variant="outlined"
+                        hide-details
+                        :class="[
+                          'stock-qty-input font-mono font-weight-bold',
+                          (!c.qty || c.qty <= 0) ? 'stock-absent' : (c.minQty > 0 && c.qty <= c.minQty ? 'stock-low' : 'stock-ok')
+                        ]"
+                        style="width: 68px;"
+                        title="Current on-hand stock (click to edit)"
+                        @change="onStockQtyChange(c, $event.target.value)"
+                        @keydown.enter="$event.target.blur()"
+                      />
+                    </div>
+                    <div class="text-caption font-mono text-slate-500" v-if="c.minQty > 0">
+                      Min: <span class="font-weight-bold">{{ c.minQty }}</span>
+                    </div>
+                  </div>
+
+                  <div class="d-flex align-center justify-space-between border-t pt-2 mt-2">
+                    <div class="d-flex align-center gap-1">
+                      <v-btn
+                        icon="mdi-cart-plus"
+                        size="x-small"
+                        color="amber-darken-3"
+                        variant="text"
+                        :title="t('components.quickAddToBasket')"
+                        @click="addToShoppingList(c)"
+                      />
+                      <v-btn
+                        icon="mdi-cash-check"
+                        size="x-small"
+                        color="primary"
+                        variant="text"
+                        :title="t('components.buyComponent')"
+                        @click="openDirectPurchase(c)"
+                      />
+                    </div>
+                    <div class="d-flex align-center gap-1">
+                      <v-btn
+                        icon="mdi-pencil-outline"
+                        size="x-small"
+                        color="slate-700"
+                        variant="text"
+                        :title="t('components.editComponent')"
+                        @click="openEditComponent(c)"
+                      />
+                      <v-btn
+                        icon="mdi-content-copy"
+                        size="x-small"
+                        color="slate-700"
+                        variant="text"
+                        :title="t('components.cloneComponent')"
+                        @click="openCloneComponent(c)"
+                      />
+                      <v-btn
+                        icon="mdi-delete-outline"
+                        size="x-small"
+                        color="error"
+                        variant="text"
+                        :title="t('components.deleteComponent')"
+                        @click="openDeleteDialog(c)"
+                      />
+                    </div>
+                  </div>
+                </div>
+              </v-card-text>
+            </v-card>
+          </v-col>
+        </v-row>
+      </div>
+
       <!-- Pagination Footer -->
       <v-divider />
       <div class="pa-3 d-flex align-center justify-space-between bg-surface">
@@ -770,8 +1084,15 @@ import DeleteComponentDialog from '../components/DeleteComponentDialog.vue';
 import ImportComponentsDialog from '../components/ImportComponentsDialog.vue';
 import ImportComponentsPackageDialog from '../components/ImportComponentsPackageDialog.vue';
 import { useComponentsStore } from '../stores/components';
+import { usePackageDetailsStore } from '../stores/packageDetails';
 
 const componentsStore = useComponentsStore();
+const packageDetailsStore = usePackageDetailsStore();
+
+const viewMode = ref(localStorage.getItem('bom_components_view_mode') || 'table');
+watch(viewMode, (newVal) => {
+  localStorage.setItem('bom_components_view_mode', newVal);
+});
 
 const components = ref([]);
 const categories = ref([]);
@@ -1069,6 +1390,39 @@ const onMountTypeChange = () => {
   fetchComponents();
 };
 
+const filterByCategory = (catId) => {
+  if (!catId) return;
+  const numId = Number(catId);
+  selectedCategories.value = [numId];
+  onFilterChange();
+};
+
+const filterByPackage = (pkgId) => {
+  if (!pkgId) return;
+  const numId = Number(pkgId);
+  selectedPackages.value = [numId];
+  const pkg = packages.value.find(p => Number(p.ID) === numId);
+  if (pkg && packageMountType.value !== 'all') {
+    const isSmdNum = packageMountType.value === 'smd' ? 1 : (packageMountType.value === 'tht' ? 0 : 2);
+    if (Number(pkg.isSmd) !== isSmdNum) {
+      packageMountType.value = 'all';
+    }
+  }
+  onFilterChange();
+};
+
+const openPackagePreview = (c) => {
+  if (!c) return;
+  packageDetailsStore.openPackage({
+    ID: c.package_id,
+    package_id: c.package_id,
+    package: c.package,
+    pinQuantity: c.pinQuantity,
+    isSmd: c.isSmd,
+    drawingURL: c.drawingURL
+  });
+};
+
 const resetFilters = () => {
   search.value = '';
   selectedCategories.value = [];
@@ -1339,5 +1693,58 @@ onMounted(async () => {
 
 .hover-zoom:hover {
   transform: scale(1.1);
+}
+
+.component-gallery-card {
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.component-gallery-card:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08) !important;
+}
+
+.component-photo-cover {
+  position: relative;
+  background-color: #f8fafc;
+}
+
+.photo-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(255, 255, 255, 0.6);
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.component-photo-cover:hover .photo-overlay {
+  opacity: 1;
+}
+
+.card-shortage {
+  border-top: 3px solid #EF4444 !important;
+}
+
+.card-low-stock {
+  border-top: 3px solid #F97316 !important;
+}
+
+.line-clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.package-preview-btn {
+  opacity: 0.8;
+  transition: opacity 0.15s ease, transform 0.15s ease;
+}
+
+.package-preview-btn:hover {
+  opacity: 1;
+  transform: scale(1.15);
 }
 </style>
