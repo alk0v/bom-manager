@@ -674,6 +674,7 @@
     "totalMissing": "Total missing items across all shortage components",
     "addMissingToShoppingList": "Add Missing to Shopping List",
     "filterPlaceholder": "Filter components in deduction table...",
+    "notesPlaceholder": "Production notes (batch #, order, comments)...",
     "allowNegativeStock": "Allow production with insufficient stock (deduct anyway)",
     "colPerUnit": "Per Unit",
     "colRequiredForBatch": "Required for {count}x",

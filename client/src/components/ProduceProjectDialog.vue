@@ -166,19 +166,32 @@
         </div>
       </div>
 
-      <!-- Search / Filter bar for BOM items -->
-      <div class="px-5 py-2 bg-white border-b d-flex align-center justify-space-between flex-shrink-0">
-        <v-text-field
-          v-model="searchQuery"
-          :placeholder="t('produceModal.filterPlaceholder')"
-          prepend-inner-icon="mdi-magnify"
-          density="compact"
-          variant="outlined"
-          hide-details
-          clearable
-          rounded="lg"
-          style="max-width: 320px;"
-        />
+      <!-- Search / Filter bar for BOM items & Production Notes -->
+      <div class="px-5 py-2 bg-white border-b d-flex align-center justify-space-between flex-wrap gap-2 flex-shrink-0">
+        <div class="d-flex align-center gap-2 flex-grow-1" style="max-width: 720px;">
+          <v-text-field
+            v-model="searchQuery"
+            :placeholder="t('produceModal.filterPlaceholder')"
+            prepend-inner-icon="mdi-magnify"
+            density="compact"
+            variant="outlined"
+            hide-details
+            clearable
+            rounded="lg"
+            style="min-width: 220px; max-width: 300px;"
+          />
+          <v-text-field
+            v-model="productionNotes"
+            :placeholder="t('produceModal.notesPlaceholder')"
+            prepend-inner-icon="mdi-note-text-outline"
+            density="compact"
+            variant="outlined"
+            hide-details
+            clearable
+            rounded="lg"
+            class="flex-grow-1"
+          />
+        </div>
 
         <div class="d-flex align-center gap-2">
           <v-checkbox
@@ -426,6 +439,7 @@ const producing = ref(false);
 const addingToCart = ref(false);
 const allowNegativeStock = ref(false);
 const searchQuery = ref('');
+const productionNotes = ref('');
 
 const showDetailsDialog = ref(false);
 const selectedComponentForDetails = ref(null);
@@ -437,6 +451,8 @@ const loadBom = async () => {
   produceCount.value = 1;
   allowNegativeStock.value = false;
   searchQuery.value = '';
+  productionNotes.value = '';
+  selectedSubstitutions.value = {};
   try {
     const data = await api.getProjectBom(props.project.id);
     bomItems.value = data || [];
@@ -638,7 +654,7 @@ const confirmProduce = async () => {
     const res = await api.produceProject(props.project.id, {
       count: produceCount.value,
       allowNegativeStock: allowNegativeStock.value,
-      notes: productionNotes.value,
+      notes: productionNotes.value?.trim() || '',
       substitutions: selectedSubstitutions.value
     });
 
