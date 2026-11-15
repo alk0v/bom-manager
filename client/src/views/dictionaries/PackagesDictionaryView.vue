@@ -903,14 +903,14 @@ const handleDrawingUpload = async (event) => {
 
   uploadingDrawing.value = true;
   try {
-    const res = await api.uploadMedia(file, 'packages');
+    const res = await api.uploadMedia('packages', file);
     if (res && res.filename) {
       packageForm.value.drawingURL = res.filename;
       notify(t('manageCatalogModal.drawingUploaded', { file: res.filename }));
     }
   } catch (err) {
     console.error('Failed to upload drawing:', err);
-    notify(t('manageCatalogModal.drawingUploadError') + ': ' + err.message, 'error');
+    notify(t('manageCatalogModal.drawingUploadError') + ': ' + (err.response?.data?.error || err.message), 'error');
   } finally {
     uploadingDrawing.value = false;
     if (drawingInputRef.value) {

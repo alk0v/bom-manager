@@ -238,11 +238,21 @@ export const api = {
 
   // Media upload
   uploadMedia: (folder, file, filename) => {
+    let targetFolder = folder;
+    let targetFile = file;
+    let targetFilename = filename;
+
+    // Gracefully handle argument transposition if file was passed as first argument
+    if (folder instanceof Blob || (folder && typeof folder === 'object' && typeof folder.name === 'string')) {
+      targetFile = folder;
+      targetFolder = typeof file === 'string' ? file : 'packages';
+    }
+
     const formData = new FormData();
-    formData.append('file', file);
-    formData.append('folder', folder);
-    if (filename) {
-      formData.append('filename', filename);
+    formData.append('file', targetFile);
+    formData.append('folder', targetFolder);
+    if (targetFilename) {
+      formData.append('filename', targetFilename);
     }
     return client.post('/media/upload', formData, {
       headers: {

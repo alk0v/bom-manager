@@ -1,8 +1,28 @@
 export const releasesEn = [
   {
+    version: '0.3.8',
+    date: '2026-11-15',
+    isCurrent: true,
+    summary: 'Version 0.3.8 fixes package footprint drawing uploads in the Packages dictionary modal window, adds parameter safety to the media upload client service, and improves quick-pickup options from saved supplier links and previous orders in the purchase confirmation dialog.',
+    features: [
+      {
+        icon: 'mdi-package-variant-closed',
+        color: 'primary',
+        title: 'Package Footprint Drawing Upload Fix',
+        description: 'Resolved an issue where uploading footprint drawings or photos in the New / Edit Package modal failed with "Unexpected file field". Corrected parameter order and made the media upload API client resilient against transposed parameters.'
+      },
+      {
+        icon: 'mdi-lightning-bolt-outline',
+        color: 'teal',
+        title: 'Enhanced Purchase Quick-Pickup',
+        description: 'Refined the purchase confirmation dialog with quick-pickup chips and table entries for saved supplier links ("Where to Buy") and purchase history, allowing fast 1-click prefilling of supplier names, prices, currencies, and product URLs.'
+      }
+    ]
+  },
+  {
     version: '0.3.7',
     date: '2026-11-03',
-    isCurrent: true,
+    isCurrent: false,
     summary: 'Version 0.3.7 introduces Component Supplier Links ("Where to Buy") for saving store URLs, unit prices, currencies, and notes per component without requiring a purchase order, adds 1-click order pre-filling from saved supplier links, and improves the Component Details modal layout to prevent action button clipping.',
     features: [
       {
